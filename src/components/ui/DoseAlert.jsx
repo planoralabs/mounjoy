@@ -9,19 +9,19 @@ const DoseAlert = ({ reminder, onAction }) => {
 
     if (isFirst) {
         return (
-            <div className="bg-slate-900 rounded-[32px] p-6 mb-6 shadow-xl border border-slate-800 animate-fadeIn overflow-hidden relative group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-brand/10 blur-[60px] rounded-full -translate-y-1/2 translate-x-1/2" />
-                <div className="flex items-center gap-4 relative">
-                    <div className="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center text-brand">
+            <div className="bg-white rounded-[32px] p-6 mb-6 shadow-sm border border-slate-100 animate-fadeIn overflow-hidden relative group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-50/50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+                <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center text-brand shadow-sm">
                         <Bell size={28} className="animate-bounce" />
                     </div>
                     <div className="flex-1">
-                        <h4 className="text-white font-black text-lg tracking-tight">Primeira Dose?</h4>
-                        <p className="text-white/50 text-xs font-medium leading-relaxed">Você ainda não registrou nenhuma dose. Marque sua primeira aplicação agora!</p>
+                        <h4 className="text-slate-800 font-black text-lg tracking-tight">Primeira Dose?</h4>
+                        <p className="text-slate-400 text-xs font-bold leading-tight">Você ainda não registrou nenhuma dose. Marque sua primeira aplicação agora!</p>
                     </div>
                     <button
                         onClick={onAction}
-                        className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shadow-lg active:scale-95 transition-all"
+                        className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shadow-lg active:scale-90 transition-all hover:bg-brand-600"
                     >
                         <ChevronRight size={20} />
                     </button>

@@ -45,25 +45,27 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4 animate-fadeIn">
-            <div className="bg-white w-full max-w-lg sm:max-w-sm rounded-t-[32px] sm:rounded-[32px] shadow-2xl animate-slideUp max-h-[90vh] flex flex-col overflow-hidden relative transition-all duration-500 ease-in-out">
+        <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-md p-0 sm:p-4 animate-fadeIn">
+            <div className="bg-white w-full max-w-lg sm:max-w-[440px] rounded-t-[40px] sm:rounded-[40px] shadow-2xl animate-slideUp max-h-[92vh] flex flex-col overflow-hidden relative transition-all duration-500 ease-in-out border border-white/20">
                 {/* Robust Header: Masking rounded corners and providing a solid barrier */}
                 <div className="bg-white z-20 shrink-0">
                     {/* Symmetrical Handle Area */}
-                    <div className="pt-4 pb-1.5 flex justify-center sm:hidden">
-                        <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
+                    <div className="pt-4 pb-2 flex justify-center sm:hidden">
+                        <div className="w-12 h-1.5 bg-slate-100 rounded-full" />
                     </div>
 
                     {/* Fixed Title Area */}
-                    <div className="px-6 pb-4 flex justify-between items-center bg-white">
-                        <h3 className="text-xl font-bold text-slate-800">{title}</h3>
-                        <button onClick={onClose} aria-label="Close modal" className="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 focus:outline-none transition-colors"><X size={18} /></button>
+                    <div className="px-6 py-5 sm:pt-8 sm:pb-5 flex justify-between items-start gap-6 bg-white shrink-0">
+                        <h3 className="text-2xl font-black text-slate-800 leading-[1.2] tracking-tight">{title}</h3>
+                        <button onClick={onClose} aria-label="Close modal" className="p-2.5 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none transition-all active:scale-90 shrink-0"><X size={20} /></button>
                     </div>
                 </div>
 
                 {/* Scrollable Body: Content goes here */}
-                <div className="flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar">
-                    {children}
+                <div className="flex-1 overflow-y-auto px-6 pb-8 hide-scrollbar">
+                    <div className="pt-2">
+                        {children}
+                    </div>
                 </div>
             </div>
         </div>,

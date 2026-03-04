@@ -32,20 +32,20 @@ const BodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
     }, [showInfo]);
 
     return (
-        <div className="flex flex-col items-center gap-4">
-            <div className="relative bg-[#f8fbff] p-3 rounded-[32px] border border-slate-100 shadow-inner w-full flex justify-center overflow-hidden">
+        <div className="flex flex-col items-center gap-3">
+            <div className="relative bg-[#f8fbff] p-2 rounded-[32px] border border-slate-100 shadow-inner w-full flex justify-center overflow-hidden">
                 {/* Info Button */}
                 <button
                     onClick={() => setShowInfo(true)}
-                    className="absolute top-3 right-3 z-20 p-2 bg-white border border-slate-100 rounded-full text-slate-400 hover:text-brand-600 transition-all"
+                    className="absolute top-2 right-2 z-20 p-2 bg-white border border-slate-100 rounded-full text-slate-400 hover:text-brand-600 transition-all"
                     title="Guia de Aplicação"
                 >
-                    <Info size={18} />
+                    <Info size={16} />
                 </button>
 
 
 
-                <svg id="body" viewBox="0 100 198.81 450" className="h-[260px] w-auto drop-shadow-md relative z-10" xmlns="http://www.w3.org/2000/svg">
+                <svg id="body" viewBox="0 100 198.81 450" className="h-[210px] w-auto drop-shadow-md relative z-10" xmlns="http://www.w3.org/2000/svg">
                     <title>Injection Site Selector</title>
 
                     {/* TRUNK (Reference - Always White) */}
@@ -118,34 +118,34 @@ const BodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                     <div
                         ref={scrollRef}
                         onScroll={handleScroll}
-                        className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-8"
+                        className="space-y-6 pb-4"
                     >
 
                         {/* Injection Sites */}
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-brand-600 border-b border-brand-100 pb-2">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 text-brand-600 border-b border-brand-100 pb-3">
                                 <CheckCircle2 size={18} />
-                                <h4 className="font-bold text-sm uppercase tracking-wider">Locais Recomendados</h4>
+                                <h4 className="font-black text-sm uppercase tracking-widest text-slate-700">Locais Recomendados</h4>
                             </div>
 
                             <div className="grid gap-3">
-                                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 transition-all hover:border-brand-200">
-                                    <p className="text-sm font-bold text-slate-800 mb-1">1. Abdômen (Preferido)</p>
-                                    <p className="text-xs text-slate-500 leading-relaxed">
+                                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 transition-all hover:border-brand-200">
+                                    <p className="text-sm font-black text-slate-800 mb-1">1. Abdômen (Preferido)</p>
+                                    <p className="text-xs text-slate-500 leading-relaxed font-medium">
                                         Região ao redor do umbigo (evitar ~5 cm do centro). Oferece absorção estável devido ao tecido adiposo.
                                     </p>
                                 </div>
 
-                                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 transition-all hover:border-brand-200">
-                                    <p className="text-sm font-bold text-slate-800 mb-1">2. Coxa (Frontal/Superior)</p>
-                                    <p className="text-xs text-slate-500 leading-relaxed">
+                                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 transition-all hover:border-brand-200">
+                                    <p className="text-sm font-black text-slate-800 mb-1">2. Coxa (Frontal/Superior)</p>
+                                    <p className="text-xs text-slate-500 leading-relaxed font-medium">
                                         Fácil para autoaplicação. Pode haver maior sensibilidade em pessoas com baixo percentual de gordura.
                                     </p>
                                 </div>
 
-                                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 transition-all hover:border-brand-200">
-                                    <p className="text-sm font-bold text-slate-800 mb-1">3. Braço (Parte Posterior)</p>
-                                    <p className="text-xs text-slate-500 leading-relaxed">
+                                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 transition-all hover:border-brand-200">
+                                    <p className="text-sm font-black text-slate-800 mb-1">3. Braço (Parte Posterior)</p>
+                                    <p className="text-xs text-slate-500 leading-relaxed font-medium">
                                         Região do tríceps. Absorção rápida, mas geralmente requer auxílio de outra pessoa para aplicar.
                                     </p>
                                 </div>
@@ -153,26 +153,26 @@ const BodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                         </div>
 
                         {/* Rotation Logic */}
-                        <div className="space-y-3 bg-emerald-50/50 p-4 rounded-3xl border border-emerald-100">
+                        <div className="space-y-3 bg-emerald-50/50 p-5 rounded-[32px] border border-emerald-100">
                             <div className="flex items-center gap-2 text-emerald-600">
                                 <RefreshCw size={18} className="animate-spin-slow" />
-                                <h4 className="font-bold text-sm uppercase tracking-wider">Rotação Essencial</h4>
+                                <h4 className="font-black text-xs uppercase tracking-widest">Rotação Essencial</h4>
                             </div>
-                            <p className="text-xs text-emerald-800 leading-relaxed">
+                            <p className="text-xs text-emerald-800/80 leading-relaxed font-medium">
                                 Alternar os pontos evita cicatrizes, irritações e **lipodistrofia** (nódulos de gordura), mantendo a medicação eficaz.
                             </p>
-                            <div className="bg-white/60 p-2 rounded-xl text-[10px] font-medium text-emerald-700 border border-emerald-100">
+                            <div className="bg-white/60 p-3 rounded-2xl text-[10px] font-black text-emerald-700 border border-emerald-100 uppercase tracking-tight">
                                 Ex: S1 (Abdômen D) → S2 (Abdômen E) → S3 (Coxa D)...
                             </div>
                         </div>
 
                         {/* Critical Care */}
-                        <div className="space-y-3 bg-amber-50/50 p-4 rounded-3xl border border-amber-100 mb-4">
+                        <div className="space-y-3 bg-amber-50/50 p-5 rounded-[32px] border border-amber-100 mb-4">
                             <div className="flex items-center gap-2 text-amber-600">
                                 <AlertTriangle size={18} />
-                                <h4 className="font-bold text-sm uppercase tracking-wider">Cuidados Importantes</h4>
+                                <h4 className="font-black text-xs uppercase tracking-widest">Cuidados Importantes</h4>
                             </div>
-                            <ul className="text-xs text-amber-800 space-y-2 list-disc list-inside">
+                            <ul className="text-xs text-amber-800/80 space-y-2 list-disc list-inside font-medium">
                                 <li>Limpar o local com álcool antes de aplicar</li>
                                 <li>Não aplicar sobre hematomas ou peles machucadas</li>
                                 <li>**Não massagear** a área após a picada</li>
@@ -193,8 +193,8 @@ const BodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                         </div>
                     )}
                 </div>
-            </Modal>
-        </div>
+            </Modal >
+        </div >
     );
 };
 

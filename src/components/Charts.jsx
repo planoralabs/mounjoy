@@ -32,7 +32,7 @@ const Charts = ({ user }) => {
 
     // Weight History Logic: Real data takes priority, but we add mock data if empty for demo purposes
     const hasEnoughData = user.measurements && user.measurements.length >= 3;
-    
+
     let baseWeightLogs = user.measurements && user.measurements.length > 0
         ? [...user.measurements].sort((a, b) => new Date(a.date) - new Date(b.date))
         : [];
@@ -204,29 +204,30 @@ const Charts = ({ user }) => {
             </div>
 
             {/* Dose History (Real data view) */}
-            <div className="bg-slate-900 rounded-[32px] p-6 text-white stagger-4 fade-in">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+            <div className="stagger-4 fade-in bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 overflow-hidden relative group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50/50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+                <div className="flex items-center gap-3 mb-6 relative z-10">
+                    <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-brand">
                         <Calendar size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] text-teal-400 font-bold uppercase tracking-widest">Controle de Protocolo</p>
-                        <p className="text-sm font-bold">{user.medicationId} • Real-time</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">Controle de Protocolo</p>
+                        <p className="text-sm font-black text-slate-700">{user.medicationId} • Recentes</p>
                     </div>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-4 relative z-10">
                     {user.doseHistory && user.doseHistory.length > 0 ? (
                         user.doseHistory.slice(0, 3).map((dose, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-sm border-b border-white/5 pb-3">
+                            <div key={idx} className="flex justify-between items-center text-sm border-b border-slate-50 pb-3 last:border-0">
                                 <div className="flex flex-col">
-                                    <span className="text-white/60 font-medium">{new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(dose.date))}</span>
-                                    <span className="text-[10px] text-white/30 uppercase">{dose.area}</span>
+                                    <span className="text-slate-600 font-bold">{new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(dose.date))}</span>
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{dose.area}</span>
                                 </div>
-                                <span className="font-bold text-teal-400">{dose.dose}</span>
+                                <span className="font-black text-brand tabular-nums">{dose.dose}</span>
                             </div>
                         ))
                     ) : (
-                        <p className="text-xs text-white/40 italic">Nenhuma dose registrada ainda.</p>
+                        <p className="text-xs text-slate-400 italic">Nenhuma dose registrada ainda.</p>
                     )}
 
                     {nextDoseDate && (

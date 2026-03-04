@@ -33,7 +33,15 @@ const CalendarView = ({ user, setUser }) => {
         const dateKey = date.toISOString().split('T')[0];
         const intake = user.dailyIntakeHistory?.[dateKey] || { water: 0, protein: 0 };
         const weightEntry = user.measurements?.find(m => m.date.startsWith(dateKey));
-        return { ...intake, weight: weightEntry?.weight };
+        const sideEffects = user.sideEffectsLogs?.find(l => l.date.startsWith(dateKey));
+        const dose = user.doseHistory?.find(d => d.date.startsWith(dateKey));
+
+        return {
+            ...intake,
+            weight: weightEntry?.weight,
+            hasSymptoms: sideEffects?.symptoms?.length > 0,
+            hasDose: !!dose
+        };
     };
 
     const handleSaveThought = async () => {
@@ -185,7 +193,11 @@ const CalendarView = ({ user, setUser }) => {
                                         }`}
                                 >
                                     {day}
-                                    {hasLoggedWeight && <div className={`absolute bottom-1 w-1 h-1 rounded-full ${selectedDate && selectedDate.getTime() === dayDate.getTime() ? 'bg-white' : 'bg-indigo-500'}`}></div>}
+                                    <div className="flex gap-0.5 mt-0.5">
+                                        {dayData.hasDose && <div className="w-1 h-1 rounded-full bg-blue-500 shadow-[0_0_4px_rgba(59,130,246,0.5)]"></div>}
+                                        {dayData.hasSymptoms && <div className="w-1 h-1 rounded-full bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]"></div>}
+                                        {hasLoggedWeight && <div className={`w-1 h-1 rounded-full ${selectedDate && selectedDate.getTime() === dayDate.getTime() ? 'bg-white' : 'bg-indigo-500'}`}></div>}
+                                    </div>
                                 </div>
                             );
                         })}

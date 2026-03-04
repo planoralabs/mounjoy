@@ -178,18 +178,21 @@ const Profile = ({ user, onReset, setUser }) => {
                 {/* Primary Action */}
                 <button
                     onClick={() => setShowDoseModal(true)}
-                    className="w-full bg-slate-900 text-white p-5 rounded-[28px] shadow-xl flex items-center justify-between group hover:scale-[1.02] transition-all"
+                    className="w-full bg-white border border-slate-100 p-5 rounded-[32px] shadow-sm flex items-center justify-between group hover:border-brand-200 hover:shadow-md transition-all relative overflow-hidden"
                 >
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                            <Check size={20} className="text-teal-400" />
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-brand-50/50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="w-12 h-12 rounded-2xl bg-brand-50 flex items-center justify-center text-brand shadow-sm">
+                            <Check size={24} className="group-hover:scale-110 transition-transform" />
                         </div>
                         <div className="text-left">
-                            <span className="block font-black text-sm uppercase tracking-widest">Registrar Dose</span>
-                            <span className="text-[10px] text-white/50 font-bold uppercase tracking-tight">Marcar aplicação de hoje</span>
+                            <span className="block font-black text-slate-800 text-base tracking-tight leading-none mb-1">Registrar Dose</span>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Marcar aplicação de hoje</span>
                         </div>
                     </div>
-                    <span className="text-white/30 group-hover:translate-x-1 transition-transform">›</span>
+                    <span className="text-slate-200 group-hover:translate-x-1 group-hover:text-brand transition-all relative z-10">
+                        <ChevronRight size={20} />
+                    </span>
                 </button>
 
                 {/* Health Goals Section */}
@@ -215,6 +218,15 @@ const Profile = ({ user, onReset, setUser }) => {
                                 <span className="flex-1 text-center font-black text-slate-900">{(user.settings?.waterGoal || 2.5).toFixed(1)}</span>
                                 <button onClick={() => updateGoal('waterGoal', (user.settings?.waterGoal || 2.5) + 0.1)} className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 font-bold">+</button>
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-slate-50">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Fibra (g)</label>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => updateGoal('fiberGoal', Math.max(10, (user.settings?.fiberGoal || 25) - 1))} className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 font-bold">−</button>
+                            <span className="flex-1 text-center font-black text-slate-900">{user.settings?.fiberGoal || 25}</span>
+                            <button onClick={() => updateGoal('fiberGoal', (user.settings?.fiberGoal || 25) + 1)} className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 font-bold">+</button>
                         </div>
                     </div>
                 </div>
@@ -268,10 +280,10 @@ const Profile = ({ user, onReset, setUser }) => {
                         Sair da Conta
                     </button>
                 </div>
-            </div>
+            </div >
 
             {/* Modal: Medidas Corporais */}
-            <Modal isOpen={showMeasureModal} onClose={() => setShowMeasureModal(false)} title="Progresso Corporal">
+            < Modal isOpen={showMeasureModal} onClose={() => setShowMeasureModal(false)} title="Progresso Corporal" >
                 <div className="space-y-5">
                     <p className="text-xs text-slate-500 text-center mb-2">Monitore suas medidas para ver a perda de gordura além da balança.</p>
 
@@ -300,10 +312,10 @@ const Profile = ({ user, onReset, setUser }) => {
 
                     <Button onClick={handleSaveMeasures} className="w-full">Salvar Medidas</Button>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Modal: Lembretes */}
-            <Modal isOpen={showReminderModal} onClose={() => setShowReminderModal(false)} title="Configurar Lembretes">
+            < Modal isOpen={showReminderModal} onClose={() => setShowReminderModal(false)} title="Configurar Lembretes" >
                 <div className="space-y-6">
                     <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl">
                         <div>
@@ -331,10 +343,10 @@ const Profile = ({ user, onReset, setUser }) => {
 
                     <Button onClick={handleSaveReminders} className="w-full">Salvar Configurações</Button>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Modal: Registrar Aplicação */}
-            <Modal isOpen={showDoseModal} onClose={() => setShowDoseModal(false)} title="Nova Aplicação">
+            < Modal isOpen={showDoseModal} onClose={() => setShowDoseModal(false)} title="Nova Aplicação" >
                 <div className="space-y-4">
                     <div className="text-center bg-slate-50 p-3 rounded-2xl">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Dose Atual</p>
@@ -353,10 +365,10 @@ const Profile = ({ user, onReset, setUser }) => {
 
                     <Button onClick={handleAddDoseRecord} className="w-full">Confirmar Aplicação</Button>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Modal: Protocolo */}
-            <Modal isOpen={showProtocolModal} onClose={() => setShowProtocolModal(false)} title="Configurar Protocolo">
+            < Modal isOpen={showProtocolModal} onClose={() => setShowProtocolModal(false)} title="Configurar Protocolo" >
                 <div className="space-y-6">
                     <div className="flex p-1 bg-slate-100 rounded-2xl">
                         <button onClick={() => setRouteFilter('all')} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${routeFilter === 'all' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}>Todos</button>
@@ -383,8 +395,8 @@ const Profile = ({ user, onReset, setUser }) => {
                     </div>
                     <Button onClick={handleUpdateProtocol} className="w-full">Salvar Alterações</Button>
                 </div>
-            </Modal>
-        </div>
+            </Modal >
+        </div >
     );
 };
 
