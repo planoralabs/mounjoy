@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Bell, LogOut, Check, TrendingUp, Scale, Camera } from 'lucide-react';
+import { Settings, Bell, LogOut, Check, TrendingUp, Scale, Camera, ChevronRight } from 'lucide-react';
 import { Modal, Button } from './ui/BaseComponents';
 import BodySelector from './ui/BodySelector';
 import { suggestNextInjection, getSiteById } from '../services/InjectionService';

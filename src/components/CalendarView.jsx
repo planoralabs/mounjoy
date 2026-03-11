@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, PenTool, Image as ImageIcon, Scale, BookOpen, Droplet, Activity, X } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Image as ImageIcon, Scale, BookOpen, Droplet, Activity, X } from 'lucide-react';
 
 const CalendarView = ({ user, setUser }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(null);
-    const [newThought, setNewThought] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
+
     const [isFullscreenPhoto, setIsFullscreenPhoto] = useState(false);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
@@ -40,25 +39,13 @@ const CalendarView = ({ user, setUser }) => {
             ...intake,
             weight: weightEntry?.weight,
             hasSymptoms: sideEffects?.symptoms?.length > 0,
-            hasDose: !!dose
+            hasDose: !!dose,
+            foodNoise: sideEffects?.foodNoise,
+            note: sideEffects?.note
         };
     };
 
-    const handleSaveThought = async () => {
-        if (!newThought.trim()) return;
-        setIsSaving(true);
-        const now = new Date().toISOString();
-        const updatedUser = {
-            ...user,
-            thoughtLogs: [
-                { text: newThought, date: now },
-                ...(user.thoughtLogs || [])
-            ]
-        };
-        await setUser(updatedUser);
-        setNewThought('');
-        setIsSaving(false);
-    };
+
 
     const nextPhoto = (e) => {
         e.stopPropagation();
@@ -233,65 +220,86 @@ const CalendarView = ({ user, setUser }) => {
                                 </div>
                             </div>
 
-                            <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100 flex flex-col gap-2">
-                                <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest flex items-center gap-1.5"><Activity size={14} /> Proteína</span>
-                                <span className="text-xl font-black tabular-nums text-orange-900">
-                                    {getDayData(selectedDate).protein > 0 ? `${getDayData(selectedDate).protein} g` : "--"}
-                                </span>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100 flex flex-col gap-2">
+                                    <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest flex items-center gap-1.5"><Activity size={14} /> Proteína</span>
+                                    <span className="text-xl font-black tabular-nums text-orange-900">
+                                        {getDayData(selectedDate).protein > 0 ? `${getDayData(selectedDate).protein} g` : "--"}
+                                    </span>
+                                </div>
+                                <div className={`${getDayData(selectedDate).foodNoise !== undefined ? (getDayData(selectedDate).foodNoise <= 3 ? 'bg-teal-50 border-teal-100' : getDayData(selectedDate).foodNoise <= 7 ? 'bg-amber-50 border-amber-100' : 'bg-red-50 border-red-100') : 'bg-slate-50 border-slate-100'} rounded-2xl p-4 border flex flex-col gap-2`}>
+                                    <span className={`text-[10px] font-black ${getDayData(selectedDate).foodNoise !== undefined ? (getDayData(selectedDate).foodNoise <= 3 ? 'text-teal-400' : getDayData(selectedDate).foodNoise <= 7 ? 'text-amber-400' : 'text-red-400') : 'text-slate-400'} uppercase tracking-widest flex items-center gap-1.5`}><Activity size={14} /> Food Noise</span>
+                                    <span className={`text-xl font-black tabular-nums ${getDayData(selectedDate).foodNoise !== undefined ? (getDayData(selectedDate).foodNoise <= 3 ? 'text-teal-900' : getDayData(selectedDate).foodNoise <= 7 ? 'text-amber-900' : 'text-red-900') : 'text-slate-900'}`}>
+                                        {getDayData(selectedDate).foodNoise !== undefined ? `${getDayData(selectedDate).foodNoise}/10` : "--"}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Thoughts Log Section */}
+            {/* Daily Records Section */}
             <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mt-6">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
                         <BookOpen size={18} className="text-slate-500" />
-                        <h3 className="font-bold text-slate-800">Diário de Pensamentos</h3>
-                    </div>
-                    <div className="bg-brand-50 text-brand text-[10px] font-black px-2 py-1 rounded-lg uppercase">
-                        Real-time Cloud
+                        <h3 className="font-bold text-slate-800">Registros de Bem-estar</h3>
                     </div>
                 </div>
 
-                <div className="space-y-4 mb-6">
-                    <div className="relative">
-                        <textarea
-                            value={newThought}
-                            onChange={(e) => setNewThought(e.target.value)}
-                            placeholder="Como você está se sentindo hoje? Algum efeito colateral ou vitória?"
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm text-slate-700 min-h-[100px] focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
-                        />
-                        <button
-                            onClick={handleSaveThought}
-                            disabled={!newThought.trim() || isSaving}
-                            className={`absolute bottom-3 right-3 p-3 rounded-xl shadow-lg transition-all active:scale-95 ${!newThought.trim() || isSaving ? 'bg-slate-200 text-slate-400' : 'bg-brand text-white hover:bg-brand-600'}`}
-                        >
-                            <PenTool size={18} />
-                        </button>
-                    </div>
-                </div>
+                <div className="space-y-4">
+                    {(() => {
+                        const logsToShow = selectedDate 
+                            ? (user.sideEffectsLogs || []).filter(l => l.date.startsWith(selectedDate.toISOString().split('T')[0]))
+                            : (user.sideEffectsLogs || []).slice(0, 10); // Show last 10 if no date selected
 
-                <div className="space-y-3">
-                    {user.thoughtLogs && user.thoughtLogs.length > 0 ? (
-                        user.thoughtLogs.map((log, idx) => (
-                            <div key={idx} className="w-full bg-slate-50 border border-slate-100/50 rounded-2xl p-4 transition-all hover:bg-slate-100/50 relative overflow-hidden group">
-                                <p className="text-sm text-slate-700 italic mb-2 leading-relaxed">"{log.text}"</p>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                        {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(log.date))}
-                                    </span>
+                        if (logsToShow.length > 0) {
+                            return logsToShow.map((log, idx) => (
+                                <div key={idx} className="w-full bg-slate-50 border border-slate-100/50 rounded-2xl p-4 transition-all hover:bg-slate-100/50">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(log.date))}
+                                            </span>
+                                            {log.foodNoise !== undefined && (
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <div className={`w-2 h-2 rounded-full ${log.foodNoise <= 3 ? 'bg-teal-500' : log.foodNoise <= 7 ? 'bg-amber-500' : 'bg-red-500'}`}></div>
+                                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Food Noise: {log.foodNoise}/10</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {log.symptoms?.length > 0 && (
+                                            <div className="flex gap-1">
+                                                {log.symptoms.map(s => {
+                                                    const emoji = { nausea: '🤢', vomito: '🤮', fadiga: '🥱', azia: '🔥', constipação: '🧱' }[s] || '🤒';
+                                                    return <span key={s} title={s} className="text-sm">{emoji}</span>;
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {log.note && (
+                                        <p className="text-sm text-slate-700 italic border-l-2 border-slate-200 pl-3 leading-relaxed mb-2">"{log.note}"</p>
+                                    )}
+                                    {log.trigger && (
+                                        <div className="bg-orange-50/50 self-start px-2 py-1 rounded text-[10px] font-bold text-orange-600 inline-block">
+                                            Gatilho: {log.trigger}
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-center py-8 opacity-40">
-                            <PenTool size={32} className="mx-auto mb-2" />
-                            <p className="text-xs font-bold uppercase tracking-widest">Nada registrado ainda</p>
-                        </div>
-                    )}
+                            ));
+                        } else {
+                            return (
+                                <div className="text-center py-12 opacity-40">
+                                    <BookOpen size={32} className="mx-auto mb-2" />
+                                    <p className="text-xs font-bold uppercase tracking-widest">
+                                        {selectedDate ? 'Sem registros para este dia' : 'Nenhum registro encontrado'}
+                                    </p>
+                                </div>
+                            );
+                        }
+                    })()}
                 </div>
             </div>
 

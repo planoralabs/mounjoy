@@ -1,8 +1,9 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Activity, Plus, Heart, Droplet, Info, Thermometer, Zap, TrendingUp, Syringe, Calendar, Camera, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { Modal, Input, Button, VerticalMeter, Slider } from './ui/BaseComponents';
 import AlertBox from './ui/AlertBox';
 import BodySelector from './ui/BodySelector';
+import InjectionSwipeCard from './ui/InjectionSwipeCard';
 import { suggestNextInjection, getSiteById } from '../services/InjectionService';
 import { ReminderService } from '../services/ReminderService';
 import DoseAlert from './ui/DoseAlert';
@@ -516,6 +517,19 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
                 </div>
             </div>
 
+            {/* Injection Tracker Card (Only for Injectables) */}
+            {medication?.route === 'injectable' && (
+                <InjectionSwipeCard
+                    medication={medication}
+                    user={user}
+                    timeRemaining={timeRemaining}
+                    cycleInfo={cycleInfo}
+                    injectionSuggestion={injectionSuggestion}
+                    handleConfirmInjection={handleConfirmInjection}
+                    setShowDoseHelp={setShowDoseHelp}
+                />
+            )}
+
             {/* Milestones Card */}
             <div className="stagger-3 fade-in bg-white p-5 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100">
                 <div className="flex items-center gap-2 mb-4">
@@ -574,68 +588,6 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
                 </div>
             )}
 
-            {/* Injection Tracker Card (Only for Injectables) */}
-            {medication?.route === 'injectable' && (
-                <div className="stagger-3 fade-in bg-white p-5 rounded-[32px] shadow-sm border border-slate-100 flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-outfit">Próxima Aplicação</span>
-                            <div className="flex items-center gap-2 mt-1">
-                                <h3 className="text-xl font-black text-slate-800 tracking-tight">
-                                    {timeRemaining === 'Hoje!' ? "Dia de Injetar!" : `Em ${timeRemaining}`}
-                                </h3>
-                                <span className="text-[10px] bg-slate-100 text-slate-600 font-black px-2 py-0.5 rounded-full uppercase">
-                                    Semana {Math.ceil((Math.abs(new Date() - new Date(user.startDate)) / (1000 * 60 * 60 * 24)) / 7) || 1}
-                                </span>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setShowInjectionModal(true)}
-                            className="flex items-center justify-center transition-transform hover:scale-110 active:scale-95 p-2"
-                        >
-                            <img src={penImg} alt="Pen" className="w-[51px] h-[51px] object-contain" />
-                        </button>
-                    </div>
-
-                    <div className="bg-white p-5 rounded-[32px] border-t-4 border-brand-500 shadow-sm mb-2">
-                        <div className="flex justify-between items-center mb-1">
-                            <span className="text-[10px] font-black text-brand-500 uppercase tracking-widest">Protocolo Semanal: {medication?.name || 'GLP-1'}</span>
-                            <span className="bg-brand-50 text-brand-700 px-2 py-0.5 rounded text-[10px] font-black italic">Dose: {user.currentDose}</span>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col gap-1">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Local Sugerido</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-lg">{injectionSuggestion.icon}</span>
-                                <span className="text-sm font-black text-slate-800">{injectionSuggestion.label}</span>
-                            </div>
-                        </div>
-                        <div className="bg-brand-50/50 rounded-2xl p-4 border border-brand-100/50 flex flex-col gap-1">
-                            <span className="text-[9px] font-black text-brand-600 uppercase tracking-widest">Status do Ciclo</span>
-                            <p className={`text-[11px] font-bold ${cycleInfo.color} leading-none`}>{cycleInfo.message}</p>
-                        </div>
-                    </div>
-
-                    {cycleInfo.daysSinceDose >= 7 && (
-                        <Button
-                            onClick={() => setShowInjectionModal(true)}
-                            className="w-full py-4 rounded-2xl text-sm font-black active:scale-[0.98]"
-                        >
-                            Registrar Aplicação de Hoje
-                        </Button>
-                    )}
-
-                    <button
-                        onClick={() => setShowDoseHelp(true)}
-                        className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-brand-500 transition-colors flex items-center justify-center gap-1.5 mt-1"
-                    >
-                        <Info size={12} />
-                        Esqueci minha dose
-                    </button>
-                </div>
-            )}
 
             {/* Intelligence Alerts */}
             <div className="space-y-3">
