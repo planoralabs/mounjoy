@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { motion, useMotionValue, useTransform, useAnimation, AnimatePresence } from 'framer-motion';
+import { motion, useMotionValue, useTransform, useAnimation, AnimatePresence, animate } from 'framer-motion';
 import { Info, MapPin, CheckCircle2 } from 'lucide-react';
 
 const InjectionSwipeCard = ({ 
@@ -12,28 +12,32 @@ const InjectionSwipeCard = ({
     setShowDoseHelp
 }) => {
     const [isApplied, setIsApplied] = useState(false);
-    const x = useMotionValue(0);
+    const dragX = useMotionValue(0);
     const controls = useAnimation();
     
-    // Scale the card slightly as it's being compressed
-    const cardScale = useTransform(x, [-160, 0], [0.94, 1]);
+    // Aggressive horizontal squeeze (compression) effect - fixed at left margin
+    const cardScaleX = useTransform(dragX, [-160, 0], [0.45, 1]);
+    const cardScaleY = useTransform(dragX, [-160, 0], [1.08, 1]);
     
-    // Pen should start invisible and track 1:1 with the swipe
-    const penOpacity = useTransform(x, [-60, -10], [1, 0]);
-    const penX = x; // 1:1 tracking
+    // Pen must track the right edge as it moves left during compression
+    // We calibrate the speed to keep the needle tip tangent to the card's moving right edge.
+    const penX = useTransform(dragX, [-160, 0], [-425, 0]); 
+    const penOpacity = useTransform(dragX, [-100, -5], [1, 0]);
 
     const handleDragEnd = (_, info) => {
-        if (info.offset.x < -120) {
+        if (info.offset.x < -100) {
             triggerSuccess();
         } else {
-            controls.start({ x: 0 });
+            // Animate the motion value back to 0 to reset all linked transforms
+            animate(dragX, 0, { type: "spring", stiffness: 300, damping: 30 });
         }
     };
 
     const triggerSuccess = async () => {
         setIsApplied(true);
         handleConfirmInjection();
-        await controls.start({ x: 0, transition: { type: "spring", stiffness: 300, damping: 25 } });
+        // Animate the squeeze back to normal
+        await animate(dragX, 0, { type: "spring", stiffness: 300, damping: 25 });
         setTimeout(() => setIsApplied(false), 3000);
     };
 
@@ -44,11 +48,24 @@ const InjectionSwipeCard = ({
     }, [user.startDate]);
 
     return (
-        <div className="relative w-full overflow-hidden p-2">
+        <div className="relative w-full overflow-hidden p-2 min-h-[190px] flex items-center justify-end">
+            {/* Invisible Drag Target */}
+            {!isApplied && (
+                <motion.div
+                    drag="x"
+                    dragConstraints={{ left: -160, right: 0 }}
+                    dragElastic={0.05}
+                    dragMomentum={false}
+                    onDragEnd={handleDragEnd}
+                    style={{ x: dragX }}
+                    className="absolute inset-0 z-30 cursor-grab active:cursor-grabbing"
+                />
+            )}
+
             {/* SVG da Caneta (Acompanha o deslize) */}
             <motion.div 
                 style={{ opacity: penOpacity, x: penX }}
-                className="absolute right-[-238px] top-1/2 -translate-y-1/2 z-0 pointer-events-none"
+                className="absolute right-[-240px] top-1/2 -translate-y-1/2 z-0 pointer-events-none"
             >
                 <svg width="240" height="80" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="rotate-[-2deg]">
                     <defs>
@@ -77,13 +94,14 @@ const InjectionSwipeCard = ({
             </motion.div>
 
             <motion.div
-                drag="x"
-                dragConstraints={{ left: -160, right: 0 }}
-                dragElastic={0.05}
                 animate={controls}
-                style={{ x, scaleX: cardScale }}
-                onDragEnd={handleDragEnd}
-                className={`relative z-10 cursor-grab active:cursor-grabbing bg-white p-5 rounded-[32px] shadow-lg border border-slate-100 flex flex-col gap-4 transition-colors duration-500 ${isApplied ? 'border-teal-200 bg-teal-50/20' : ''}`}
+                style={{ 
+                    scaleX: cardScaleX, 
+                    scaleY: cardScaleY, 
+                    originX: 0,
+                    width: '100%' 
+                }}
+                className={`relative z-10 bg-white p-5 rounded-[32px] shadow-lg border border-slate-100 flex flex-col gap-4 transition-colors duration-500 ${isApplied ? 'border-teal-200 bg-teal-50/20' : ''}`}
             >
                 <div className="flex items-center justify-between">
                     <div>
@@ -159,7 +177,7 @@ const InjectionSwipeCard = ({
 
                 <button 
                   onClick={() => setShowDoseHelp(true)}
-                  className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-brand-500 transition-colors flex items-center justify-center gap-1.5 mt-1"
+                  className="z-40 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-brand-500 transition-colors flex items-center justify-center gap-1.5 mt-1"
                 >
                     <Info size={12} />
                     Esqueci minha dose
