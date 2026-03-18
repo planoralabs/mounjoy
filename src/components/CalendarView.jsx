@@ -294,7 +294,7 @@ const CalendarView = ({ user, setUser }) => {
                                 <div className="text-center py-12 opacity-40">
                                     <BookOpen size={32} className="mx-auto mb-2" />
                                     <p className="text-xs font-bold uppercase tracking-widest">
-                                        {selectedDate ? 'Sem registros para este dia' : 'Nenhum registro encontrado'}
+                                        {selectedDate ? 'Nenhum registro neste dia' : 'Nenhum registro encontrado'}
                                     </p>
                                 </div>
                             );

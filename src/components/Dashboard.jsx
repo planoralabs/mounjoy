@@ -75,6 +75,7 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
     const [animatingAsset, setAnimatingAsset] = useState(null);
     const [isFullscreenPhoto, setIsFullscreenPhoto] = useState(false);
     const [showDoseHelp, setShowDoseHelp] = useState(false);
+    const [showBodyMap, setShowBodyMap] = useState(false);
 
     // Get date key for daily tracking
     const today = new Date().toISOString().split('T')[0];
@@ -527,6 +528,7 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
                     injectionSuggestion={injectionSuggestion}
                     handleConfirmInjection={handleConfirmInjection}
                     setShowDoseHelp={setShowDoseHelp}
+                    onShowBodyGuide={() => setShowBodyMap(true)}
                 />
             )}
 
@@ -971,6 +973,36 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
 
                     <Button onClick={() => setShowDoseHelp(false)} className="w-full py-4 rounded-2xl text-sm font-black">
                         Entendi
+                    </Button>
+                </div>
+            </Modal>
+            
+            {/* Modal: Guia de Aplicação (Standalone Body Map) */}
+            <Modal
+                isOpen={showBodyMap}
+                onClose={() => setShowBodyMap(false)}
+                title="Guia de Aplicação"
+            >
+                <div className="space-y-6">
+                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">
+                        Selecione o local para ver os detalhes
+                    </p>
+                    
+                    <BodySelector
+                        selectedSiteId={selectedSiteId || injectionSuggestion.id}
+                        onSelect={setSelectedSiteId}
+                        suggestedSiteId={injectionSuggestion.id}
+                        lastSiteId={user.doseHistory?.[0]?.siteId}
+                    />
+
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] text-slate-500 leading-relaxed italic">
+                            *A rotação dos locais é fundamental para evitar lipodistrofia e garantir a absorção correta do medicamento.
+                        </p>
+                    </div>
+
+                    <Button onClick={() => setShowBodyMap(false)} className="w-full py-4 rounded-2xl text-sm font-black">
+                        Fechar Guia
                     </Button>
                 </div>
             </Modal>

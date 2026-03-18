@@ -42,28 +42,33 @@ const Onboarding = ({ onComplete }) => {
         return matchesAdmin && matchesFocus;
     });
 
+    const isNextDisabled = () => {
+        if (step === 1) return !data.name;
+        if (step === 4) return !data.medicationId;
+        if (step === 5) return !data.currentDose;
+        return false;
+    };
+
+    const selectedMed = MOCK_MEDICATIONS.find(m => m.id === data.medicationId);
+
     const steps = [
         // Step 0: Welcome
-        <div className="flex flex-col h-full justify-center items-center text-center fade-in">
+        <div className="flex flex-col h-full justify-center items-center text-center fade-in pb-20">
             <div className="w-24 h-24 bg-teal-100 rounded-full flex items-center justify-center mb-6 text-teal-600 shadow-inner">
                 <Activity size={48} />
             </div>
             <h1 className="text-3xl font-bold text-slate-800 mb-2">Bem-vindo ao Mounjoy</h1>
             <p className="text-slate-500 mb-8 max-w-xs">Seu companheiro diário na jornada de transformação e saúde metabólica.</p>
-            <Button onClick={nextStep} className="w-full max-w-xs">Começar Configuração <ArrowRight size={18} /></Button>
         </div>,
 
         // Step 1: Name Only
         <div className="flex flex-col h-full pt-10 fade-in">
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Sobre você</h2>
             <Input label="Como podemos te chamar?" placeholder="Seu nome" value={data.name} onChange={(e) => handleChange('name', e.target.value)} />
-            <div className="mt-auto">
-                <Button onClick={nextStep} className="w-full" disabled={!data.name}>Próximo</Button>
-            </div>
         </div>,
 
         // Step 2: Current Physical Data (Sliders)
-        <div className="flex flex-col h-full pt-10 fade-in">
+        <div className="flex flex-col h-full pt-10 fade-in overflow-y-auto pb-32 hide-scrollbar">
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Seus Dados</h2>
             <Slider
                 label="Peso Atual"
@@ -83,14 +88,10 @@ const Onboarding = ({ onComplete }) => {
                 step={0.01}
                 suffix="m"
             />
-            <div className="mt-auto flex gap-3">
-                <Button variant="ghost" onClick={prevStep}>Voltar</Button>
-                <Button onClick={nextStep} className="flex-1">Próximo</Button>
-            </div>
         </div>,
 
         // Step 3: Goal Weight (Slider)
-        <div className="flex flex-col h-full pt-10 fade-in">
+        <div className="flex flex-col h-full pt-10 fade-in overflow-y-auto pb-32 hide-scrollbar">
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Sua Meta</h2>
             <Slider
                 label="Meta de Peso"
@@ -101,10 +102,6 @@ const Onboarding = ({ onComplete }) => {
                 step={0.1}
                 suffix="kg"
             />
-            <div className="mt-auto flex gap-3">
-                <Button variant="ghost" onClick={prevStep}>Voltar</Button>
-                <Button onClick={nextStep} className="flex-1">Próximo</Button>
-            </div>
         </div>,
 
         // Step 4: Medication Selection (Focused Interaction)
@@ -165,7 +162,7 @@ const Onboarding = ({ onComplete }) => {
                 />
             )}
 
-            <div className={`grid transition-all duration-500 gap-3 overflow-y-auto pb-40 max-h-[60vh] hide-scrollbar pr-1 relative ${selectedSubstance ? 'z-30 pointer-events-none' : 'z-20'
+            <div className={`grid transition-all duration-500 gap-3 overflow-y-auto pb-52 max-h-[65vh] hide-scrollbar pr-1 relative ${selectedSubstance ? 'z-30 pointer-events-none' : 'z-20'
                 } ${selectedSubstance ? 'grid-cols-1 items-center justify-center' : 'grid-cols-2'}`}>
                 {Object.entries(
                     filteredMeds.reduce((acc, med) => {
@@ -187,13 +184,6 @@ const Onboarding = ({ onComplete }) => {
                                 : 'bg-white border-white border-2 hover:border-slate-100'
                                 } ${!selectedSubstance ? 'opacity-100' : ''}`}
                         >
-                            {(hasSelection || isFocused) && (
-                                <div className={`absolute top-3 right-3 rounded-full bg-teal-600 flex items-center justify-center text-white shadow-sm transition-all duration-300 ${isFocused ? 'w-4 h-4 translate-x-1 -translate-y-1' : 'w-5 h-5'
-                                    }`}>
-                                    <Check size={isFocused ? 10 : 12} strokeWidth={3} />
-                                </div>
-                            )}
-
                             <div className="flex-1 flex flex-col items-center justify-center">
                                 <h3 className={`font-black tracking-tight transition-all leading-tight ${isFocused ? 'text-xl text-teal-950 mb-4' : 'text-lg text-slate-800'
                                     }`}>
@@ -219,15 +209,17 @@ const Onboarding = ({ onComplete }) => {
                                                     e.stopPropagation();
                                                     handleChange('medicationId', med.id);
                                                 }}
-                                                className={`font-bold transition-all duration-500 relative group py-2.5 px-6 rounded-2xl text-[12px] bg-white/80 hover:bg-white shadow-sm border border-slate-200 w-full active:scale-95 transform-gpu ${isSelected
-                                                    ? 'text-teal-600 border-teal-200 bg-teal-50/50 max-w-[170px] scale-100'
-                                                    : 'text-slate-600 hover:text-slate-800 border-transparent max-w-[190px] scale-105'
-                                                    } ${isSelected ? 'shadow-md' : 'shadow-sm'}`}
+                                                className={`font-bold transition-all duration-500 relative group py-2.5 px-6 rounded-2xl text-[12px] bg-white/80 hover:bg-white border w-full active:scale-95 transform-gpu ${isSelected
+                                                    ? 'text-teal-700 border-teal-600 bg-teal-50/50 max-w-[170px] scale-100 shadow-md ring-1 ring-teal-600/10'
+                                                    : 'text-slate-600 hover:text-slate-800 border-slate-200 max-w-[190px] scale-105 shadow-sm'
+                                                    }`}
                                                 style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                                             >
                                                 {med.brand}
                                                 {isSelected && (
-                                                    <div className="absolute -bottom-0.5 left-6 right-6 h-0.5 bg-teal-600 rounded-full scale-in" />
+                                                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center text-white shadow-sm scale-in">
+                                                        <Check size={12} strokeWidth={3} />
+                                                    </div>
                                                 )}
                                             </button>
                                         );
@@ -238,18 +230,10 @@ const Onboarding = ({ onComplete }) => {
                     );
                 })}
             </div>
-
-            {/* Fixed Bottom Buttons - Optimized position */}
-            <div className="absolute bottom-0 left-[-24px] right-[-24px] p-6 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pt-12 z-40 border-t border-slate-100/50">
-                <div className="flex gap-3 max-w-md mx-auto">
-                    <Button variant="ghost" onClick={prevStep} className="px-8">Voltar</Button>
-                    <Button onClick={nextStep} className="flex-1 shadow-lg shadow-teal-500/20" disabled={!data.medicationId}>Próximo</Button>
-                </div>
-            </div>
         </div>,
 
         // Step 5: Dosage & Schedule
-        <div className="flex flex-col h-full pt-10 fade-in">
+        <div className="flex flex-col h-full pt-10 fade-in overflow-y-auto pb-32 hide-scrollbar">
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Detalhes da Dose</h2>
 
             {data.medicationId && (
@@ -286,24 +270,63 @@ const Onboarding = ({ onComplete }) => {
                 </div>
             </div>
 
-            <div className="mt-auto flex gap-3">
-                <Button variant="ghost" onClick={prevStep}>Voltar</Button>
-                <Button onClick={() => onComplete(data)} className="flex-1" disabled={!data.currentDose}>Finalizar</Button>
-            </div>
+            {/* Protocol Summary Preview */}
+            {data.currentDose && selectedMed && (
+                <div className="mt-4 p-5 bg-white rounded-3xl border border-slate-100 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <p className="text-sm leading-relaxed text-slate-600">
+                        Você iniciará seu protocolo com <strong className="text-slate-900">{selectedMed.brand}</strong> ({selectedMed.substance}), na dose de <strong className="text-teal-600">{data.currentDose}</strong>, com aplicações toda <strong className="text-slate-900">{data.injectionDay}</strong>.
+                    </p>
+                </div>
+            )}
         </div>
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 flex flex-col">
+        <div className="min-h-screen bg-slate-50 p-6 flex flex-col relative overflow-hidden">
             {/* Progress Bar */}
-            <div className="w-full h-1.5 bg-slate-200 rounded-full mb-6 overflow-hidden">
+            <div 
+                className="w-full bg-slate-200 rounded-full mb-8 overflow-hidden transition-all duration-700 ease-in-out shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] shrink-0"
+                style={{ height: `${16 - (step / (steps.length - 1)) * 14}px` }}
+            >
                 <div
-                    className="h-full bg-teal-500 transition-all duration-500 ease-out"
+                    className="h-full bg-teal-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(20,184,166,0.3)]"
                     style={{ width: `${(step / (steps.length - 1)) * 100}%` }}
                 />
             </div>
-            <div className="flex-1 relative">
+
+            <div className="flex-1 relative overflow-hidden">
                 {steps[step]}
+            </div>
+
+            {/* Fixed Bottom Navigation */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pt-12 z-40">
+                <div className="max-w-md mx-auto">
+                    {/* Visual Confirmation Summary for Step 4 */}
+                    {step === 4 && data.medicationId && (
+                        <div className="mb-4 flex flex-col items-center animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Selecionado</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xl font-black text-teal-600 italic">{selectedMed?.brand}</span>
+                                <span className="text-slate-300">|</span>
+                                <span className="text-sm font-bold text-slate-500 uppercase tracking-tight">{selectedMed?.substance}</span>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <div className="flex gap-3">
+                        {step > 0 && (
+                            <Button variant="ghost" onClick={prevStep} className="px-8">Voltar</Button>
+                        )}
+                        <Button 
+                            onClick={step === steps.length - 1 ? () => onComplete(data) : nextStep} 
+                            className={`flex-1 shadow-lg ${step === 0 ? 'w-full' : ''} ${isNextDisabled() ? 'grayscale opacity-50' : 'shadow-teal-500/20'}`}
+                            disabled={isNextDisabled()}
+                        >
+                            {step === 0 ? 'Começar Configuração' : step === steps.length - 1 ? 'Finalizar' : 'Próximo'}
+                            {step === 0 && <ArrowRight size={18} />}
+                        </Button>
+                    </div>
+                </div>
             </div>
         </div>
     );

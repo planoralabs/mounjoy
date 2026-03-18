@@ -9,7 +9,8 @@ const InjectionSwipeCard = ({
     cycleInfo, 
     injectionSuggestion, 
     handleConfirmInjection,
-    setShowDoseHelp
+    setShowDoseHelp,
+    onShowBodyGuide
 }) => {
     const [isApplied, setIsApplied] = useState(false);
     const dragX = useMotionValue(0);
@@ -49,19 +50,6 @@ const InjectionSwipeCard = ({
 
     return (
         <div className="relative w-full overflow-hidden p-2 min-h-[190px] flex items-center justify-end">
-            {/* Invisible Drag Target */}
-            {!isApplied && (
-                <motion.div
-                    drag="x"
-                    dragConstraints={{ left: -160, right: 0 }}
-                    dragElastic={0.05}
-                    dragMomentum={false}
-                    onDragEnd={handleDragEnd}
-                    style={{ x: dragX }}
-                    className="absolute inset-0 z-30 cursor-grab active:cursor-grabbing"
-                />
-            )}
-
             {/* SVG da Caneta (Acompanha o deslize) */}
             <motion.div 
                 style={{ opacity: penOpacity, x: penX }}
@@ -93,7 +81,19 @@ const InjectionSwipeCard = ({
                 </svg>
             </motion.div>
 
+            {/* The actual card is now the pan/drag surface */}
             <motion.div
+                onPan={!isApplied ? (_, info) => {
+                    const val = Math.max(-160, Math.min(0, info.offset.x));
+                    dragX.set(val);
+                } : undefined}
+                onPanEnd={!isApplied ? (_, info) => {
+                    if (info.offset.x < -100) {
+                        triggerSuccess();
+                    } else {
+                        animate(dragX, 0, { type: "spring", stiffness: 300, damping: 30 });
+                    }
+                } : undefined}
                 animate={controls}
                 style={{ 
                     scaleX: cardScaleX, 
@@ -101,10 +101,10 @@ const InjectionSwipeCard = ({
                     originX: 0,
                     width: '100%' 
                 }}
-                className={`relative z-10 bg-white p-5 rounded-[32px] shadow-lg border border-slate-100 flex flex-col gap-4 transition-colors duration-500 ${isApplied ? 'border-teal-200 bg-teal-50/20' : ''}`}
+                className={`relative z-10 bg-white p-5 rounded-[32px] shadow-lg border border-slate-100 flex flex-col gap-4 transition-colors duration-500 ${isApplied ? 'border-teal-200 bg-teal-50/20' : 'cursor-grab active:cursor-grabbing'}`}
             >
-                <div className="flex items-center justify-between">
-                    <div>
+                <div className="flex items-center justify-between pointer-events-none">
+                    <div className="flex-1">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-outfit">
                             {isApplied ? 'Aplicação Realizada' : 'Próxima Aplicação'}
                         </span>
@@ -152,7 +152,7 @@ const InjectionSwipeCard = ({
                     </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-[32px] border-t-4 border-brand-500 shadow-sm">
+                <div className="bg-white p-5 rounded-[32px] border-t-4 border-brand-500 shadow-sm pointer-events-none">
                     <div className="flex justify-between items-center mb-1">
                         <span className="text-[10px] font-black text-brand-500 uppercase tracking-widest">Protocolo Semanal: {medication?.name || 'GLP-1'}</span>
                         <span className="bg-brand-50 text-brand-700 px-2 py-0.5 rounded text-[10px] font-black italic">Dose: {user.currentDose}</span>
@@ -161,13 +161,20 @@ const InjectionSwipeCard = ({
 
                 {!isApplied && (
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col gap-1">
+                        <button 
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onShowBodyGuide?.();
+                            }}
+                            className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col gap-1 text-left hover:bg-slate-100 transition-all active:scale-95 shadow-sm"
+                        >
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Local Sugerido</span>
                             <div className="flex items-center gap-2">
                                 <span className="text-lg">{injectionSuggestion.icon}</span>
                                 <span className="text-sm font-black text-slate-800">{injectionSuggestion.label}</span>
                             </div>
-                        </div>
+                        </button>
                         <div className="bg-brand-50/50 rounded-2xl p-4 border border-brand-100/50 flex flex-col gap-1">
                             <span className="text-[9px] font-black text-brand-600 uppercase tracking-widest">Status do Ciclo</span>
                             <p className={`text-[11px] font-bold ${cycleInfo.color} leading-none`}>{cycleInfo.message}</p>
@@ -176,8 +183,12 @@ const InjectionSwipeCard = ({
                 )}
 
                 <button 
-                  onClick={() => setShowDoseHelp(true)}
-                  className="z-40 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-brand-500 transition-colors flex items-center justify-center gap-1.5 mt-1"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDoseHelp(true);
+                  }}
+                  className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-brand-500 transition-colors flex items-center justify-center gap-1.5 mt-1"
                 >
                     <Info size={12} />
                     Esqueci minha dose
