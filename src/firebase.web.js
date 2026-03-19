@@ -1,11 +1,18 @@
 import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const getEnv = (key) => {
-    // Para Vite, process.env também funciona se configurado ou pode ser injetado.
-    // Mas para Metro, process.env é o padrão estável.
-    return process.env[`EXPO_PUBLIC_${key}`] || process.env[key] || '';
+    // Vite (Web)
+    if (import.meta && import.meta.env && import.meta.env[key]) {
+        return import.meta.env[key];
+    }
+    // Expo (Native)
+    if (process && process.env && process.env[`EXPO_PUBLIC_${key}`]) {
+        return process.env[`EXPO_PUBLIC_${key}`];
+    }
+    return '';
 };
 
 const firebaseConfig = {
@@ -18,7 +25,13 @@ const firebaseConfig = {
     measurementId: getEnv('VITE_FIREBASE_MEASUREMENT_ID')
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+export const analytics = getAnalytics(app);
+
+// Initialize Cloud Firestore and get a reference to the service
 export const db = getFirestore(app);
+
+// Initialize Firebase Auth and Google Provider
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
