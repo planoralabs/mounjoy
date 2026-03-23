@@ -5,7 +5,7 @@ import BodySelector from './ui/BodySelector';
 import { suggestNextInjection, getSiteById } from '../services/InjectionService';
 import { MOCK_MEDICATIONS } from '../constants/medications';
 
-const Profile = ({ user, onReset, setUser }) => {
+const Profile = ({ user, onReset, setUser, theme, setTheme }) => {
     const [showProtocolModal, setShowProtocolModal] = useState(false);
     const [showDoseModal, setShowDoseModal] = useState(false);
     const [showMeasureModal, setShowMeasureModal] = useState(false);
@@ -231,6 +231,37 @@ const Profile = ({ user, onReset, setUser }) => {
                     </div>
                 </div>
 
+                {/* theme Selection */}
+                <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Settings size={18} className="text-brand" />
+                        <h3 className="font-bold text-slate-800">Tema do App</h3>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <button
+                            onClick={() => setTheme('default')}
+                            className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${theme === 'default' ? 'border-brand bg-brand/5' : 'border-slate-50'}`}
+                        >
+                            <div className="w-8 h-8 rounded-full bg-[#0d9488]"></div>
+                            <span className="text-[10px] font-bold text-slate-600 uppercase">Nature</span>
+                        </button>
+                        <button
+                            onClick={() => setTheme('blue')}
+                            className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${theme === 'blue' ? 'border-brand bg-brand/5' : 'border-slate-50'}`}
+                        >
+                            <div className="w-8 h-8 rounded-full bg-[#2563eb]"></div>
+                            <span className="text-[10px] font-bold text-slate-600 uppercase">Pro Blue</span>
+                        </button>
+                        <button
+                            onClick={() => setTheme('slate')}
+                            className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${theme === 'slate' ? 'border-brand bg-brand/5' : 'border-slate-50'}`}
+                        >
+                            <div className="w-8 h-8 rounded-full bg-[#475569]"></div>
+                            <span className="text-[10px] font-bold text-slate-600 uppercase">Nordic</span>
+                        </button>
+                    </div>
+                </div>
+
                 {/* Other Settings */}
                 <div className="space-y-3">
                     <button
@@ -371,9 +402,9 @@ const Profile = ({ user, onReset, setUser }) => {
             < Modal isOpen={showProtocolModal} onClose={() => setShowProtocolModal(false)} title="Configurar Protocolo" >
                 <div className="space-y-6">
                     <div className="flex p-1 bg-slate-100 rounded-2xl">
-                        <button onClick={() => setRouteFilter('all')} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${routeFilter === 'all' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}>Todos</button>
-                        <button onClick={() => setRouteFilter('injectable')} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${routeFilter === 'injectable' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}>Injetável</button>
-                        <button onClick={() => setRouteFilter('oral')} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${routeFilter === 'oral' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}>Via Oral</button>
+                        <button onClick={() => setRouteFilter('all')} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${routeFilter === 'all' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500'}`}>Todos</button>
+                        <button onClick={() => setRouteFilter('injectable')} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${routeFilter === 'injectable' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500'}`}>Injetável</button>
+                        <button onClick={() => setRouteFilter('oral')} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${routeFilter === 'oral' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500'}`}>Via Oral</button>
                     </div>
                     <div>
                         <div className="flex justify-between items-end mb-3">

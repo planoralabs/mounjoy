@@ -54,7 +54,7 @@ const Onboarding = ({ onComplete }) => {
     const steps = [
         // Step 0: Welcome
         <div className="flex flex-col h-full justify-center items-center text-center fade-in pb-20">
-            <div className="w-24 h-24 bg-teal-100 rounded-full flex items-center justify-center mb-6 text-teal-600 shadow-inner">
+            <div className="w-24 h-24 bg-brand-100 rounded-full flex items-center justify-center mb-6 text-brand-600 shadow-inner">
                 <Activity size={48} />
             </div>
             <h1 className="text-3xl font-bold text-slate-800 mb-2">Bem-vindo ao Mounjoy</h1>
@@ -123,7 +123,7 @@ const Onboarding = ({ onComplete }) => {
                                 <button
                                     key={f.id}
                                     onClick={() => setFilterAdmin(f.id)}
-                                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${filterAdmin === f.id ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-400 border-slate-100 hover:border-teal-200'
+                                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${filterAdmin === f.id ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-slate-400 border-slate-100 hover:border-brand-200'
                                         }`}
                                 >
                                     {f.label}
@@ -143,7 +143,7 @@ const Onboarding = ({ onComplete }) => {
                                 <button
                                     key={f.id}
                                     onClick={() => setFilterFocus(f.id)}
-                                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${filterFocus === f.id ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-400 border-slate-100 hover:border-teal-200'
+                                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${filterFocus === f.id ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-slate-400 border-slate-100 hover:border-brand-200'
                                         }`}
                                 >
                                     {f.label}
@@ -180,18 +180,18 @@ const Onboarding = ({ onComplete }) => {
                             key={substance}
                             onClick={() => handleSubstanceClick(substance)}
                             className={`p-4 rounded-[32px] transition-all duration-500 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden h-fit min-h-[100px] cursor-pointer ${isFocused
-                                ? 'bg-teal-50 border-teal-600 border-2 ring-2 ring-teal-500/5 scale-105 my-4 shadow-xl z-30 w-full max-w-[210px] mx-auto pointer-events-auto'
+                                ? 'bg-brand-50 border-brand-600 border-2 ring-2 ring-brand-500/5 scale-105 my-4 shadow-xl z-30 w-full max-w-[210px] mx-auto pointer-events-auto'
                                 : 'bg-white border-white border-2 hover:border-slate-100'
                                 } ${!selectedSubstance ? 'opacity-100' : ''}`}
                         >
                             <div className="flex-1 flex flex-col items-center justify-center">
-                                <h3 className={`font-black tracking-tight transition-all leading-tight ${isFocused ? 'text-xl text-teal-950 mb-4' : 'text-lg text-slate-800'
+                                <h3 className={`font-black tracking-tight transition-all leading-tight ${isFocused ? 'text-xl text-brand-950 mb-4' : 'text-lg text-slate-800'
                                     }`}>
                                     {substance}
                                 </h3>
 
                                 {!isFocused && meds.find(m => m.id === data.medicationId) && (
-                                    <div className="text-[10px] font-bold text-teal-600 mt-1 uppercase tracking-tight animate-in fade-in slide-in-from-top-1 duration-500">
+                                    <div className="text-[10px] font-bold text-brand-600 mt-1 uppercase tracking-tight animate-in fade-in slide-in-from-top-1 duration-500">
                                         {meds.find(m => m.id === data.medicationId).brand}
                                     </div>
                                 )}
@@ -210,14 +210,14 @@ const Onboarding = ({ onComplete }) => {
                                                     handleChange('medicationId', med.id);
                                                 }}
                                                 className={`font-bold transition-all duration-500 relative group py-2.5 px-6 rounded-2xl text-[12px] bg-white/80 hover:bg-white border w-full active:scale-95 transform-gpu ${isSelected
-                                                    ? 'text-teal-700 border-teal-600 bg-teal-50/50 max-w-[170px] scale-100 shadow-md ring-1 ring-teal-600/10'
+                                                    ? 'text-brand-700 border-brand-600 bg-brand-50/50 max-w-[170px] scale-100 shadow-md ring-1 ring-brand-600/10'
                                                     : 'text-slate-600 hover:text-slate-800 border-slate-200 max-w-[190px] scale-105 shadow-sm'
                                                     }`}
                                                 style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                                             >
                                                 {med.brand}
                                                 {isSelected && (
-                                                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center text-white shadow-sm scale-in">
+                                                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-brand-600 flex items-center justify-center text-white shadow-sm scale-in">
                                                         <Check size={12} strokeWidth={3} />
                                                     </div>
                                                 )}
@@ -244,7 +244,7 @@ const Onboarding = ({ onComplete }) => {
                             <button
                                 key={dose}
                                 onClick={() => handleChange('currentDose', dose)}
-                                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${data.currentDose === dose ? 'bg-teal-700 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-100'
+                                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${data.currentDose === dose ? 'bg-brand-700 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-100'
                                     }`}
                             >
                                 {dose}
@@ -274,7 +274,7 @@ const Onboarding = ({ onComplete }) => {
             {data.currentDose && selectedMed && (
                 <div className="mt-4 p-5 bg-white rounded-3xl border border-slate-100 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <p className="text-sm leading-relaxed text-slate-600">
-                        Você iniciará seu protocolo com <strong className="text-slate-900">{selectedMed.brand}</strong> ({selectedMed.substance}), na dose de <strong className="text-teal-600">{data.currentDose}</strong>, com aplicações toda <strong className="text-slate-900">{data.injectionDay}</strong>.
+                        Você iniciará seu protocolo com <strong className="text-slate-900">{selectedMed.brand}</strong> ({selectedMed.substance}), na dose de <strong className="text-brand-600">{data.currentDose}</strong>, com aplicações toda <strong className="text-slate-900">{data.injectionDay}</strong>.
                     </p>
                 </div>
             )}
@@ -289,7 +289,7 @@ const Onboarding = ({ onComplete }) => {
                 style={{ height: `${16 - (step / (steps.length - 1)) * 14}px` }}
             >
                 <div
-                    className="h-full bg-teal-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(20,184,166,0.3)]"
+                    className="h-full bg-brand-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(20,184,166,0.3)]"
                     style={{ width: `${(step / (steps.length - 1)) * 100}%` }}
                 />
             </div>
@@ -306,7 +306,7 @@ const Onboarding = ({ onComplete }) => {
                         <div className="mb-4 flex flex-col items-center animate-in fade-in slide-in-from-bottom-2 duration-500">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Selecionado</span>
                             <div className="flex items-center gap-2">
-                                <span className="text-xl font-black text-teal-600 italic">{selectedMed?.brand}</span>
+                                <span className="text-xl font-black text-brand-600 italic">{selectedMed?.brand}</span>
                                 <span className="text-slate-300">|</span>
                                 <span className="text-sm font-bold text-slate-500 uppercase tracking-tight">{selectedMed?.substance}</span>
                             </div>
@@ -319,7 +319,7 @@ const Onboarding = ({ onComplete }) => {
                         )}
                         <Button 
                             onClick={step === steps.length - 1 ? () => onComplete(data) : nextStep} 
-                            className={`flex-1 shadow-lg ${step === 0 ? 'w-full' : ''} ${isNextDisabled() ? 'grayscale opacity-50' : 'shadow-teal-500/20'}`}
+                            className={`flex-1 shadow-lg ${step === 0 ? 'w-full' : ''} ${isNextDisabled() ? 'grayscale opacity-50' : 'shadow-brand-500/20'}`}
                             disabled={isNextDisabled()}
                         >
                             {step === 0 ? 'Começar Configuração' : step === steps.length - 1 ? 'Finalizar' : 'Próximo'}

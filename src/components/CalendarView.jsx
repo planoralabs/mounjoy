@@ -227,9 +227,9 @@ const CalendarView = ({ user, setUser }) => {
                                         {getDayData(selectedDate).protein > 0 ? `${getDayData(selectedDate).protein} g` : "--"}
                                     </span>
                                 </div>
-                                <div className={`${getDayData(selectedDate).foodNoise !== undefined ? (getDayData(selectedDate).foodNoise <= 3 ? 'bg-teal-50 border-teal-100' : getDayData(selectedDate).foodNoise <= 7 ? 'bg-amber-50 border-amber-100' : 'bg-red-50 border-red-100') : 'bg-slate-50 border-slate-100'} rounded-2xl p-4 border flex flex-col gap-2`}>
-                                    <span className={`text-[10px] font-black ${getDayData(selectedDate).foodNoise !== undefined ? (getDayData(selectedDate).foodNoise <= 3 ? 'text-teal-400' : getDayData(selectedDate).foodNoise <= 7 ? 'text-amber-400' : 'text-red-400') : 'text-slate-400'} uppercase tracking-widest flex items-center gap-1.5`}><Activity size={14} /> Food Noise</span>
-                                    <span className={`text-xl font-black tabular-nums ${getDayData(selectedDate).foodNoise !== undefined ? (getDayData(selectedDate).foodNoise <= 3 ? 'text-teal-900' : getDayData(selectedDate).foodNoise <= 7 ? 'text-amber-900' : 'text-red-900') : 'text-slate-900'}`}>
+                                <div className={`${getDayData(selectedDate).foodNoise !== undefined ? (getDayData(selectedDate).foodNoise <= 3 ? 'bg-brand-50 border-brand-100' : getDayData(selectedDate).foodNoise <= 7 ? 'bg-amber-50 border-amber-100' : 'bg-red-50 border-red-100') : 'bg-slate-50 border-slate-100'} rounded-2xl p-4 border flex flex-col gap-2`}>
+                                    <span className={`text-[10px] font-black ${getDayData(selectedDate).foodNoise !== undefined ? (getDayData(selectedDate).foodNoise <= 3 ? 'text-brand-400' : getDayData(selectedDate).foodNoise <= 7 ? 'text-amber-400' : 'text-red-400') : 'text-slate-400'} uppercase tracking-widest flex items-center gap-1.5`}><Activity size={14} /> Food Noise</span>
+                                    <span className={`text-xl font-black tabular-nums ${getDayData(selectedDate).foodNoise !== undefined ? (getDayData(selectedDate).foodNoise <= 3 ? 'text-brand-900' : getDayData(selectedDate).foodNoise <= 7 ? 'text-amber-900' : 'text-red-900') : 'text-slate-900'}`}>
                                         {getDayData(selectedDate).foodNoise !== undefined ? `${getDayData(selectedDate).foodNoise}/10` : "--"}
                                     </span>
                                 </div>
@@ -264,7 +264,7 @@ const CalendarView = ({ user, setUser }) => {
                                             </span>
                                             {log.foodNoise !== undefined && (
                                                 <div className="flex items-center gap-1.5 mt-1">
-                                                    <div className={`w-2 h-2 rounded-full ${log.foodNoise <= 3 ? 'bg-teal-500' : log.foodNoise <= 7 ? 'bg-amber-500' : 'bg-red-500'}`}></div>
+                                                    <div className={`w-2 h-2 rounded-full ${log.foodNoise <= 3 ? 'bg-brand-500' : log.foodNoise <= 7 ? 'bg-amber-500' : 'bg-red-500'}`}></div>
                                                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Food Noise: {log.foodNoise}/10</span>
                                                 </div>
                                             )}

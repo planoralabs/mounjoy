@@ -9,7 +9,7 @@ export const MOCK_MEDICATIONS = [
         frequency: 'daily',
         focus: 'weight',
         doses: ['7 mg', '14 mg', '25 mg', '50 mg'],
-        color: 'bg-teal-600',
+        color: 'bg-brand-600',
         description: 'Versão oral de alta dose para perda de peso.'
     },
     {
@@ -21,7 +21,7 @@ export const MOCK_MEDICATIONS = [
         frequency: 'weekly',
         focus: 'weight',
         doses: ['0.25 mg', '0.5 mg', '1.0 mg', '1.7 mg', '2.4 mg'],
-        color: 'bg-teal-500',
+        color: 'bg-brand-500',
         description: 'Injetável semanal focado em obesidade.'
     },
     {

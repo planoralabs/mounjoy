@@ -1,13 +1,57 @@
 @import "tailwindcss";
 
+:root {
+  /* Default: Nature Teal */
+  --brand-50: #f0fdfa;
+  --brand-100: #ccfbf1;
+  --brand-200: #99f6e4;
+  --brand-400: #2dd4bf;
+  --brand-500: #14b8a6;
+  --brand-600: #0d9488;
+  --brand-900: #134e4a;
+  --brand-glow: rgba(13, 148, 136, 0.15);
+  --brand-gradient-start: #0d9488;
+  --brand-gradient-end: #0f766e;
+}
+
+[data-theme='blue'] {
+  /* Professional Blue (Royal/Sapphire) */
+  --brand-50: #f0f7ff;
+  --brand-100: #e0f2fe;
+  --brand-200: #bae0ff;
+  --brand-400: #60a5fa;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-900: #1e3a8a;
+  --brand-glow: rgba(37, 99, 235, 0.15);
+  --brand-gradient-start: #2563eb;
+  --brand-gradient-end: #1d4ed8;
+}
+
+[data-theme='slate'] {
+  /* Nordic Slate (Modern Professional) */
+  --brand-50: #f8fafc;
+  --brand-100: #f1f5f9;
+  --brand-200: #e2e8f0;
+  --brand-400: #94a3b8;
+  --brand-500: #64748b;
+  --brand-600: #475569;
+  --brand-900: #1e293b;
+  --brand-glow: rgba(71, 85, 105, 0.15);
+  --brand-gradient-start: #475569;
+  --brand-gradient-end: #334155;
+}
+
 @theme {
-  --color-brand-50: #f0fdfa;
-  --color-brand-100: #ccfbf1;
-  --color-brand-500: #14b8a6;
-  --color-brand-600: #0d9488;
-  --color-brand-900: #134e4a;
-  --color-brand-light: #14b8a6;
-  --color-brand-dark: #0d9488;
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-900: var(--brand-900);
+  --color-brand-light: var(--brand-500);
+  --color-brand-dark: var(--brand-600);
 
   --color-accent-light: #ffedd5;
   --color-accent: #fb923c;
@@ -17,7 +61,7 @@
 
   --radius-super: 32px;
 
-  --shadow-soft: 0 10px 40px -10px rgba(13, 148, 136, 0.15);
+  --shadow-soft: 0 10px 40px -10px var(--brand-glow);
   --shadow-inner-light: inset 0 2px 4px 0 rgba(255, 255, 255, 0.3);
 }
 
@@ -25,7 +69,7 @@
 @layer base {
   body {
     @apply antialiased text-slate-800 font-sans selection:bg-brand-100;
-    background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%);
+    background: linear-gradient(180deg, var(--brand-50) 0%, #ffffff 100%);
     min-height: 100vh;
   }
 }
@@ -41,8 +85,8 @@
 
   .btn-primary {
     @apply text-white font-bold transition-all active:scale-95;
-    background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
-    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+    background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%);
+    box-shadow: 0 4px 12px var(--brand-glow);
   }
 
   .pill-button {
@@ -53,8 +97,8 @@
   .pill-button-primary {
     @apply rounded-full px-6 py-3 font-semibold transition-all active:scale-95;
     @apply text-white font-bold hover:brightness-110;
-    background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
-    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+    background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%);
+    box-shadow: 0 4px 12px var(--brand-glow);
   }
 
   .pill-button-secondary {

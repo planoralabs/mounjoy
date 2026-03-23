@@ -151,7 +151,7 @@ const Charts = ({ user }) => {
         // 1. Background Gradient (Premium Slate to Teal)
         const grad = ctx.createLinearGradient(0, 0, 0, 1920);
         grad.addColorStop(0, '#0f172a'); // slate-900
-        grad.addColorStop(1, '#0d9488'); // teal-600
+        grad.addColorStop(1, '#0d9488'); // brand-600
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 1080, 1920);
 
@@ -472,10 +472,10 @@ const Charts = ({ user }) => {
                 </div>
 
                 {/* Evolution Comparison Section */}
-                <div className="mt-8 pt-8 border-t border-teal-50/50 flex flex-col gap-6">
+                <div className="mt-8 pt-8 border-t border-brand-50/50 flex flex-col gap-6">
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                            <Scale size={14} className="text-teal-600" />
+                            <Scale size={14} className="text-brand-600" />
                             <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] font-outfit">Comparador Visual</h3>
                         </div>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Selecione até 4 registros para comparar</p>
@@ -491,8 +491,8 @@ const Charts = ({ user }) => {
                                     key={idx}
                                     onClick={() => toggleDate(log.date)}
                                     className={`px-4 py-2.5 rounded-2xl text-[10px] font-black whitespace-nowrap transition-all border flex flex-col items-center gap-1 ${isSelected
-                                        ? 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-200 scale-105 z-10'
-                                        : 'bg-white text-slate-500 border-slate-100 hover:border-teal-200 hover:bg-teal-50/30'
+                                        ? 'bg-brand-600 text-white border-brand-600 shadow-md shadow-brand-200 scale-105 z-10'
+                                        : 'bg-white text-slate-500 border-slate-100 hover:border-brand-200 hover:bg-brand-50/30'
                                         } ${!isSelected && selectedDates.length >= 4 ? 'opacity-40 grayscale cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
                                     disabled={!isSelected && selectedDates.length >= 4}
                                 >
@@ -540,7 +540,7 @@ const Charts = ({ user }) => {
                                                     <span className="text-[10px] font-black text-slate-400">kg</span>
                                                 </div>
                                                 {diff !== null && (
-                                                    <div className={`text-[9px] font-black mt-1 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full ${parseFloat(diff) <= 0 ? 'bg-teal-50 text-teal-600' : 'bg-red-50 text-red-600'}`}>
+                                                    <div className={`text-[9px] font-black mt-1 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full ${parseFloat(diff) <= 0 ? 'bg-brand-50 text-brand-600' : 'bg-red-50 text-red-600'}`}>
                                                         {parseFloat(diff) <= 0 ? '' : '+'}{diff}kg
                                                     </div>
                                                 )}
@@ -553,7 +553,7 @@ const Charts = ({ user }) => {
                             {selectedDates.length >= 2 && (
                                 <button 
                                     onClick={() => setShowFullComparison(true)}
-                                    className="w-full py-4 rounded-3xl bg-teal-50 text-teal-600 flex items-center justify-center gap-3 border border-teal-100 shadow-sm hover:bg-teal-600 hover:text-white transition-all active:scale-95 group font-black text-xs uppercase tracking-widest mt-4"
+                                    className="w-full py-4 rounded-3xl bg-brand-50 text-brand-600 flex items-center justify-center gap-3 border border-brand-100 shadow-sm hover:bg-brand-600 hover:text-white transition-all active:scale-95 group font-black text-xs uppercase tracking-widest mt-4"
                                 >
                                     <Maximize2 size={18} className="group-hover:scale-110 transition-transform" />
                                     Expandir Comparativo
@@ -645,7 +645,7 @@ const Charts = ({ user }) => {
                         
                         <div className="flex flex-col items-center">
                             <h2 className="text-xl font-black text-white tracking-widest uppercase">Evolução</h2>
-                            <p className="text-[8px] font-black text-teal-400 uppercase tracking-widest">Ajuste & Compartilhe</p>
+                            <p className="text-[8px] font-black text-brand-400 uppercase tracking-widest">Ajuste & Compartilhe</p>
                         </div>
 
                         <button 
@@ -716,7 +716,7 @@ const Charts = ({ user }) => {
                         {/* Bottom Total Loss Badge (Only for 2 photos for clarity) */}
                         {selectedDates.length === 2 && !isDragging && (
                             <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                                <div className="bg-teal-600 text-white px-3 py-1 rounded-full font-black text-xs border border-teal-400/30 shadow-2xl">
+                                <div className="bg-brand-600 text-white px-3 py-1 rounded-full font-black text-xs border border-brand-400/30 shadow-2xl">
                                     {(baseWeightLogs.find(l => l.date === [...selectedDates].sort((a,b) => new Date(a)-new Date(b))[1])?.weight - baseWeightLogs.find(l => l.date === [...selectedDates].sort((a,b) => new Date(a)-new Date(b))[0])?.weight).toFixed(1)}kg
                                 </div>
                             </div>

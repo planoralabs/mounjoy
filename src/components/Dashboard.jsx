@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Activity, Plus, Heart, Droplet, Info, Thermometer, Zap, TrendingUp, Syringe, Calendar, Camera, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Activity, Plus, Heart, Droplet, Info, Thermometer, Zap, TrendingUp, Syringe, Calendar, Camera, ChevronLeft, ChevronRight, Trash2, PenLine } from 'lucide-react';
 import { Modal, Input, Button, VerticalMeter, Slider } from './ui/BaseComponents';
 import AlertBox from './ui/AlertBox';
 import BodySelector from './ui/BodySelector';
@@ -76,6 +76,11 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
     const [isFullscreenPhoto, setIsFullscreenPhoto] = useState(false);
     const [showDoseHelp, setShowDoseHelp] = useState(false);
     const [showBodyMap, setShowBodyMap] = useState(false);
+    const [isEditingProtocol, setIsEditingProtocol] = useState(false);
+    const [tempProtocol, setTempProtocol] = useState({ medicationId: user.medicationId, currentDose: user.currentDose });
+    const [filterAdmin, setFilterAdmin] = useState('all');
+    const [filterFocus, setFilterFocus] = useState('all');
+    const [selectedSubstance, setSelectedSubstance] = useState(null);
 
     // Get date key for daily tracking
     const today = new Date().toISOString().split('T')[0];
@@ -280,7 +285,7 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
             color = "text-orange-500";
         } else {
             message = "Nível Estável: Aproveite para focar em treinos de força.";
-            color = "text-teal-600";
+            color = "text-brand-600";
         }
 
         return { message, level: drugLevel, color, daysSinceDose };
@@ -313,7 +318,31 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
         localStorage.setItem('mounjoy_user2', JSON.stringify(updatedUser));
         setShowInjectionModal(false);
         setSelectedSiteId(null);
+        setIsEditingProtocol(false);
     };
+
+    const handleSaveProtocol = () => {
+        const updatedUser = {
+            ...user,
+            medicationId: tempProtocol.medicationId,
+            currentDose: tempProtocol.currentDose
+        };
+        setUser(updatedUser);
+        localStorage.setItem('mounjoy_user2', JSON.stringify(updatedUser));
+        setIsEditingProtocol(false);
+    };
+
+    const filteredMeds = MOCK_MEDICATIONS.filter(med => {
+        const matchesAdmin =
+            filterAdmin === 'all' ||
+            (filterAdmin === 'weekly' && med.route === 'injectable' && med.frequency === 'weekly') ||
+            (filterAdmin === 'daily_inj' && med.route === 'injectable' && med.frequency === 'daily') ||
+            (filterAdmin === 'daily_oral' && med.route === 'oral');
+
+        const matchesFocus = filterFocus === 'all' || med.focus === filterFocus;
+
+        return matchesAdmin && matchesFocus;
+    });
 
     const healthInsights = useMemo(() => {
         const startWeight = user.history[0];
@@ -475,7 +504,7 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
 
                     <div className="flex flex-col relative z-10 mb-4">
                         <div className="flex justify-between items-start mb-2">
-                            <span className="text-teal-50 text-[10px] font-bold tracking-widest uppercase opacity-80 font-outfit">Progresso</span>
+                            <span className="text-brand-50 text-[10px] font-bold tracking-widest uppercase opacity-80 font-outfit">Progresso</span>
                             <button
                                 onClick={() => {
                                     setNewWeight(user.currentWeight.toString());
@@ -548,7 +577,7 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
                         </div>
                         <div className="h-3 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100 relative">
                             <div
-                                className="h-full bg-gradient-to-r from-teal-400 to-teal-500 rounded-full transition-all duration-1000"
+                                className="h-full bg-gradient-to-r from-brand-400 to-brand-500 rounded-full transition-all duration-1000"
                                 style={{ width: `${Math.min(100, ((user.history[0] - user.currentWeight) / (user.history[0] * 0.05)) * 100)}%` }}
                             ></div>
                             {user.currentWeight <= user.history[0] * 0.95 && (
@@ -567,7 +596,7 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
                         </div>
                         <div className="h-3 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100 relative">
                             <div
-                                className="h-full bg-gradient-to-r from-teal-500 to-brand-500 rounded-full transition-all duration-1000"
+                                className="h-full bg-gradient-to-r from-brand-500 to-brand-500 rounded-full transition-all duration-1000"
                                 style={{ width: `${Math.min(100, ((user.history[0] - user.currentWeight) / (user.history[0] * 0.10)) * 100)}%` }}
                             ></div>
                             {user.currentWeight <= user.history[0] * 0.9 && (
@@ -606,13 +635,13 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
                 )}
 
                 {stats.isLowHunger && (
-                    <div className="stagger-1 fade-in bg-teal-50 border border-teal-100 p-4 rounded-[28px] flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-600">
+                    <div className="stagger-1 fade-in bg-brand-50 border border-brand-100 p-4 rounded-[28px] flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600">
                             <Zap size={20} />
                         </div>
                         <div className="flex-1">
-                            <p className="text-[10px] font-black text-teal-700 uppercase tracking-widest">Baixa Fome Detectada</p>
-                            <p className="text-xs text-teal-600 font-medium leading-tight">Priorize refeições leves e densas em proteína: ovos, iogurte ou shake.</p>
+                            <p className="text-[10px] font-black text-brand-700 uppercase tracking-widest">Baixa Fome Detectada</p>
+                            <p className="text-xs text-brand-600 font-medium leading-tight">Priorize refeições leves e densas em proteína: ovos, iogurte ou shake.</p>
                         </div>
                     </div>
                 )}
@@ -789,44 +818,136 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
             {/* Modal: Registro de Dose (Injectável ou Oral) */}
             <Modal
                 isOpen={showInjectionModal}
-                onClose={() => setShowInjectionModal(false)}
-                title={medication?.route === 'oral' ? "Registrar Dose" : "Confirmar Aplicação"}
+                onClose={() => {
+                    setShowInjectionModal(false);
+                    setIsEditingProtocol(false);
+                }}
+                title={isEditingProtocol ? "Editar Protocolo" : (medication?.route === 'oral' ? "Registrar Dose" : "Confirmar Aplicação")}
             >
                 <div className="space-y-4">
-                    <div className="bg-brand-50/50 rounded-[32px] p-5 border border-brand-100/50 flex flex-col gap-1 overflow-hidden relative group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-200/10 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
-                        <div className="relative z-10">
-                            <p className="text-[10px] font-black text-brand-500/60 uppercase tracking-[0.2em] mb-1">Dose a ser registrada</p>
-                            <p className="text-xl font-black flex items-center gap-2 text-slate-800">
-                                {medication?.route === 'oral' ? '💊' : '💉'} {user.currentDose}
-                                <span className="text-sm font-medium text-slate-400">({medication?.name})</span>
-                            </p>
-                        </div>
-                    </div>
-
-                    {medication?.route !== 'oral' && (
+                    {!isEditingProtocol ? (
                         <>
-                            <div>
-                                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2">Escolha o Local</label>
-                                <BodySelector
-                                    selectedSiteId={selectedSiteId || injectionSuggestion.id}
-                                    onSelect={setSelectedSiteId}
-                                    suggestedSiteId={injectionSuggestion.id}
-                                    lastSiteId={user.doseHistory?.[0]?.siteId}
-                                />
+                            <div className="bg-brand-50/50 rounded-[32px] p-5 border border-brand-100/50 flex flex-col gap-1 overflow-hidden relative group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-200/10 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+                                <div className="relative z-10">
+                                    <p className="text-[10px] font-black text-brand-500/60 uppercase tracking-[0.2em] mb-1">Dose a ser registrada</p>
+                                    <p className="text-xl font-black flex items-center gap-2 text-slate-800">
+                                        {medication?.route === 'oral' ? '💊' : '💉'} {user.currentDose}
+                                        <span className="text-sm font-medium text-slate-400">({medication?.name})</span>
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setTempProtocol({ medicationId: user.medicationId, currentDose: user.currentDose });
+                                        setIsEditingProtocol(true);
+                                    }}
+                                    className="absolute top-4 right-4 z-20 p-2 bg-white border border-slate-100 rounded-full text-slate-400 hover:text-brand-600 hover:border-brand-100 transition-all shadow-sm active:scale-95"
+                                    title="Alterar Protocolo"
+                                >
+                                    <PenLine size={14} />
+                                </button>
                             </div>
 
-                            {user.doseHistory?.[0]?.siteId === (selectedSiteId || injectionSuggestion.id) && (
-                                <div className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-center gap-3 animate-headShake">
-                                    <AlertBox type="warning" title="Atenção" message="Você usou este local na última aplicação. Recomenda-se a rotação." />
+                            {medication?.route !== 'oral' && (
+                                <>
+                                    <div>
+                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2">Escolha o Local</label>
+                                        <BodySelector
+                                            selectedSiteId={selectedSiteId || injectionSuggestion.id}
+                                            onSelect={setSelectedSiteId}
+                                            suggestedSiteId={injectionSuggestion.id}
+                                            lastSiteId={user.doseHistory?.[0]?.siteId}
+                                        />
+                                    </div>
+
+                                    {user.doseHistory?.[0]?.siteId === (selectedSiteId || injectionSuggestion.id) && (
+                                        <div className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-center gap-3 animate-headShake">
+                                            <AlertBox type="warning" title="Atenção" message="Você usou este local na última aplicação. Recomenda-se a rotação." />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            <Button onClick={handleConfirmInjection} className="w-full py-4 rounded-[24px] text-lg font-black shadow-xl">
+                                {medication?.route === 'oral' ? "Confirmar Dose" : "Registrar Aplicação"}
+                            </Button>
+                        </>
+                    ) : (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            {/* Filter UI */}
+                            <div className="space-y-4">
+                                <div>
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Via de Administração</span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {[
+                                            { id: 'all', label: 'Todos' },
+                                            { id: 'weekly', label: 'Injeção Semanal' },
+                                            { id: 'daily_inj', label: 'Injeção Diária' },
+                                            { id: 'daily_oral', label: 'Comprimido' }
+                                        ].map(f => (
+                                            <button
+                                                key={f.id}
+                                                onClick={() => setFilterAdmin(f.id)}
+                                                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${filterAdmin === f.id ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-slate-400 border-slate-100 hover:border-brand-200'}`}
+                                            >
+                                                {f.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Med Selection Grid */}
+                            <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1 hide-scrollbar">
+                                {Object.entries(
+                                    filteredMeds.reduce((acc, med) => {
+                                        (acc[med.substance] = acc[med.substance] || []).push(med);
+                                        return acc;
+                                    }, {})
+                                ).map(([substance, meds]) => {
+                                    const isSelectedSub = meds.some(m => m.id === tempProtocol.medicationId);
+                                    return (
+                                        <div key={substance} className="space-y-2">
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{substance}</div>
+                                            {meds.map(med => (
+                                                <button
+                                                    key={med.id}
+                                                    onClick={() => setTempProtocol({ medicationId: med.id, currentDose: med.doses[0] })}
+                                                    className={`w-full p-3 rounded-2xl border text-left transition-all active:scale-95 ${tempProtocol.medicationId === med.id ? 'bg-brand-50 border-brand-500 ring-1 ring-brand-500' : 'bg-white border-slate-100 hover:border-slate-300'}`}
+                                                >
+                                                    <p className={`text-xs font-black ${tempProtocol.medicationId === med.id ? 'text-brand-700' : 'text-slate-700'}`}>{med.brand}</p>
+                                                    <p className="text-[9px] text-slate-400 font-bold uppercase">{med.frequency === 'weekly' ? 'Semanal' : 'Diário'}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Dose Selection */}
+                            {tempProtocol.medicationId && (
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2">Selecione a Dose</label>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {MOCK_MEDICATIONS.find(m => m.id === tempProtocol.medicationId).doses.map(dose => (
+                                            <button
+                                                key={dose}
+                                                onClick={() => setTempProtocol({ ...tempProtocol, currentDose: dose })}
+                                                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${tempProtocol.currentDose === dose ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-500 border border-slate-100'}`}
+                                            >
+                                                {dose}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
-                        </>
-                    )}
 
-                    <Button onClick={handleConfirmInjection} className="w-full py-4 rounded-[24px] text-lg font-black shadow-xl">
-                        {medication?.route === 'oral' ? "Confirmar Dose" : "Registrar Aplicação"}
-                    </Button>
+                            <div className="flex gap-3 pt-2">
+                                <Button variant="ghost" onClick={() => setIsEditingProtocol(false)} className="flex-1">Voltar</Button>
+                                <Button onClick={handleSaveProtocol} className="flex-[2] shadow-xl">Salvar Protocolo</Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </Modal>
 
@@ -838,7 +959,7 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
             >
                 <div className="space-y-4 text-slate-600">
                     <p className="text-sm leading-relaxed">
-                        Perder mais de 1.5kg por semana de forma consistente pode indicar que você está perdendo **massa muscular** em vez de apenas gordura.
+                        Perder mais de 1.5kg por semana de forma consistente pode indicar que você está perdendo <strong>massa muscular</strong> em vez de apenas gordura.
                     </p>
                     <div className="bg-brand-50 p-4 rounded-2xl border border-brand-100">
                         <h4 className="font-bold text-brand-700 text-xs uppercase mb-2">Como prevenir</h4>
@@ -945,17 +1066,17 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
                         {reminder.daysRemaining >= 2 ? (
                             <div className="space-y-4">
                                 <p className="text-sm text-brand-900 leading-relaxed">
-                                    Como faltam **{reminder.daysRemaining} dias** para sua próxima dose, você deve:
+                                    Como faltam <strong>{reminder.daysRemaining} dias</strong> para sua próxima dose, você deve:
                                 </p>
                                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-brand-200">
-                                    <p className="text-sm font-bold text-teal-600 mb-1">✅ Aplique a dose esquecida agora.</p>
+                                    <p className="text-sm font-bold text-brand-600 mb-1">✅ Aplique a dose esquecida agora.</p>
                                     <p className="text-[10px] text-slate-500">Mantenha seu dia de aplicação original para a próxima semana.</p>
                                 </div>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 <p className="text-sm text-brand-900 leading-relaxed">
-                                    Como faltam apenas **{reminder.daysRemaining} dias** para sua próxima dose, a recomendação é:
+                                    Como faltam apenas <strong>{reminder.daysRemaining} dias</strong> para sua próxima dose, a recomendação é:
                                 </p>
                                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-brand-200">
                                     <p className="text-sm font-bold text-orange-600 mb-1">❌ Pule a dose esquecida.</p>

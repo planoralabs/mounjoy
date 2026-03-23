@@ -101,7 +101,7 @@ const InjectionSwipeCard = ({
                     originX: 0,
                     width: '100%' 
                 }}
-                className={`relative z-10 bg-white p-5 rounded-[32px] shadow-lg border border-slate-100 flex flex-col gap-4 transition-colors duration-500 ${isApplied ? 'border-teal-200 bg-teal-50/20' : 'cursor-grab active:cursor-grabbing'}`}
+                className={`relative z-10 bg-white p-5 rounded-[32px] shadow-lg border border-slate-100 flex flex-col gap-4 transition-colors duration-500 ${isApplied ? 'border-brand-200 bg-brand-50/20' : 'cursor-grab active:cursor-grabbing'}`}
             >
                 <div className="flex items-center justify-between pointer-events-none">
                     <div className="flex-1">
@@ -112,7 +112,7 @@ const InjectionSwipeCard = ({
                             <h3 className="text-xl font-black text-slate-800 tracking-tight">
                                 {isApplied ? 'Sucesso!' : (timeRemaining === 'Hoje!' ? "Dia de Injetar!" : `Em ${timeRemaining}`)}
                             </h3>
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${isApplied ? 'bg-teal-100 text-teal-600' : 'bg-slate-100 text-slate-600'}`}>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${isApplied ? 'bg-brand-100 text-brand-600' : 'bg-slate-100 text-slate-600'}`}>
                                 Semana {weekNumber}
                             </span>
                         </div>
@@ -126,7 +126,7 @@ const InjectionSwipeCard = ({
                                     animate={{ scale: 1, rotate: 0 }}
                                     exit={{ scale: 0 }}
                                 >
-                                    <CheckCircle2 className="w-10 h-10 text-teal-500" />
+                                    <CheckCircle2 className="w-10 h-10 text-brand-500" />
                                 </motion.div>
                             ) : (
                                 <motion.div 

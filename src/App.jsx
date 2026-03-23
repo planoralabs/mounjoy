@@ -27,7 +27,7 @@ const NavItem = ({ icon: Icon, active, onClick }) => (
 
 
 
-const MainApp = ({ guestUser, setGuestUser }) => {
+const MainApp = ({ guestUser, setGuestUser, theme, setTheme }) => {
     const { currentUser, userData, logout } = useAuth();
     const [activeTab, setActiveTab] = useState('home');
     const [isMigrating, setIsMigrating] = useState(false);
@@ -105,7 +105,7 @@ const MainApp = ({ guestUser, setGuestUser }) => {
             case 'logs': return <Logs user={user} setUser={handleUpdateUser} />;
             case 'calendar': return <CalendarView user={user} setUser={handleUpdateUser} />;
             case 'charts': return <Charts user={user} />;
-            case 'profile': return <Profile user={user} onReset={handleReset} setUser={handleUpdateUser} />;
+            case 'profile': return <Profile user={user} onReset={handleReset} setUser={handleUpdateUser} theme={theme} setTheme={setTheme} />;
             default: return <Dashboard user={user} setUser={handleUpdateUser} setActiveTab={setActiveTab} />;
         }
     };
@@ -119,6 +119,8 @@ const MainApp = ({ guestUser, setGuestUser }) => {
     };
 
     const medicationName = user.medicationId ? (user.medicationId.charAt(0).toUpperCase() + user.medicationId.slice(1)) : 'Protocolo';
+
+
 
     return (
         <div className="min-h-screen bg-transparent pb-24 selection:bg-brand-100">
@@ -164,6 +166,17 @@ const AppContent = () => {
     const { currentUser, userData } = useAuth();
     const [startedOnboarding, setStartedOnboarding] = useState(false);
     const [showLogin, setShowLogin] = useState(false);
+    const [theme, setTheme] = useState(() => localStorage.getItem('mounjoy_theme') || 'default');
+
+    useEffect(() => {
+        if (theme === 'default') {
+            document.documentElement.removeAttribute('data-theme');
+        } else {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+        localStorage.setItem('mounjoy_theme', theme);
+    }, [theme]);
+
     const [guestUser, setGuestUser] = useState(() => {
         const saved = localStorage.getItem('mounjoy_guest_user');
         return saved ? JSON.parse(saved) : null;
@@ -218,7 +231,7 @@ const AppContent = () => {
     // and they DON'T have guest data, we might show a loading state or the MainApp will handle it.
     // Given AuthProvider handles loading, if currentUser exists, userData will eventually follow.
     if (currentUser || guestUser) {
-        return <MainApp guestUser={guestUser} setGuestUser={setGuestUser} />;
+        return <MainApp guestUser={guestUser} setGuestUser={setGuestUser} theme={theme} setTheme={setTheme} />;
     }
 
     // If user clicked "Entrar", show the login screen

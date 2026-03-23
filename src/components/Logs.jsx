@@ -56,7 +56,7 @@ const Logs = ({ user, setUser }) => {
     };
 
     const getSliderColor = () => {
-        if (foodNoise <= 3) return 'bg-teal-500';
+        if (foodNoise <= 3) return 'bg-brand-500';
         if (foodNoise <= 7) return 'bg-orange-500';
         return 'bg-red-500';
     };
@@ -135,7 +135,7 @@ const Logs = ({ user, setUser }) => {
                         className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-white border-2 rounded-full shadow-md transition-all pointer-events-none`}
                         style={{
                             left: `calc(${(foodNoise / 10) * 100}% - 12px)`,
-                            borderColor: foodNoise <= 3 ? '#14b8a6' : foodNoise <= 7 ? '#f97316' : '#ef4444'
+                            borderColor: foodNoise <= 3 ? 'var(--brand-500)' : foodNoise <= 7 ? '#f97316' : '#ef4444'
                         }}
                     />
                 </div>
@@ -177,17 +177,17 @@ const Logs = ({ user, setUser }) => {
                         O "ruído alimentar" são aqueles pensamentos constantes e intrusivos sobre comida que podem dificultar o controle do peso.
                     </p>
                     <div className="space-y-3">
-                        <div className="flex gap-3 items-start bg-teal-50 p-3 rounded-xl border border-teal-100">
-                            <div className="font-bold text-teal-600 text-sm">0-3</div>
-                            <p className="text-xs">**Silencioso:** Você só pensa em comida quando está com fome física real.</p>
+                        <div className="flex gap-3 items-start bg-brand-50 p-3 rounded-xl border border-brand-100">
+                            <div className="font-bold text-brand-600 text-sm">0-3</div>
+                            <p className="text-xs"><strong>Silencioso:</strong> Você só pensa em comida quando está com fome física real.</p>
                         </div>
                         <div className="flex gap-3 items-start bg-orange-50 p-3 rounded-xl border border-orange-100">
                             <div className="font-bold text-orange-500 text-sm">4-7</div>
-                            <p className="text-xs">**Moderado:** Pensamentos ocasionais sobre comida ou desejo por snacks específicos.</p>
+                            <p className="text-xs"><strong>Moderado:</strong> Pensamentos ocasionais sobre comida ou desejo por snacks específicos.</p>
                         </div>
                         <div className="flex gap-3 items-start bg-red-50 p-3 rounded-xl border border-red-100">
                             <div className="font-bold text-red-500 text-sm">8-10</div>
-                            <p className="text-xs">**Alto:** Pensamentos constantes sobre a próxima refeição ou snacks.</p>
+                            <p className="text-xs"><strong>Alto:</strong> Pensamentos constantes sobre a próxima refeição ou snacks.</p>
                         </div>
                     </div>
                 </div>

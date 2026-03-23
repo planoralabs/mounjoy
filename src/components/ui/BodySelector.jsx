@@ -16,6 +16,18 @@ const BodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
         return "fill-white hover:fill-slate-100 cursor-pointer transition-all";
     };
 
+    const getSiteName = (id) => {
+        const names = {
+            'arm-right': 'Braço Direito',
+            'arm-left': 'Braço Esquerdo',
+            'abdomen-left': 'Abdômen Esquerdo',
+            'abdomen-right': 'Abdômen Direito',
+            'thigh-right': 'Coxa Direita',
+            'thigh-left': 'Coxa Esquerda'
+        };
+        return names[id] || 'Selecione um local';
+    };
+
     const handleScroll = () => {
         if (scrollRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
@@ -98,6 +110,15 @@ const BodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                         onClick={() => onSelect("thigh-left")}
                     />
                 </svg>
+
+                {/* Selected Site Name Label */}
+                {selectedSiteId && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="bg-slate-900/90 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-xl border border-white/10 whitespace-nowrap">
+                           {getSiteName(selectedSiteId)}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Selection/Suggested Indicators */}
@@ -159,7 +180,7 @@ const BodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                                 <h4 className="font-black text-xs uppercase tracking-widest">Rotação Essencial</h4>
                             </div>
                             <p className="text-xs text-emerald-800/80 leading-relaxed font-medium">
-                                Alternar os pontos evita cicatrizes, irritações e **lipodistrofia** (nódulos de gordura), mantendo a medicação eficaz.
+                                Alternar os pontos evita cicatrizes, irritações e <strong>lipodistrofia</strong> (nódulos de gordura), mantendo a medicação eficaz.
                             </p>
                             <div className="bg-white/60 p-3 rounded-2xl text-[10px] font-black text-emerald-700 border border-emerald-100 uppercase tracking-tight">
                                 Ex: S1 (Abdômen D) → S2 (Abdômen E) → S3 (Coxa D)...
@@ -175,7 +196,7 @@ const BodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                             <ul className="text-xs text-amber-800/80 space-y-2 list-disc list-inside font-medium">
                                 <li>Limpar o local com álcool antes de aplicar</li>
                                 <li>Não aplicar sobre hematomas ou peles machucadas</li>
-                                <li>**Não massagear** a área após a picada</li>
+                                <li><strong>Não massagear</strong> a área após a picada</li>
                                 <li>Descarte as agulhas em coletores adequados</li>
                             </ul>
                         </div>
