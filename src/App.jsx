@@ -7,6 +7,7 @@ import Profile from './components/Profile';
 import CalendarView from './components/CalendarView';
 import Onboarding from './components/Onboarding';
 import LandingPage from './components/LandingPage';
+import FunLandingPage from './components/FunLandingPage';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './components/Login';
@@ -101,7 +102,7 @@ const MainApp = ({ guestUser, setGuestUser, theme, setTheme }) => {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'home': return <Dashboard user={user} setUser={handleUpdateUser} setActiveTab={setActiveTab} />;
+            case 'home': return <Dashboard user={user} setUser={handleUpdateUser} setActiveTab={setActiveTab} theme={theme} />;
             case 'logs': return <Logs user={user} setUser={handleUpdateUser} />;
             case 'calendar': return <CalendarView user={user} setUser={handleUpdateUser} />;
             case 'charts': return <Charts user={user} />;
@@ -120,30 +121,32 @@ const MainApp = ({ guestUser, setGuestUser, theme, setTheme }) => {
 
     const medicationName = user.medicationId ? (user.medicationId.charAt(0).toUpperCase() + user.medicationId.slice(1)) : 'Protocolo';
 
-
-
     return (
-        <div className="min-h-screen bg-transparent pb-24 selection:bg-brand-100">
+        <div className={`min-h-screen pb-24 selection:bg-brand-100 transition-colors duration-500 ${theme === 'fun' ? 'bg-[#fdf5eb]' : 'bg-[#f8fafc]'}`}>
             <header className="px-6 py-6 flex justify-between items-center bg-transparent max-w-md mx-auto">
                 <div>
-                    <h1 className="text-2xl font-bold text-brand-900 tracking-tight">Olá, {user.name}</h1>
-                    <p className="text-sm text-slate-500 font-semibold font-outfit">
-                        Você está na {getWeekNumber()}ª semana em uso de {medicationName}
+                    {theme === 'fun' ? (
+                        <div className="flex items-center gap-2">
+                           <img src="/logomount.png" alt="Mounjoy" className="h-6 w-auto" />
+                           <h1 className="text-xl font-black text-orange-600 tracking-tight">Oi, {user.name}! 🎈</h1>
+                        </div>
+                    ) : (
+                        <h1 className="text-2xl font-bold text-brand-900 tracking-tight">Olá, {user.name}</h1>
+                    )}
+                    <p className={`text-sm font-semibold font-outfit ${theme === 'fun' ? 'text-orange-400' : 'text-slate-500'}`}>
+                        {theme === 'fun' ? "Você está arrasando na " : "Você está na "}
+                        {getWeekNumber()}ª semana de {medicationName}
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
-
-
-                    <div
-                        className="w-12 h-12 bg-white rounded-2xl shadow-soft flex items-center justify-center border border-slate-100 cursor-pointer hover:shadow-lg transition-all overflow-hidden"
-                        onClick={() => setActiveTab('profile')}
-                    >
-                        {user.photoURL ? (
-                            <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" />
-                        ) : (
-                            <span className="text-brand-600 font-bold text-lg">{user.name?.charAt(0).toUpperCase() || '?'}</span>
-                        )}
-                    </div>
+                <div
+                    className="w-12 h-12 bg-white rounded-2xl shadow-soft flex items-center justify-center border border-slate-100 cursor-pointer hover:shadow-lg transition-all overflow-hidden"
+                    onClick={() => setActiveTab('profile')}
+                >
+                    {user.photoURL ? (
+                        <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                        <span className="text-brand-600 font-bold text-lg">{user.name?.charAt(0).toUpperCase() || '?'}</span>
+                    )}
                 </div>
             </header>
 
@@ -241,14 +244,25 @@ const AppContent = () => {
 
     // If user clicked "Começar" on landing, show onboarding
     if (startedOnboarding) {
-        return <Onboarding onComplete={handleOnboardingComplete} />;
+        return <Onboarding onComplete={handleOnboardingComplete} theme={theme} />;
     }
 
-    // Default: Show the Landing Page
+    // Default: Show the Landing Page (toggle between Standard and Fun)
+    if (theme === 'fun') {
+        return (
+            <FunLandingPage
+                onStart={() => setStartedOnboarding(true)}
+                onLogin={() => setShowLogin(true)}
+                onToggleTheme={() => setTheme('default')}
+            />
+        );
+    }
+
     return (
         <LandingPage
             onStart={() => setStartedOnboarding(true)}
             onLogin={() => setShowLogin(true)}
+            onToggleTheme={() => setTheme('fun')}
         />
     );
 };

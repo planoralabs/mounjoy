@@ -8,11 +8,18 @@ import { suggestNextInjection, getSiteById } from '../services/InjectionService'
 import { ReminderService } from '../services/ReminderService';
 import DoseAlert from './ui/DoseAlert';
 import { MOCK_MEDICATIONS } from '../constants/medications';
-import scalerImg from '../public/scaler.png';
-import waterImg from '../public/water.png';
-import proteinImg from '../public/protein.png';
-import penImg from '../public/pen.png';
-import fiberImg from '../public/fiber.png';
+const scalerImg = '/scaler.png';
+const waterImg = '/water.png';
+const proteinImg = '/protein.png';
+const penImg = '/pen.png';
+const fiberImg = '/fiber.png';
+const mascotHydrated = '/mascothydrated.png';
+const mascotZen = '/mascotzen.png';
+const mascotFoodNoise = '/mascotfoodnoise.png';
+const mascotRemember = '/remember.png';
+const mascotStretch = '/mascotstretch.png';
+const mascotStrong = '/mascotstrong.png';
+const mascotAchieve = '/mascotachieve.png';
 
 const TIPS = [
     "Beba pelo menos 2.5L de água para ajudar os rins a processar a quebra de gordura.",
@@ -63,7 +70,7 @@ const ConfettiExplosion = React.memo(() => {
     );
 });
 
-const Dashboard = ({ user, setUser, setActiveTab }) => {
+const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
     const medication = MOCK_MEDICATIONS.find(m => m.id === user.medicationId);
     const [showWeightModal, setShowWeightModal] = useState(false);
     const [newWeight, setNewWeight] = useState('');
@@ -397,14 +404,16 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
             {/* Health Insights Section */}
             {(healthInsights.length > 0) && (
                 <div className="space-y-3 stagger-1 fade-in">
-                    <h3 className="text-lg font-bold text-slate-800 ml-1 font-outfit">Insights de Saúde</h3>
+                    <h3 className={`text-lg font-bold ml-1 font-outfit ${theme === 'fun' ? 'text-orange-500' : 'text-slate-800'}`}>Insights de Saúde</h3>
                     {healthInsights.map((insight, index) => (
                         <div key={index} className="relative group">
-                            <AlertBox
-                                type={insight.type}
-                                title={insight.title}
-                                message={insight.message}
-                            />
+                            <div className={`${theme === 'fun' ? 'animate-bounce-subtle' : ''}`}>
+                                <AlertBox
+                                    type={insight.type}
+                                    title={insight.title}
+                                    message={insight.message}
+                                />
+                            </div>
                             <button
                                 onClick={insight.onInfo}
                                 className="absolute top-4 right-4 text-slate-400 hover:text-brand transition-colors"
@@ -413,6 +422,46 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
                             </button>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Fun Mascot Highlight for Food Noise / Reminders */}
+            {theme === 'fun' && (
+                <div className="stagger-1 fade-in">
+                    {/* Food Noise Alert */}
+                    {(cycleInfo.daysSinceDose >= 5) ? (
+                        <div className="bg-orange-400 rounded-[40px] p-6 text-white shadow-xl relative overflow-hidden group mb-4">
+                            <div className="absolute -right-4 -bottom-4 w-32 h-32 opacity-20 group-hover:scale-125 transition-transform">
+                                <img src={mascotStrong} alt="Strong Mascot" className="w-full h-auto" />
+                            </div>
+                            <div className="relative z-10 flex gap-4 items-center">
+                                <div className="w-20 h-20 shrink-0 bg-white/20 rounded-3xl flex items-center justify-center p-2">
+                                    <img src={mascotFoodNoise} alt="Food Noise Mascot" className="h-full w-auto animate-bounce-subtle" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-orange-100 mb-1">Cuidado com o Food Noise 🎈</p>
+                                    <h4 className="text-xl font-black mb-1 leading-tight">Mantenha o foco!</h4>
+                                    <p className="text-xs font-medium opacity-90 leading-relaxed">Sua dose está baixando. Priorize as proteínas agora!</p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (cycleInfo.daysSinceDose === 0) ? (
+                         <div className="bg-blue-600 rounded-[40px] p-6 text-white shadow-xl relative overflow-hidden group mb-4">
+                            <div className="absolute -right-4 -bottom-4 w-32 h-32 opacity-20 group-hover:scale-125 transition-transform">
+                                <img src={mascotZen} alt="Zen Mascot" className="w-full h-auto" />
+                            </div>
+                            <div className="relative z-10 flex gap-4 items-center">
+                                <div className="w-20 h-20 shrink-0 bg-white/20 rounded-3xl flex items-center justify-center p-2">
+                                    <img src={mascotRemember} alt="Remember" className="h-full w-auto animate-float" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-100 mb-1">Dia de Brilhar 💉</p>
+                                    <h4 className="text-xl font-black mb-1 leading-tight">Dia da sua dose!</h4>
+                                    <p className="text-xs font-medium opacity-90 leading-relaxed">Prepare tudo com calma e respire fundo. Você está indo bem!</p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
                 </div>
             )}
 
@@ -497,9 +546,9 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
                 </div>
 
                 {/* Vertical Progress Card */}
-                <div className="relative overflow-hidden rounded-[40px] p-5 text-white shadow-xl bg-gradient-to-br from-brand-500 to-brand-600 flex flex-col justify-between h-full">
+                <div className={`relative overflow-hidden rounded-[40px] p-5 text-white shadow-xl flex flex-col justify-between h-full transition-all duration-500 ${theme === 'fun' ? 'bg-orange-500 shadow-orange-200' : 'bg-gradient-to-br from-brand-500 to-brand-600'}`}>
                     <div className="absolute -right-8 -bottom-8 opacity-10 pointer-events-none">
-                        <Activity size={140} />
+                        {theme === 'fun' ? <img src="/mascotachieve.png" alt="Mascot" className="w-32 h-32" /> : <Activity size={140} />}
                     </div>
 
                     <div className="flex flex-col relative z-10 mb-4">
@@ -564,8 +613,12 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
             {/* Milestones Card */}
             <div className="stagger-3 fade-in bg-white p-5 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100">
                 <div className="flex items-center gap-2 mb-4">
-                    <TrendingUp size={16} className="text-brand-500" />
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Marcos de Sucesso</h3>
+                    {theme === 'fun' ? (
+                        <div className="w-6 h-6 rounded-lg bg-orange-100 flex items-center justify-center">
+                            <img src="/mascotachieve.png" alt="Mascot" className="w-4 h-4 object-contain" />
+                        </div>
+                    ) : <TrendingUp size={16} className="text-brand-500" />}
+                    <h3 className={`text-xs font-black uppercase tracking-widest ${theme === 'fun' ? 'text-orange-500' : 'text-slate-400'}`}>Marcos de Sucesso</h3>
                 </div>
 
                 <div className="space-y-6">
@@ -669,6 +722,9 @@ const Dashboard = ({ user, setUser, setActiveTab }) => {
                         <div className="w-full relative flex flex-col items-center gap-3 my-2 z-10">
                             <div className="relative w-full h-28 flex items-center justify-center">
                                 <img src={waterImg} alt="Water" className={`h-full w-auto object-contain drop-shadow-[-4px_5px_0_rgba(148,163,184,0.4)] transform transition-all duration-300 absolute ${animatingAsset === 'water' ? 'scale-125' : 'scale-100 hover:scale-110'} animate-float`} />
+                                {theme === 'fun' && waterPercentage < 50 && (
+                                    <img src={mascotHydrated} alt="Mascot Hydrated" className="absolute -top-6 -right-2 w-16 h-16 animate-bounce-subtle z-20 pointer-events-none" />
+                                )}
                             </div>
                             <div className="w-full flex items-center gap-2 px-1">
                                 <span className={`text-2xl font-black tabular-nums leading-none transition-colors duration-700 ${isWaterComplete ? 'text-white' : 'text-slate-800'}`}>{dailyData.water}</span>

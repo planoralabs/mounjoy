@@ -3,7 +3,7 @@ import { Activity, ArrowRight, Check, Syringe, Droplet, Info } from 'lucide-reac
 import { Button, Input, Slider } from './ui/BaseComponents';
 import { MOCK_MEDICATIONS } from '../constants/medications';
 
-const Onboarding = ({ onComplete }) => {
+const Onboarding = ({ onComplete, theme }) => {
     const [step, setStep] = useState(0);
     const [data, setData] = useState({
         name: '',
@@ -54,13 +54,23 @@ const Onboarding = ({ onComplete }) => {
     const steps = [
         // Step 0: Welcome
         <div className="flex flex-col h-full justify-center items-center text-center fade-in pb-20">
-            <div className="w-24 h-24 bg-brand-100 rounded-full flex items-center justify-center mb-6 text-brand-600 shadow-inner">
-                <Activity size={48} />
-            </div>
-            <h1 className="text-3xl font-bold text-slate-800 mb-2">Bem-vindo ao Mounjoy</h1>
-            <p className="text-slate-500 mb-8 max-w-xs">Seu companheiro diário na jornada de transformação e saúde metabólica.</p>
+            {theme === 'fun' ? (
+                <div className="relative mb-8">
+                    <div className="absolute inset-0 bg-orange-200 rounded-full blur-3xl opacity-50 scale-150 animate-pulse"></div>
+                    <img src="/mascot11.png" alt="Mascot Mascot" className="h-48 w-auto relative z-10 drop-shadow-2xl animate-float" />
+                </div>
+            ) : (
+                <img src="/logomount.png" alt="Mounjoy Logo" className="h-20 w-auto object-contain mb-8 text-brand-500" />
+            )}
+            <h1 className={`text-3xl font-black mb-2 ${theme === 'fun' ? 'text-orange-500' : 'text-slate-800'}`}>
+                {theme === 'fun' ? "Ei! Sou seu novo Moun-Amigo!" : "Bem-vindo ao Mounjoy"}
+            </h1>
+            <p className="text-slate-500 mb-8 max-w-xs font-medium">
+                {theme === 'fun' 
+                    ? "Vou te ajudar a ficar incrível e acompanhar cada passinho da sua evolução!" 
+                    : "Seu companheiro diário na jornada de transformação e saúde metabólica."}
+            </p>
         </div>,
-
         // Step 1: Name Only
         <div className="flex flex-col h-full pt-10 fade-in">
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Sobre você</h2>
@@ -272,9 +282,16 @@ const Onboarding = ({ onComplete }) => {
 
             {/* Protocol Summary Preview */}
             {data.currentDose && selectedMed && (
-                <div className="mt-4 p-5 bg-white rounded-3xl border border-slate-100 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <p className="text-sm leading-relaxed text-slate-600">
-                        Você iniciará seu protocolo com <strong className="text-slate-900">{selectedMed.brand}</strong> ({selectedMed.substance}), na dose de <strong className="text-brand-600">{data.currentDose}</strong>, com aplicações toda <strong className="text-slate-900">{data.injectionDay}</strong>.
+                <div className={`mt-4 p-5 rounded-3xl border shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden ${theme === 'fun' ? 'bg-orange-50 border-orange-100' : 'bg-white border-slate-100'}`}>
+                    {theme === 'fun' && (
+                        <img src="/mascotachieve.png" alt="Happy Mascot" className="absolute -right-4 -bottom-4 h-20 opacity-20" />
+                    )}
+                    <p className={`text-sm leading-relaxed relative z-10 ${theme === 'fun' ? 'text-orange-950 font-medium' : 'text-slate-600'}`}>
+                        {theme === 'fun' ? "Tudo pronto! Seu plano com " : "Você iniciará seu protocolo com "}
+                        <strong className={theme === 'fun' ? 'text-orange-600' : 'text-slate-900'}>{selectedMed.brand}</strong> 
+                        {theme === 'fun' ? " está montado. " : " (" + selectedMed.substance + "), "}
+                        na dose de <strong className={theme === 'fun' ? 'text-orange-600' : 'text-brand-600'}>{data.currentDose}</strong>
+                        {theme === 'fun' ? ". Vamos nessa!" : ", com aplicações toda " + data.injectionDay + "."}
                     </p>
                 </div>
             )}
@@ -285,11 +302,11 @@ const Onboarding = ({ onComplete }) => {
         <div className="min-h-screen bg-slate-50 p-6 flex flex-col relative overflow-hidden">
             {/* Progress Bar */}
             <div 
-                className="w-full bg-slate-200 rounded-full mb-8 overflow-hidden transition-all duration-700 ease-in-out shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] shrink-0"
+                className={`w-full bg-slate-200 rounded-full mb-8 overflow-hidden transition-all duration-700 ease-in-out shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] shrink-0`}
                 style={{ height: `${16 - (step / (steps.length - 1)) * 14}px` }}
             >
                 <div
-                    className="h-full bg-brand-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(20,184,166,0.3)]"
+                    className={`h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)] ${theme === 'fun' ? 'bg-orange-500 shadow-orange-500/30' : 'bg-brand-500 shadow-brand-500/30'}`}
                     style={{ width: `${(step / (steps.length - 1)) * 100}%` }}
                 />
             </div>

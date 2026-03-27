@@ -42,6 +42,20 @@
   --brand-gradient-end: #334155;
 }
 
+[data-theme='fun'] {
+  /* Playful Orange Mounjoy Theme */
+  --brand-50: #fff7ed;
+  --brand-100: #ffedd5;
+  --brand-200: #fed7aa;
+  --brand-400: #fb923c;
+  --brand-500: #f97316;
+  --brand-600: #ea580c;
+  --brand-900: #7c2d12;
+  --brand-glow: rgba(249, 115, 22, 0.15);
+  --brand-gradient-start: #f97316;
+  --brand-gradient-end: #ea580c;
+}
+
 @theme {
   --color-brand-50: var(--brand-50);
   --color-brand-100: var(--brand-100);

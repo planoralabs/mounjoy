@@ -60,12 +60,7 @@ const Login = ({ onBack }) => {
 
             <div className="w-full max-w-md z-10">
                 <div className="flex flex-col items-center mb-10">
-                    <div className="w-20 h-20 rounded-3xl bg-white shadow-xl shadow-indigo-100 flex items-center justify-center mb-4 border border-white rotate-3">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 to-brand-500 flex items-center justify-center text-white">
-                            <LogIn size={32} />
-                        </div>
-                    </div>
-                    <h1 className="text-3xl font-black text-slate-800 tracking-tight">Mounjoy</h1>
+                    <img src="/logomount.png" alt="Mounjoy Logo" className="h-16 w-auto object-contain mb-8" />
                     <p className="text-slate-400 font-bold text-sm uppercase tracking-widest mt-1">Sua jornada começa aqui</p>
                 </div>
 
