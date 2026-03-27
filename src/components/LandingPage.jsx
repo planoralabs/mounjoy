@@ -8,8 +8,7 @@ const LandingPage = ({ onStart, onLogin }) => {
             {/* Minimalist Landing Header */}
             <header className="px-6 py-6 flex justify-between items-center max-w-6xl mx-auto absolute top-0 left-0 right-0 z-50">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center text-white font-black text-xl">M</div>
-                    <span className="text-xl font-bold text-slate-900 tracking-tight">Mounjoy</span>
+                    <img src="/logomount.png" alt="Mounjoy Logo" className="h-10 w-auto object-contain" />
                 </div>
                 <button
                     onClick={onLogin}
@@ -25,10 +24,7 @@ const LandingPage = ({ onStart, onLogin }) => {
 
             {/* Hero Section */}
             <section className="relative px-6 pt-20 pb-16 text-center max-w-4xl mx-auto md:pt-32 md:pb-24">
-                <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100 mb-8 animate-fadeIn">
-                    <Heart className="text-red-500" size={16} />
-                    <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Seu Companheiro na Jornada Metabólica</span>
-                </div>
+
 
                 <h1 className="text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-8 animate-slideUp md:text-7xl lg:text-8xl">
                     Sua jornada com GLP-1, <br />
