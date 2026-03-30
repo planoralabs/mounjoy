@@ -9,7 +9,7 @@
   --brand-500: #14b8a6;
   --brand-600: #0d9488;
   --brand-900: #134e4a;
-  --brand-glow: rgba(13, 148, 136, 0.15);
+  --brand-glow: rgba(15, 23, 42, 0.08);
   --brand-gradient-start: #0d9488;
   --brand-gradient-end: #0f766e;
 }
@@ -23,7 +23,7 @@
   --brand-500: #3b82f6;
   --brand-600: #2563eb;
   --brand-900: #1e3a8a;
-  --brand-glow: rgba(37, 99, 235, 0.15);
+  --brand-glow: rgba(15, 23, 42, 0.08);
   --brand-gradient-start: #2563eb;
   --brand-gradient-end: #1d4ed8;
 }
@@ -37,7 +37,7 @@
   --brand-500: #64748b;
   --brand-600: #475569;
   --brand-900: #1e293b;
-  --brand-glow: rgba(71, 85, 105, 0.15);
+  --brand-glow: rgba(15, 23, 42, 0.08);
   --brand-gradient-start: #475569;
   --brand-gradient-end: #334155;
 }
@@ -51,7 +51,7 @@
   --brand-500: #f97316;
   --brand-600: #ea580c;
   --brand-900: #7c2d12;
-  --brand-glow: rgba(249, 115, 22, 0.15);
+  --brand-glow: rgba(15, 23, 42, 0.08);
   --brand-gradient-start: #f97316;
   --brand-gradient-end: #ea580c;
 }
@@ -225,6 +225,24 @@
 
 .animate-fadeInRight {
   animation: fadeInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes drag {
+  0%, 100% { transform: translateX(-10px); }
+  50% { transform: translateX(10px); }
+}
+
+@keyframes scrollZoom {
+  0%, 100% { transform: scale(0.9) translateY(0); }
+  50% { transform: scale(1.1) translateY(-5px); }
+}
+
+.animate-drag {
+  animation: drag 2s ease-in-out infinite;
+}
+
+.animate-scrollZoom {
+  animation: scrollZoom 2s ease-in-out infinite;
 }
 
 /* Custom scrollbar for mobile feel */

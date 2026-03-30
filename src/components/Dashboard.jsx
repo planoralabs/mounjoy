@@ -693,7 +693,7 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                             <Zap size={20} />
                         </div>
                         <div className="flex-1">
-                            <p className="text-[10px] font-black text-brand-700 uppercase tracking-widest">Baixa Fome Detectada</p>
+                            <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest">Baixa Fome Detectada</p>
                             <p className="text-xs text-brand-600 font-medium leading-tight">Priorize refeições leves e densas em proteína: ovos, iogurte ou shake.</p>
                         </div>
                     </div>
@@ -971,7 +971,7 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                                                     onClick={() => setTempProtocol({ medicationId: med.id, currentDose: med.doses[0] })}
                                                     className={`w-full p-3 rounded-2xl border text-left transition-all active:scale-95 ${tempProtocol.medicationId === med.id ? 'bg-brand-50 border-brand-500 ring-1 ring-brand-500' : 'bg-white border-slate-100 hover:border-slate-300'}`}
                                                 >
-                                                    <p className={`text-xs font-black ${tempProtocol.medicationId === med.id ? 'text-brand-700' : 'text-slate-700'}`}>{med.brand}</p>
+                                                    <p className={`text-xs font-black ${tempProtocol.medicationId === med.id ? 'text-brand-600' : 'text-slate-700'}`}>{med.brand}</p>
                                                     <p className="text-[9px] text-slate-400 font-bold uppercase">{med.frequency === 'weekly' ? 'Semanal' : 'Diário'}</p>
                                                 </button>
                                             ))}
@@ -989,7 +989,7 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                                             <button
                                                 key={dose}
                                                 onClick={() => setTempProtocol({ ...tempProtocol, currentDose: dose })}
-                                                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${tempProtocol.currentDose === dose ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-50 text-slate-500 border border-slate-100'}`}
+                                                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${tempProtocol.currentDose === dose ? 'bg-brand-600 text-white shadow-md' : 'bg-slate-50 text-slate-500 border border-slate-100'}`}
                                             >
                                                 {dose}
                                             </button>

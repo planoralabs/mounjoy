@@ -254,7 +254,7 @@ const Onboarding = ({ onComplete, theme }) => {
                             <button
                                 key={dose}
                                 onClick={() => handleChange('currentDose', dose)}
-                                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${data.currentDose === dose ? 'bg-brand-700 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-100'
+                                className={`py-2 px-1 rounded-xl text-xs font-bold transition-all ${data.currentDose === dose ? 'bg-brand-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-100'
                                     }`}
                             >
                                 {dose}

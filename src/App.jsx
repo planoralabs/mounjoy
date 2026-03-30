@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, PenLine, BarChart3, Settings, CalendarDays } from 'lucide-react';
+import { Home, PenLine, BarChart3, Settings, CalendarDays, Info, Cloud } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Logs from './components/Logs';
 import Charts from './components/Charts';
@@ -8,10 +8,10 @@ import CalendarView from './components/CalendarView';
 import Onboarding from './components/Onboarding';
 import LandingPage from './components/LandingPage';
 import FunLandingPage from './components/FunLandingPage';
+import { Modal, Button } from './components/ui/BaseComponents';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './components/Login';
-
 import { userService } from './services/userService';
 
 const NavItem = ({ icon: Icon, active, onClick }) => (
@@ -32,6 +32,26 @@ const MainApp = ({ guestUser, setGuestUser, theme, setTheme }) => {
     const { currentUser, userData, logout } = useAuth();
     const [activeTab, setActiveTab] = useState('home');
     const [isMigrating, setIsMigrating] = useState(false);
+    const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showGuestNotice, setShowGuestNotice] = useState(true); // 🎈 Auto-start for guests
+
+    const isGuest = !currentUser && guestUser;
+
+    const handleAvatarClick = () => {
+        if (isGuest) {
+            setShowGuestNotice(!showGuestNotice);
+        } else {
+            setActiveTab('profile');
+        }
+    };
+
+    // 🛡️ Auto-close login modal on success
+    useEffect(() => {
+        if (currentUser && showLoginModal) {
+            setShowLoginModal(false);
+            setShowGuestNotice(false);
+        }
+    }, [currentUser, showLoginModal]);
 
     // Migration Bridge: LocalStorage -> Firestore
     useEffect(() => {
@@ -48,7 +68,6 @@ const MainApp = ({ guestUser, setGuestUser, theme, setTheme }) => {
                 if (dataToMigrate) {
                     try {
                         const parsed = JSON.parse(dataToMigrate);
-                        console.log("Migrating local data to Cloud Firestore...");
 
                         await userService.saveUserProfile(currentUser.uid, {
                             ...parsed,
@@ -139,16 +158,64 @@ const MainApp = ({ guestUser, setGuestUser, theme, setTheme }) => {
                     </p>
                 </div>
                 <div
-                    className="w-12 h-12 bg-white rounded-2xl shadow-soft flex items-center justify-center border border-slate-100 cursor-pointer hover:shadow-lg transition-all overflow-hidden"
-                    onClick={() => setActiveTab('profile')}
+                    className="relative w-12 h-12 bg-white rounded-2xl shadow-soft flex items-center justify-center border border-slate-100 cursor-pointer hover:shadow-lg transition-all"
+                    onClick={handleAvatarClick}
                 >
                     {user.photoURL ? (
                         <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" />
                     ) : (
                         <span className="text-brand-600 font-bold text-lg">{user.name?.charAt(0).toUpperCase() || '?'}</span>
                     )}
+
+                    {/* 🛡️ Guest Dropdown Balloon (OWASP Pillar 02 / UX) */}
+                    {showGuestNotice && isGuest && (
+                        <>
+                            {/* Backdrop: Dims the rest of the app */}
+                            <div 
+                                className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[45]" 
+                                onClick={(e) => { e.stopPropagation(); setShowGuestNotice(false); }}
+                            />
+                            
+                            <div className="absolute top-16 right-0 w-[280px] bg-white rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-white p-8 z-[50] animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-500">
+                                {/* Triangle Pointer */}
+                                <div className="absolute -top-2 right-4 w-4 h-4 bg-white rotate-45 border-t border-l border-white shadow-[-5px_-5px_10px_rgba(0,0,0,0.02)]"></div>
+                                
+                                <div className="flex flex-col items-center text-center gap-5">
+                                    <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand shadow-sm">
+                                        <Cloud size={28} className="animate-bounce" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h4 className="text-base font-black text-slate-800 uppercase tracking-widest">Salve seu progresso</h4>
+                                        <p className="text-xs font-semibold text-slate-400 leading-relaxed">Seus dados atuais não ficarão salvos. Registre-se para não perder nada!</p>
+                                    </div>
+                                    <Button 
+                                        onClick={(e) => { e.stopPropagation(); setShowLoginModal(true); setShowGuestNotice(false); }}
+                                        className="w-full py-4 text-sm font-black shadow-lg shadow-brand-500/20"
+                                    >
+                                        Criar Conta e Salvar
+                                    </Button>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); setShowGuestNotice(false); }}
+                                        className="text-xs font-bold text-slate-300 hover:text-slate-500 transition-colors uppercase tracking-widest pt-1"
+                                    >
+                                        Continuar como Visitante
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </header>
+
+            {/* Modal de Login flutuante no dashboard (Opção Recomendada por Antigravity) */}
+            <Modal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} title="Salvar sua Jornada">
+                <div className="flex flex-col gap-4">
+                    <p className="text-sm text-center text-slate-500 mb-2">Entre agora para migrar seu protocolo atual para uma conta segura e gratuita.</p>
+                    <div className="max-h-[70vh] overflow-y-auto hide-scrollbar">
+                        <Login onBack={() => setShowLoginModal(false)} showBack={false} />
+                    </div>
+                </div>
+            </Modal>
 
             <main className="px-6 max-w-md mx-auto">
                 {renderContent()}
@@ -179,6 +246,30 @@ const AppContent = () => {
         }
         localStorage.setItem('mounjoy_theme', theme);
     }, [theme]);
+
+    const { logout } = useAuth();
+    
+    // 🛡️ OWASP Pillar 07: Inactivity Logout
+    // Se o usuário ficar inativo por 30 min, deslogamos ele.
+    useEffect(() => {
+        let timeout;
+        const resetTimer = () => {
+            if (timeout) clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                logout();
+            }, 30 * 60 * 1000); // 30 minutos
+        };
+
+        window.addEventListener('mousemove', resetTimer);
+        window.addEventListener('keypress', resetTimer);
+        resetTimer();
+
+        return () => {
+            window.removeEventListener('mousemove', resetTimer);
+            window.removeEventListener('keypress', resetTimer);
+            if (timeout) clearTimeout(timeout);
+        };
+    }, [logout]);
 
     const [guestUser, setGuestUser] = useState(() => {
         const saved = localStorage.getItem('mounjoy_guest_user');
@@ -233,7 +324,8 @@ const AppContent = () => {
     // HOWEVER: If a user IS logged in but Firestore hasn't loaded yet (userData is null),
     // and they DON'T have guest data, we might show a loading state or the MainApp will handle it.
     // Given AuthProvider handles loading, if currentUser exists, userData will eventually follow.
-    if (currentUser || guestUser) {
+    // If we have a user (logged in or guest) AND we have their data, we show the main app
+    if ((currentUser || guestUser) && hasAnyUser) {
         return <MainApp guestUser={guestUser} setGuestUser={setGuestUser} theme={theme} setTheme={setTheme} />;
     }
 

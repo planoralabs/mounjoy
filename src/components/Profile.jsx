@@ -3,6 +3,7 @@ import { Settings, Bell, LogOut, Check, TrendingUp, Scale, Camera, ChevronRight 
 import { Modal, Button } from './ui/BaseComponents';
 import BodySelector from './ui/BodySelector';
 import { suggestNextInjection, getSiteById } from '../services/InjectionService';
+import { userService } from '../services/userService';
 import { MOCK_MEDICATIONS } from '../constants/medications';
 
 const Profile = ({ user, onReset, setUser, theme, setTheme }) => {
@@ -10,6 +11,9 @@ const Profile = ({ user, onReset, setUser, theme, setTheme }) => {
     const [showDoseModal, setShowDoseModal] = useState(false);
     const [showMeasureModal, setShowMeasureModal] = useState(false);
     const [showReminderModal, setShowReminderModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteStep, setDeleteStep] = useState(1); // 1 or 2
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [selectedMed, setSelectedMed] = useState(user.medicationId);
     const [selectedDose, setSelectedDose] = useState(user.currentDose);
@@ -132,6 +136,19 @@ const Profile = ({ user, onReset, setUser, theme, setTheme }) => {
             img.src = event.target.result;
         };
         reader.readAsDataURL(file);
+    };
+
+    const handleDeleteAccount = async () => {
+        setIsDeleting(true);
+        try {
+            await userService.deleteUserAccount(user.uid);
+            onReset(); // Logout and clear local session
+        } catch (error) {
+            alert('Erro ao apagar conta. Tente novamente.');
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+            setDeleteStep(1);
+        }
     };
 
     const currentMedInfo = MOCK_MEDICATIONS.find(m => m.id === selectedMed) || MOCK_MEDICATIONS[0];
@@ -310,8 +327,51 @@ const Profile = ({ user, onReset, setUser, theme, setTheme }) => {
                         <LogOut size={18} />
                         Sair da Conta
                     </button>
+
+                    <button
+                        onClick={() => { setShowDeleteModal(true); setDeleteStep(1); }}
+                        className="w-full mt-2 p-4 rounded-[24px] text-slate-300 font-bold flex items-center justify-center gap-2 hover:text-red-300 transition-colors text-xs transition-all active:scale-95"
+                    >
+                        Apagar Minha Conta e Dados Permanentemente
+                    </button>
                 </div>
             </div >
+
+            {/* Modal: Confirmação de Exclusão Dupla (Pillar 02 Privacy) */}
+            <Modal isOpen={showDeleteModal} onClose={() => { if (!isDeleting) setShowDeleteModal(false); }} title={deleteStep === 1 ? "🚨 Aviso Importante" : "⚠️ Última Chance"}>
+                <div className="space-y-6">
+                    <div className="bg-red-50 p-6 rounded-[32px] border border-red-100 flex flex-col items-center text-center">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-red-500 mb-4 shadow-sm animate-pulse">
+                            <LogOut size={32} />
+                        </div>
+                        <h3 className="text-xl font-black text-red-600 mb-2">Ação Irreversível</h3>
+                        <p className="text-sm font-medium text-red-900/70 leading-relaxed">
+                            {deleteStep === 1 
+                                ? "Ao apagar sua conta, todas as suas fotos de evolução, registros de doses, peso e histórico clínico serão DELETADOS PARA SEMPRE."
+                                : "Nós NÃO poderemos recuperar seus dados caso você mude de ideia depois. Você tem certeza ABSOLUTA de que deseja prosseguir?"}
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        {deleteStep === 1 ? (
+                            <Button onClick={() => setDeleteStep(2)} className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5">
+                                Eu entendo, quero prosseguir
+                            </Button>
+                        ) : (
+                            <Button 
+                                onClick={handleDeleteAccount} 
+                                disabled={isDeleting}
+                                className="w-full bg-red-900 hover:bg-black text-white font-black py-5"
+                            >
+                                {isDeleting ? "Apagando tudo..." : "APAGAR TUDO AGORA"}
+                            </Button>
+                        )}
+                        <Button variant="ghost" onClick={() => setShowDeleteModal(false)} disabled={isDeleting} className="w-full">
+                            Cancelar e Voltar
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Modal: Medidas Corporais */}
             < Modal isOpen={showMeasureModal} onClose={() => setShowMeasureModal(false)} title="Progresso Corporal" >
@@ -420,7 +480,7 @@ const Profile = ({ user, onReset, setUser, theme, setTheme }) => {
                         <label className="text-xs font-bold text-slate-500 uppercase mb-3 block">Dosagem</label>
                         <div className="grid grid-cols-3 gap-2">
                             {currentMedInfo?.doses.map(dose => (
-                                <button key={dose} onClick={() => setSelectedDose(dose)} className={`p-3 rounded-xl border-2 text-xs font-bold transition-all ${selectedDose === dose ? 'border-brand bg-brand text-white shadow-md' : 'border-slate-100 bg-white text-slate-500'}`}>{dose}</button>
+                                <button key={dose} onClick={() => setSelectedDose(dose)} className={`p-3 rounded-xl border-2 text-xs font-bold transition-all ${selectedDose === dose ? 'border-brand-600 bg-brand-600 text-white shadow-md' : 'border-slate-100 bg-white text-slate-500'}`}>{dose}</button>
                             ))}
                         </div>
                     </div>

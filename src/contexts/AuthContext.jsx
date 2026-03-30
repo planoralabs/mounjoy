@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
     onAuthStateChanged,
     signInWithPopup,
@@ -16,6 +16,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+    const userUnsubscribeRef = useRef(null);
     const [currentUser, setCurrentUser] = useState(null);
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -32,7 +33,13 @@ export const AuthProvider = ({ children }) => {
         return signInWithPopup(auth, googleProvider);
     };
 
-    const logout = () => {
+    const logout = async () => {
+        // 🔐 Critical Fix: Kill connection to Firestore BEFORE signing out to prevent permission errors
+        if (userUnsubscribeRef.current) {
+            userUnsubscribeRef.current();
+            userUnsubscribeRef.current = null;
+        }
+        setUserData(null);
         return signOut(auth);
     };
 
@@ -40,11 +47,17 @@ export const AuthProvider = ({ children }) => {
         let unsubscribeUser = null;
 
         const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+            // Clean up existing Firestore subscription before changing auth state
+            if (userUnsubscribeRef.current) {
+                userUnsubscribeRef.current();
+                userUnsubscribeRef.current = null;
+            }
+
             setCurrentUser(user);
 
             if (user) {
                 // Subscribe to Firestore user document
-                unsubscribeUser = userService.subscribeToUser(user.uid, (data) => {
+                userUnsubscribeRef.current = userService.subscribeToUser(user.uid, (data) => {
                     setUserData(data);
                     setLoading(false);
                 });
@@ -56,7 +69,7 @@ export const AuthProvider = ({ children }) => {
 
         return () => {
             unsubscribeAuth();
-            if (unsubscribeUser) unsubscribeUser();
+            if (userUnsubscribeRef.current) userUnsubscribeRef.current();
         };
     }, []);
 

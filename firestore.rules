@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 🔐 Pilar OWASP 01: Broken Access Control
+    // Garante que apenas o usuário autenticado possa ler/escrever seus próprios dados.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Bloqueia qualquer outro acesso não autorizado por padrão.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

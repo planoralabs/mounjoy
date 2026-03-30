@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button, Input } from './ui/BaseComponents';
 import { Mail, Lock, Chrome, ArrowRight, UserPlus, LogIn, ChevronLeft } from 'lucide-react';
 
-const Login = ({ onBack }) => {
+const Login = ({ onBack, showBack = true }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -44,27 +44,32 @@ const Login = ({ onBack }) => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 pb-12 font-sans select-none overflow-hidden relative">
+        <div className={`${showBack ? 'min-h-screen bg-slate-50' : 'bg-transparent'} flex flex-col items-center justify-center p-6 pb-12 font-sans select-none overflow-hidden relative`}>
             {/* Background elements */}
-            <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-indigo-100 rounded-full blur-[80px] opacity-60"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-brand-100 rounded-full blur-[100px] opacity-40"></div>
+            {showBack && (
+                <>
+                    <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-indigo-100 rounded-full blur-[80px] opacity-60"></div>
+                    <div className="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-brand-100 rounded-full blur-[100px] opacity-40"></div>
+                </>
+            )}
 
-            {/* Back Button */}
-            <button
-                onClick={onBack}
-                className="absolute top-8 left-8 p-3 rounded-2xl bg-white border border-slate-100 text-slate-400 hover:text-slate-600 hover:shadow-md transition-all active:scale-95 z-50"
-                title="Voltar"
-            >
-                <ChevronLeft size={24} />
-            </button>
+            {showBack && (
+                <button
+                    onClick={onBack}
+                    className="absolute top-8 left-8 p-3 rounded-2xl bg-white border border-slate-100 text-slate-400 hover:text-slate-600 hover:shadow-md transition-all active:scale-95 z-50"
+                    title="Voltar"
+                >
+                    <ChevronLeft size={24} />
+                </button>
+            )}
 
-            <div className="w-full max-w-md z-10">
-                <div className="flex flex-col items-center mb-10">
-                    <img src="/logomount.png" alt="Mounjoy Logo" className="h-16 w-auto object-contain mb-8" />
+            <div className={`w-full max-w-md ${showBack ? 'z-10' : 'z-0'}`}>
+                <div className={`flex flex-col items-center ${showBack ? 'mb-10' : 'mb-6'}`}>
+                    <img src="/logomount.png" alt="Mounjoy Logo" className={`${showBack ? 'h-16' : 'h-12'} w-auto object-contain mb-8`} />
                     <p className="text-slate-400 font-bold text-sm uppercase tracking-widest mt-1">Sua jornada começa aqui</p>
                 </div>
 
-                <div className="bg-white/70 backdrop-blur-xl p-8 rounded-[40px] shadow-2xl shadow-slate-200/50 border border-white flex flex-col gap-6">
+                <div className={`${showBack ? 'bg-white/70 shadow-2xl rounded-[40px] border border-white' : 'bg-transparent border-none shadow-none'} backdrop-blur-xl p-8 flex flex-col gap-6`}>
                     <div className="flex flex-col gap-1">
                         <h2 className="text-xl font-black text-slate-800 tracking-tight">
                             {isLogin ? 'Bem-vindo de volta' : 'Criar nova conta'}
@@ -105,6 +110,7 @@ const Login = ({ onBack }) => {
                                 className="w-full h-14 pl-12 pr-4 bg-slate-50/50 border-none rounded-2xl text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                autoComplete="current-password"
                                 required
                             />
                         </div>

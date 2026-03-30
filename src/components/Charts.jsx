@@ -30,6 +30,8 @@ const Charts = ({ user }) => {
     const [selectedDates, setSelectedDates] = useState([]);
     const [showFullComparison, setShowFullComparison] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
+    const [exportPreview, setExportPreview] = useState(null);
     const [photoAdjustments, setPhotoAdjustments] = useState({}); // { dateStr: { x, y, scale } }
 
     const updateAdjustment = (dateStr, changes) => {
@@ -48,11 +50,25 @@ const Charts = ({ user }) => {
         setDragStart({ x: e.clientX - adj.x, y: e.clientY - adj.y });
     };
 
+    const handleTouchStart = (e, dateStr) => {
+        setIsDragging(dateStr);
+        const adj = photoAdjustments[dateStr] || { x: 0, y: 0, scale: 1 };
+        setDragStart({ x: e.touches[0].clientX - adj.x, y: e.touches[0].clientY - adj.y });
+    };
+
     const handleMouseMove = (e) => {
         if (!isDragging) return;
         updateAdjustment(isDragging, {
             x: e.clientX - dragStart.x,
             y: e.clientY - dragStart.y
+        });
+    };
+
+    const handleTouchMove = (e) => {
+        if (!isDragging) return;
+        updateAdjustment(isDragging, {
+            x: e.touches[0].clientX - dragStart.x,
+            y: e.touches[0].clientY - dragStart.y
         });
     };
 
@@ -137,11 +153,10 @@ const Charts = ({ user }) => {
         if (selectedDates.length < 2) return;
         setIsExporting(true);
         
-        const sortedDates = [...selectedDates].sort((a, b) => new Date(a) - new Date(b)).slice(0, 2);
-        const l1 = baseWeightLogs.find(l => l.date === sortedDates[0]);
-        const l2 = baseWeightLogs.find(l => l.date === sortedDates[1]);
-        const p1 = findPhotoForDate(sortedDates[0]);
-        const p2 = findPhotoForDate(sortedDates[1]);
+        const sortedDates = [...selectedDates].sort((a, b) => new Date(a) - new Date(b));
+        const lLogs = sortedDates.map(d => baseWeightLogs.find(l => l.date === d));
+        const l1 = lLogs[0];
+        const l2 = lLogs[lLogs.length - 1];
 
         const canvas = document.createElement('canvas');
         canvas.width = 1080;
@@ -166,189 +181,98 @@ const Charts = ({ user }) => {
         const safeImgUrl = (p) => p?.url || 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&w=400&h=400&q=40';
 
         try {
-            const img1 = await loadImage(safeImgUrl(p1));
-            const img2 = await loadImage(safeImgUrl(p2));
-
-            const drawFullWidth = (img, y, weight, date, height = 500, adj = {x:0, y:0, scale:1}) => {
-                const imgRatio = img.width / img.height;
-                const targetRatio = 1080 / height;
-                let sx, sy, sw, sh;
-                if (imgRatio > targetRatio) {
-                    sh = img.height; sw = sh * targetRatio;
-                    sx = (img.width - sw) / 2; sy = 0;
-                } else {
-                    sw = img.width; sh = sw / targetRatio;
-                    sx = 0; sy = (img.height - sh) / 2;
-                }
-
-                ctx.save();
-                ctx.beginPath();
-                ctx.rect(0, y, 1080, height);
-                ctx.clip();
-                
-                // Adjustment scale/translate (mapped from screen pixels to canvas pixels roughly)
-                // Since modal is roughly 400px and canvas is 1080px, scale is ~2.7x
-                const canvasX = adj.x * 2.7;
-                const canvasY = adj.y * 2.7;
-                
-                ctx.translate(canvasX, canvasY);
-                ctx.translate(540, y + height/2);
-                ctx.scale(adj.scale, adj.scale);
-                ctx.translate(-540, -(y + height/2));
-
-                ctx.drawImage(img, sx, sy, sw, sh, 0, y, 1080, height);
-                ctx.restore();
-                
-                // Bottom Gradient
-                const grad = ctx.createLinearGradient(0, y + height - 200, 0, y + height);
-                grad.addColorStop(0, 'transparent');
-                grad.addColorStop(1, 'rgba(0,0,0,0.8)');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, y + height - 200, 1080, 200);
-
-                // Info
-                ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'right';
-                ctx.font = 'black 80px Outfit, sans-serif';
-                ctx.fillText(`${weight}kg`, 1030, y + height - 100);
-                ctx.font = 'bold 30px Outfit, sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                ctx.fillText(new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }), 1030, y + height - 50);
-            };
-
-            const drawGrid = (img, x, y, w, h, weight, date, adj = {x:0, y:0, scale:1}) => {
-                const imgRatio = img.width / img.height;
-                const targetRatio = w / h;
-                let sx, sy, sw, sh;
-                if (imgRatio > targetRatio) {
-                    sh = img.height; sw = sh * targetRatio;
-                    sx = (img.width - sw) / 2; sy = 0;
-                } else {
-                    sw = img.width; sh = sw / targetRatio;
-                    sx = 0; sy = (img.height - sh) / 2;
-                }
+            const drawQuadrant = async (dateStr, x, y, w, h) => {
+                const log = baseWeightLogs.find(l => l.date === dateStr);
+                const photo = findPhotoForDate(dateStr);
+                const adj = photoAdjustments[dateStr] || { x: 0, y: 0, scale: 1 };
+                const img = await loadImage(safeImgUrl(photo));
 
                 ctx.save();
                 ctx.beginPath();
                 ctx.rect(x, y, w, h);
                 ctx.clip();
 
-                const canvasX = adj.x * 2.7;
-                const canvasY = adj.y * 2.7;
+                // Layer 1: Background Blur (Context)
+                ctx.save();
+                ctx.filter = 'blur(60px) brightness(0.6)';
+                const bScale = Math.max(w / img.width, h / img.height) * 1.2;
+                ctx.translate(x + w/2, y + h/2);
+                ctx.scale(bScale, bScale);
+                ctx.drawImage(img, -img.width/2, -img.height/2);
+                ctx.restore();
+
+                // Layer 2: Main Image (Foreground with Adjustments)
+                const canvasX = adj.x * (1080 / 400); 
+                const canvasY = adj.y * (1080 / 400);
                 
+                ctx.save();
+                ctx.filter = 'none';
                 ctx.translate(canvasX, canvasY);
                 ctx.translate(x + w/2, y + h/2);
                 ctx.scale(adj.scale, adj.scale);
-                ctx.translate(-(x + w/2), -(y + h/2));
-
-                ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+                
+                const fScale = Math.min(w / img.width, h / img.height);
+                ctx.scale(fScale, fScale);
+                ctx.drawImage(img, -img.width/2, -img.height/2);
+                ctx.restore();
                 ctx.restore();
 
-                const grad = ctx.createLinearGradient(0, y + h - 150, 0, y + h);
-                grad.addColorStop(0, 'transparent');
-                grad.addColorStop(1, 'rgba(0,0,0,0.8)');
-                ctx.fillStyle = grad;
-                ctx.fillRect(x, y + h - 150, w, 150);
-                ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'center';
-                ctx.font = 'black 60px Outfit, sans-serif';
-                ctx.fillText(`${weight}kg`, x + w/2, y + h - 70);
-                ctx.font = 'bold 24px Outfit, sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                ctx.fillText(new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), x + w/2, y + h - 30);
+                const drawHardText = (text, tx, ty, fontSize, color = '#ffffff', align = 'left') => {
+                    ctx.font = `900 ${fontSize}px Outfit, sans-serif`;
+                    ctx.textAlign = align;
+                    ctx.fillStyle = '#000000';
+                    const offset = Math.max(2, fontSize / 20);
+                    ctx.fillText(text, tx + offset, ty + offset);
+                    ctx.fillStyle = color;
+                    ctx.fillText(text, tx, ty);
+                };
+
+                const dateText = new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                const isFourGrid = sortedDates.length === 4;
+                const align = isFourGrid ? 'left' : 'center';
+                const tx = isFourGrid ? (x + 40) : (x + w/2);
+                const wSize = isFourGrid ? 75 : 90;
+                const dSize = isFourGrid ? 35 : 40;
+                
+                drawHardText(`${log.weight}kg`, tx, y + h - 140, wSize, '#ffffff', align);
+                drawHardText(dateText.toUpperCase(), tx, y + h - 70, dSize, 'rgba(255,255,255,0.7)', align);
             };
 
             const count = sortedDates.length;
             if (count === 2) {
-                const drawHalf = (img, x, weight, date, adj = {x:0, y:0, scale:1}) => {
-                    const imgRatio = img.width / img.height;
-                    const targetRatio = 538 / 1920;
-                    let sx, sy, sw, sh;
-                    if (imgRatio > targetRatio) {
-                        sh = img.height; sw = sh * targetRatio;
-                        sx = (img.width - sw) / 2; sy = 0;
-                    } else {
-                        sw = img.width; sh = sw / targetRatio;
-                        sx = 0; sy = (img.height - sh) / 2;
-                    }
-
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.rect(x, 0, 538, 1920);
-                    ctx.clip();
-
-                    const canvasX = adj.x * 3.5; // Adjusted multiplier for full height
-                    const canvasY = adj.y * 3.5;
-
-                    ctx.translate(canvasX, canvasY);
-                    ctx.translate(x + 269, 960);
-                    ctx.scale(adj.scale, adj.scale);
-                    ctx.translate(-(x + 269), -960);
-
-                    ctx.drawImage(img, sx, sy, sw, sh, x, 0, 538, 1920);
-                    ctx.restore();
-
-                    const grad = ctx.createLinearGradient(0, 1520, 0, 1920);
-                    grad.addColorStop(0, 'transparent'); grad.addColorStop(1, 'rgba(0,0,0,0.8)');
-                    ctx.fillStyle = grad; ctx.fillRect(x, 1520, 538, 400);
-                    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
-                    ctx.font = 'black 100px Outfit, sans-serif';
-                    ctx.fillText(`${weight}kg`, x + 269, 1700);
-                    ctx.font = 'bold 45px Outfit, sans-serif';
-                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-                    ctx.fillText(new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }), x + 269, 1800);
-                };
-                drawHalf(img1, 0, l1.weight, l1.date, photoAdjustments[sortedDates[0]]);
-                drawHalf(img2, 542, l2.weight, l2.date, photoAdjustments[sortedDates[1]]);
+                await drawQuadrant(sortedDates[0], 0, 0, 538, 1920);
+                await drawQuadrant(sortedDates[1], 542, 0, 538, 1920);
             } else if (count === 3) {
-                const img3 = await loadImage(safeImgUrl(findPhotoForDate(sortedDates[2])));
-                const l3 = baseWeightLogs.find(l => l.date === sortedDates[2]);
-                drawFullWidth(img1, 0, l1.weight, l1.date, 640, photoAdjustments[sortedDates[0]]);
-                drawFullWidth(img2, 640, l2.weight, l2.date, 640, photoAdjustments[sortedDates[1]]);
-                drawFullWidth(img3, 1280, l3.weight, l3.date, 640, photoAdjustments[sortedDates[2]]);
+                await drawQuadrant(sortedDates[0], 0, 0, 1080, 638);
+                await drawQuadrant(sortedDates[1], 0, 641, 1080, 638);
+                await drawQuadrant(sortedDates[2], 0, 1282, 1080, 638);
             } else if (count === 4) {
-                const img3 = await loadImage(safeImgUrl(findPhotoForDate(sortedDates[2])));
-                const img4 = await loadImage(safeImgUrl(findPhotoForDate(sortedDates[3])));
-                const l3 = baseWeightLogs.find(l => l.date === sortedDates[2]);
-                const l4 = baseWeightLogs.find(l => l.date === sortedDates[3]);
-                drawGrid(img1, 0, 0, 539, 959, l1.weight, l1.date, photoAdjustments[sortedDates[0]]);
-                drawGrid(img2, 541, 0, 539, 959, l2.weight, l2.date, photoAdjustments[sortedDates[1]]);
-                drawGrid(img3, 0, 961, 539, 959, l3.weight, l3.date, photoAdjustments[sortedDates[2]]);
-                drawGrid(img4, 541, 961, 539, 959, l4.weight, l4.date, photoAdjustments[sortedDates[3]]);
+                await drawQuadrant(sortedDates[0], 0, 0, 538, 958);
+                await drawQuadrant(sortedDates[1], 542, 0, 538, 958);
+                await drawQuadrant(sortedDates[2], 0, 962, 538, 958);
+                await drawQuadrant(sortedDates[3], 542, 962, 538, 958);
             }
 
             // 4. Branding Overlay
-            // Top Logo
-            ctx.fillStyle = 'rgba(255,255,255,0.9)';
-            ctx.font = 'black 60px Outfit, sans-serif';
-            ctx.shadowColor = 'rgba(0,0,0,0.5)';
-            ctx.shadowBlur = 20;
-            ctx.textAlign = 'center';
-            ctx.fillText('MOUnJOY', 540, 150);
-            
-            ctx.font = 'bold 24px Outfit, sans-serif';
-            ctx.letterSpacing = "8px";
-            ctx.fillText('Sua Jornada Metabolicamente Ativa', 540, 200);
+            ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 20;
+            ctx.fillStyle = 'white'; ctx.textAlign = 'center';
+            ctx.font = '900 90px Outfit, sans-serif';
+            ctx.fillText('MOUnJOY', 540, 180);
+            ctx.font = 'bold 36px Outfit, sans-serif';
+            ctx.fillText('Sua Jornada Metabolicamente Ativa', 540, 240);
             ctx.shadowBlur = 0;
 
-            // Total Progress Bottom Badge
             const totalDiff = (l2.weight - l1.weight).toFixed(1);
+            // Dynamic position: 900 for evens (2/4), 1220 for 3-stack (between 2nd/3rd)
+            const badgeY = (count === 2 || count === 4) ? 900 : 1220; 
             ctx.fillStyle = parseFloat(totalDiff) <= 0 ? '#0d9488' : '#ef4444';
-            ctx.beginPath();
-            ctx.roundRect(430, 1680, 220, 100, 50);
-            ctx.fill();
-            
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'black 40px Outfit, sans-serif';
-            ctx.fillText(`${totalDiff > 0 ? '+' : ''}${totalDiff}kg`, 540, 1745);
+            ctx.beginPath(); ctx.roundRect(405, badgeY, 270, 120, 60); ctx.fill();
+            ctx.fillStyle = '#ffffff'; ctx.font = '900 50px Outfit, sans-serif';
+            ctx.fillText(`${totalDiff > 0 ? '+' : ''}${totalDiff}kg`, 540, badgeY + 75);
 
-            // Download
-            const link = document.createElement('a');
-            link.download = `mounjoy-evolution-${new Date().getTime()}.png`;
-            link.href = canvas.toDataURL('image/png', 1.0);
-            link.click();
-        } catch (err) {
-            console.error(err);
+            setExportPreview(canvas.toDataURL('image/png'));
+        } catch (error) {
+            console.error('Export error:', error);
         } finally {
             setIsExporting(false);
         }
@@ -552,7 +476,7 @@ const Charts = ({ user }) => {
 
                             {selectedDates.length >= 2 && (
                                 <button 
-                                    onClick={() => setShowFullComparison(true)}
+                                    onClick={() => { setShowFullComparison(true); setShowOnboarding(true); setTimeout(() => setShowOnboarding(false), 4000); }}
                                     className="w-full py-4 rounded-3xl bg-brand-50 text-brand-600 flex items-center justify-center gap-3 border border-brand-100 shadow-sm hover:bg-brand-600 hover:text-white transition-all active:scale-95 group font-black text-xs uppercase tracking-widest mt-4"
                                 >
                                     <Maximize2 size={18} className="group-hover:scale-110 transition-transform" />
@@ -633,6 +557,8 @@ const Charts = ({ user }) => {
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleMouseUp}
                 >
                     {/* Header Controls */}
                     <div className="absolute top-0 left-0 right-0 h-20 flex items-center justify-between px-6 z-50 bg-gradient-to-b from-black/80 to-transparent">
@@ -669,17 +595,28 @@ const Charts = ({ user }) => {
                                         key={idx} 
                                         className="relative h-full overflow-hidden cursor-move touch-none"
                                         onMouseDown={(e) => handleMouseDown(e, dateStr)}
+                                        onTouchStart={(e) => handleTouchStart(e, dateStr)}
                                         onWheel={(e) => handleWheel(e, dateStr)}
                                     >
                                         {photo ? (
-                                            <img 
-                                                src={photo.url} 
-                                                alt="Progresso" 
-                                                className="w-full h-full object-cover origin-center pointer-events-none"
-                                                style={{ 
-                                                    transform: `scale(${adj.scale}) translate(${adj.x / adj.scale}px, ${adj.y / adj.scale}px)` 
-                                                }}
-                                            />
+                                            <div className="w-full h-full relative">
+                                                {/* Background Blur: Fills the grid with context (UX Pillar 02/03) */}
+                                                <img 
+                                                    src={photo.url} 
+                                                    alt="Background Blur" 
+                                                    className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-40 scale-110 pointer-events-none"
+                                                />
+                                                
+                                                {/* Main Image: Fully visible and adjustable */}
+                                                <img 
+                                                    src={photo.url} 
+                                                    alt="Progresso" 
+                                                    className="w-full h-full object-contain origin-center pointer-events-none relative z-10"
+                                                    style={{ 
+                                                        transform: `scale(${adj.scale}) translate(${adj.x / adj.scale}px, ${adj.y / adj.scale}px)` 
+                                                    }}
+                                                />
+                                            </div>
                                         ) : (
                                             <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-600">
                                                 <Camera size={24} />
@@ -688,7 +625,7 @@ const Charts = ({ user }) => {
                                         
                                         {/* Interaction Hints (Only visible when not dragging) */}
                                         {!isDragging && (
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                                                 <div className="flex gap-4">
                                                     <ZoomIn size={32} className="text-white/50" />
                                                     <ZoomOut size={32} className="text-white/50" />
@@ -697,9 +634,9 @@ const Charts = ({ user }) => {
                                         )}
 
                                         {/* Info Overlay (Bottom) */}
-                                        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col items-center justify-end pb-4 pointer-events-none">
-                                            <p className="text-2xl font-black text-white leading-none mb-1">{log.weight}kg</p>
-                                            <p className="text-[8px] font-black text-white/50 uppercase tracking-widest leading-none">
+                                        <div className={`absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/99 via-black/30 to-transparent flex flex-col ${selectedDates.length === 4 ? 'items-start px-4' : 'items-center'} justify-end pb-4 pointer-events-none z-30`}>
+                                            <p className={`font-black text-white leading-none mb-1 [text-shadow:2px_2px_0px_rgba(0,0,0,1)] ${selectedDates.length === 4 ? 'text-xl' : 'text-3xl'}`}>{log.weight}kg</p>
+                                            <p className="text-[10px] font-black text-white/50 uppercase tracking-widest leading-none [text-shadow:1px_1px_0px_rgba(0,0,0,1)]">
                                                 {new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}
                                             </p>
                                         </div>
@@ -708,19 +645,81 @@ const Charts = ({ user }) => {
                             })}
                         </div>
                         
-                        {/* Help Toast */}
-                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black text-white/70 border border-white/10 uppercase tracking-widest pointer-events-none animate-in slide-in-from-bottom-4 duration-1000">
-                           Arraste para mover • Scroll para Zoom
-                        </div>
+                        {/* Instructional Overlay (Vertical List with Animations) */}
+                        {showOnboarding && (
+                            <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none bg-black/20 backdrop-blur-[2px] animate-in fade-in duration-500">
+                                <div className="flex flex-col gap-12 items-center">
+                                    <div className="flex flex-col items-center gap-3 animate-in slide-in-from-bottom-8 duration-700">
+                                        <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl">
+                                            <Activity size={24} className="text-white animate-drag" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-1">Arraste para Mover</p>
+                                            <p className="text-[8px] font-bold text-white/50 uppercase">Toque e deslize a foto</p>
+                                        </div>
+                                    </div>
 
-                        {/* Bottom Total Loss Badge (Only for 2 photos for clarity) */}
-                        {selectedDates.length === 2 && !isDragging && (
-                            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                                <div className="bg-brand-600 text-white px-3 py-1 rounded-full font-black text-xs border border-brand-400/30 shadow-2xl">
-                                    {(baseWeightLogs.find(l => l.date === [...selectedDates].sort((a,b) => new Date(a)-new Date(b))[1])?.weight - baseWeightLogs.find(l => l.date === [...selectedDates].sort((a,b) => new Date(a)-new Date(b))[0])?.weight).toFixed(1)}kg
+                                    <div className="flex flex-col items-center gap-3 animate-in slide-in-from-bottom-8 duration-1000">
+                                        <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl">
+                                            <ZoomIn size={24} className="text-white animate-scrollZoom" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-1">Pinch ou Scroll</p>
+                                            <p className="text-[8px] font-bold text-white/50 uppercase">Para ajustar o zoom</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
+
+                        {/* Bottom Total Loss Badge */}
+                        {selectedDates.length >= 2 && !isDragging && (
+                            <div className={`absolute left-1/2 -translate-x-1/2 z-40 pointer-events-none ${selectedDates.length === 3 ? 'bottom-20' : 'top-1/2 -translate-y-1/2'}`}>
+                                <div className="bg-brand-600 text-white px-4 py-2 rounded-full font-black text-xs border border-brand-400/30 shadow-2xl scale-110">
+                                    {([...selectedDates].sort((a,b) => new Date(a)-new Date(b)).length > 1) && (
+                                        (baseWeightLogs.find(l => l.date === [...selectedDates].sort((a,b) => new Date(a)-new Date(b))[selectedDates.length - 1])?.weight - baseWeightLogs.find(l => l.date === [...selectedDates].sort((a,b) => new Date(a)-new Date(b))[0])?.weight).toFixed(1)
+                                    )}kg
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Share / Export Preview Modal */}
+            {exportPreview && (
+                <div className="fixed inset-0 z-[200] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-300">
+                    <div className="w-full max-w-sm bg-white rounded-[40px] overflow-hidden shadow-2xl flex flex-col items-center p-8 animate-in zoom-in-95 duration-300">
+                        <div className="flex justify-between items-center w-full mb-6">
+                            <h3 className="text-xl font-black text-slate-800">Sua Evolução ✨</h3>
+                            <button onClick={() => setExportPreview(null)} className="p-2 rounded-full bg-slate-50 text-slate-400 hover:text-slate-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="w-full aspect-[9/16] bg-slate-100 rounded-3xl overflow-hidden shadow-inner mb-6 relative group">
+                            <img src={exportPreview} alt="Preview" className="w-full h-full object-contain" />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                <Download size={40} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-xl" />
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={() => {
+                                const link = document.createElement('a');
+                                link.download = `mounjoy-evolucao-${new Date().getTime()}.png`;
+                                link.href = exportPreview;
+                                link.click();
+                            }}
+                            className="w-full py-4 rounded-2xl bg-brand-600 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-brand-200 hover:bg-brand-700 transition-all active:scale-95"
+                        >
+                            <Download size={18} />
+                            Baixar Foto
+                        </button>
+                        
+                        <p className="mt-4 text-[10px] text-slate-400 font-medium text-center uppercase tracking-widest">
+                            Pronto para inspirar sua jornada!
+                        </p>
                     </div>
                 </div>
             )}
