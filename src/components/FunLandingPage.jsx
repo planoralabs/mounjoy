@@ -70,13 +70,48 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                 </div>
 
                 {/* Image Section - Absolute right/bottom and potentially bleeding */}
-                <div className="absolute bottom-0 right-0 w-full md:w-3/5 h-full pointer-events-none">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-orange-200/50 rounded-full blur-3xl -z-10 animate-pulse"></div>
-                    <img 
-                        src={landingfunImg} 
-                        alt="Mounjoy New Fun Hero" 
-                        className="w-[130%] min-w-[700px] md:min-w-[1200px] h-auto drop-shadow-2xl animate-popIn absolute bottom-0 right-0 z-10 origin-bottom-right transform translate-y-4 translate-x-4 md:translate-y-0 md:translate-x-0"
-                    />
+                {/* Dynamic Hero Composition (Capybara Replacement) */}
+                <div className="absolute bottom-0 right-0 w-full md:w-3/5 h-full pointer-events-none flex items-end justify-center md:justify-end overflow-hidden">
+                    {/* Background Circle Scenery */}
+                    <div className="absolute top-[20%] right-[-10%] md:right-[5%] w-[450px] h-[450px] md:w-[680px] md:h-[680px] bg-gradient-to-br from-[#f69d5c] to-[#f47a20] rounded-full shadow-2xl overflow-hidden z-0">
+                        {/* Internal Track Decorative Element */}
+                        <svg className="absolute bottom-0 left-0 w-full h-[60%] opacity-40" viewBox="0 0 400 200" preserveAspectRatio="none">
+                            <path d="M-50,200 C100,180 300,150 450,180 L450,200 L-50,200 Z" fill="#eb4d00" />
+                            <path d="M-50,190 C100,170 300,140 450,170" fill="none" stroke="white" strokeWidth="2" strokeDasharray="10 10" />
+                            <path d="M-50,170 C100,150 300,120 450,150" fill="none" stroke="white" strokeWidth="2" strokeDasharray="10 10" />
+                        </svg>
+                        
+                        {/* Decorative Clouds/Hills */}
+                        <div className="absolute top-[30%] left-[10%] w-20 h-8 bg-white/20 rounded-full blur-md"></div>
+                        <div className="absolute top-[45%] right-[15%] w-24 h-10 bg-white/20 rounded-full blur-md"></div>
+                        
+                        {/* Styled Trees */}
+                        <div className="absolute bottom-[20%] left-[20%] z-10">
+                            <div className="w-10 h-10 bg-[#2359ac] rounded-full"></div>
+                            <div className="w-1.5 h-6 bg-[#2359ac] mx-auto -mt-1 rounded-sm opacity-50"></div>
+                        </div>
+                        <div className="absolute bottom-[35%] right-[25%] z-10 opacity-60 scale-75">
+                            <div className="w-10 h-10 bg-[#2359ac] rounded-full"></div>
+                            <div className="w-1.5 h-6 bg-[#2359ac] mx-auto -mt-1 rounded-sm opacity-50"></div>
+                        </div>
+                    </div>
+
+                    {/* The Mascot - The Strong Capybara Hero */}
+                    <div className="relative z-20 w-[110%] md:w-[90%] max-w-[800px] mb-[-2%] mr-[-5%] md:mr-[-10%] group">
+                        {/* Floating shadow */}
+                        <div className="absolute bottom-[10%] left-1/4 right-3 w-[60%] h-8 bg-black/10 rounded-full blur-xl group-hover:scale-110 transition-transform duration-1000"></div>
+                        
+                        <img 
+                            src="/mascotstrong.png" 
+                            alt="Mascot Capybara Strong" 
+                            className="w-full h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-popIn origin-bottom-right"
+                        />
+                        
+                        {/* Detail/Accent: A Kettlebell by its side */}
+                        <div className="absolute bottom-[12%] left-[15%] w-16 h-16 md:w-24 md:h-24 bg-[#2359ac] rounded-2xl rotate-12 flex items-center justify-center p-3 shadow-lg animate-float">
+                             <div className="w-1/2 h-1/2 rounded-full border-4 border-white/20"></div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
