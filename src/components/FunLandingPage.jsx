@@ -102,15 +102,12 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                         <div className="absolute bottom-[10%] left-1/4 right-3 w-[60%] h-8 bg-black/10 rounded-full blur-xl group-hover:scale-110 transition-transform duration-1000"></div>
                         
                         <img 
-                            src="/mascotstrong.png" 
-                            alt="Mascot Capybara Strong" 
+                            src="/scalade.png" 
+                            alt="Mounjoy Scalade" 
                             className="w-full h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-popIn origin-bottom-right"
                         />
                         
-                        {/* Detail/Accent: A Kettlebell by its side */}
-                        <div className="absolute bottom-[12%] left-[15%] w-16 h-16 md:w-24 md:h-24 bg-[#2359ac] rounded-2xl rotate-12 flex items-center justify-center p-3 shadow-lg animate-float">
-                             <div className="w-1/2 h-1/2 rounded-full border-4 border-white/20"></div>
-                        </div>
+
                     </div>
                 </div>
             </section>
@@ -185,7 +182,7 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                         </Button>
                     </div>
                     <div className="mt-12 md:mt-0 flex items-center justify-center relative translate-y-10 group-hover:translate-y-0 transition-transform duration-700">
-                        <img src="/mascotstrong.png" alt="Peeking Mascot" className="h-64 object-contain" />
+                        <img src="/scalade.png" alt="Mounjoy Mascot" className="h-64 object-contain" />
                     </div>
                 </div>
             </section>
