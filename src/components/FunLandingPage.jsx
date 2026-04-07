@@ -76,16 +76,16 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
             <section className="relative w-full overflow-hidden min-h-[600px] md:min-h-[850px]">
                 {/* Content Container */}
                 <div className="max-w-7xl mx-auto px-6 h-full flex flex-col md:flex-row items-center">
-                    <div className="flex-1 space-y-8 text-center md:text-left z-20 pt-32 pb-20 md:pb-40">
+                    <div className="flex-1 space-y-8 text-center md:text-left z-20 pt-32 pb-10 md:pb-40">
                         <h1 className="text-5xl font-black text-[#093466] leading-[1.1] md:text-7xl">
-                            Mounjoy: Sua jornada <br />
+                            Sua jornada <br />
                             <span className="text-orange-500">GLP-1</span> nunca foi <br />
                             tão leve! 🎈
                         </h1>
-                        <p className="text-xl text-slate-600 font-medium max-w-lg">
-                            O suporte definitivo para usuários de Mounjaro, Ozempic e protocolos de emagrecimento. Gerencie doses, acompanhe evolução e veja sua transformação.
+                        <p className="text-xl text-slate-600 font-medium max-w-lg mx-auto md:mx-0">
+                            O aliado perfeito para sua jornada com Mounjaro, Ozempic ou qualquer outro protocolo de emagrecimento. <br className="hidden md:block" /> Organize suas doses, acompanhe seu progresso e tenha tudo o que precisa para o sucesso do seu tratamento.
                         </p>
-                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
                             <Button 
                                 onClick={onStart} 
                                 className="bg-orange-500 hover:bg-orange-600 text-white font-black py-6 px-10 rounded-[30px] text-xl shadow-xl shadow-orange-200 border-none w-full sm:w-auto"
@@ -94,16 +94,12 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                             </Button>
                         </div>
                     </div>
-                    
-                    {/* Spacer for desktop layout */}
-                    <div className="flex-1 hidden md:block h-full"></div>
                 </div>
 
-                {/* Image Section - Absolute right/bottom and potentially bleeding */}
-                {/* Dynamic Hero Composition (Capybara Replacement) */}
-                <div className="absolute bottom-0 right-0 w-full md:w-3/5 h-full pointer-events-none flex items-end justify-center md:justify-end overflow-hidden">
+                {/* Dynamic Hero Composition - Relative on mobile, Absolute on MD */}
+                <div className="relative md:absolute bottom-0 right-0 w-full md:w-3/5 h-[400px] md:h-full pointer-events-none flex items-end justify-center md:justify-end overflow-hidden">
                     {/* Background Circle Scenery */}
-                    <div className="absolute top-[20%] right-[-10%] md:right-[5%] w-[450px] h-[450px] md:w-[680px] md:h-[680px] bg-gradient-to-br from-[#f69d5c] to-[#f47a20] rounded-full shadow-2xl overflow-hidden z-0">
+                    <div className="absolute top-[20%] right-[-10%] md:right-[5%] w-[350px] h-[350px] md:w-[680px] md:h-[680px] bg-gradient-to-br from-[#f69d5c] to-[#f47a20] rounded-full shadow-2xl overflow-hidden z-0">
                         {/* Internal Track Decorative Element */}
                         <svg className="absolute bottom-0 left-0 w-full h-[60%] opacity-40" viewBox="0 0 400 200" preserveAspectRatio="none">
                             <path d="M-50,200 C100,180 300,150 450,180 L450,200 L-50,200 Z" fill="#eb4d00" />
@@ -128,6 +124,18 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
 
                     {/* The Mascot - The Strong Capybara Hero */}
                     <div className="relative z-20 w-[140%] sm:w-[120%] md:w-[90%] max-w-[800px] mb-[-5%] md:mb-[-2%] mr-[-10%] md:mr-[-10%] group">
+                        {/* Speech Bubble - Visible and Centered on Mobile */}
+                        <div 
+                            className="absolute -top-14 left-1/2 -translate-x-1/2 md:left-[25%] md:translate-x-0 z-30 opacity-0 animate-bubbleIn block"
+                            style={{ animationDelay: '1.2s' }}
+                        >
+                            <div className="bg-white px-5 py-3 md:px-6 md:py-4 rounded-[20px] md:rounded-[25px] shadow-2xl border-2 border-orange-50 flex items-center justify-center relative">
+                                <span className="text-orange-600 font-black text-lg md:text-xl whitespace-nowrap">Eu te acompanho!</span>
+                                {/* Triangle pointer - centered on mobile, centered-right on md */}
+                                <div className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 md:left-[55%] w-4 h-4 md:w-5 md:h-5 bg-white border-b-2 border-l-2 border-orange-50 rotate-45"></div>
+                            </div>
+                        </div>
+
                         {/* Floating shadow */}
                         <div className="absolute bottom-[10%] left-1/4 right-3 w-[60%] h-8 bg-black/10 rounded-full blur-xl group-hover:scale-110 transition-transform duration-1000"></div>
                         
@@ -136,8 +144,6 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                             alt="Mounjoy Scalade" 
                             className="w-full h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.15)] animate-popIn origin-bottom-right"
                         />
-                        
-
                     </div>
                 </div>
             </section>
@@ -273,7 +279,14 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                 .animate-popIn {
                     animation: popIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                 }
-
+                @keyframes bubbleIn {
+                    0% { transform: scale(0) translateY(20px); opacity: 0; }
+                    70% { transform: scale(1.1) translateY(-5px); opacity: 1; }
+                    100% { transform: scale(1) translateY(0); opacity: 1; }
+                }
+                .animate-bubbleIn {
+                    animation: bubbleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
             ` }} />
         </div>
     );
