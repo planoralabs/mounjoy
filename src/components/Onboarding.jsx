@@ -12,7 +12,7 @@ const Onboarding = ({ onComplete, theme }) => {
         goalWeight: '70.0',
         medicationId: '',
         currentDose: '',
-        injectionDay: 'Segunda-feira'
+        injectionDay: ''
     });
 
     const [filterAdmin, setFilterAdmin] = useState('all'); // weekly, daily_inj, daily_oral
@@ -280,18 +280,17 @@ const Onboarding = ({ onComplete, theme }) => {
                 </div>
             </div>
 
-            {/* Protocol Summary Preview */}
-            {data.currentDose && selectedMed && (
+            {/* Protocol Summary Preview - Only show when fully ready */}
+            {data.currentDose && data.injectionDay && selectedMed && (
                 <div className={`mt-4 p-5 rounded-3xl border shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden ${theme === 'fun' ? 'bg-orange-50 border-orange-100' : 'bg-white border-slate-100'}`}>
-                    {theme === 'fun' && (
-                        <img src="/mascotachieve.png" alt="Happy Mascot" className="absolute -right-4 -bottom-4 h-20 opacity-20" />
-                    )}
                     <p className={`text-sm leading-relaxed relative z-10 ${theme === 'fun' ? 'text-orange-950 font-medium' : 'text-slate-600'}`}>
                         {theme === 'fun' ? "Tudo pronto! Seu plano com " : "Você iniciará seu protocolo com "}
                         <strong className={theme === 'fun' ? 'text-orange-600' : 'text-slate-900'}>{selectedMed.brand}</strong> 
-                        {theme === 'fun' ? " está montado. " : " (" + selectedMed.substance + "), "}
+                        {theme === 'fun' ? " está montado, " : " (" + selectedMed.substance + "), "}
                         na dose de <strong className={theme === 'fun' ? 'text-orange-600' : 'text-brand-600'}>{data.currentDose}</strong>
-                        {theme === 'fun' ? ". Vamos nessa!" : ", com aplicações toda " + data.injectionDay + "."}
+                        {theme === 'fun' 
+                          ? `, começando na próxima ${data.injectionDay}. Vamos nessa!` 
+                          : ", com aplicações toda " + data.injectionDay + "."}
                     </p>
                 </div>
             )}
@@ -317,7 +316,13 @@ const Onboarding = ({ onComplete, theme }) => {
 
             {/* Fixed Bottom Navigation */}
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pt-12 z-40">
-                <div className="max-w-md mx-auto">
+                {/* Background Mascot for Summary Step - Only shows when EVERYTHING is selected */}
+                {theme === 'fun' && step === steps.length - 1 && data.currentDose && data.injectionDay && (
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none opacity-20 transform-gpu animate-in fade-in slide-in-from-bottom-20 duration-1000">
+                        <img src="/mascotachieve.png" alt="Happy Mascot" className="h-64 object-contain" />
+                    </div>
+                )}
+                <div className="max-w-md mx-auto relative z-10">
                     {/* Visual Confirmation Summary for Step 4 */}
                     {step === 4 && data.medicationId && (
                         <div className="mb-4 flex flex-col items-center animate-in fade-in slide-in-from-bottom-2 duration-500">
