@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowRight, Trophy, Users, Star, Smartphone, CheckCircle2, Zap, Heart } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowRight, Trophy, Users, Star, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/BaseComponents';
 const scalerImg = '/scaler.png';
 const waterImg = '/water.png';
@@ -7,8 +7,38 @@ const proteinImg = '/protein.png';
 const penImg = '/pen.png';
 const fiberImg = '/fiber.png';
 const landingfunImg = '/landingfun.png';
+const mascotImg = '/mascot.png';
+const mascotZenImg = '/mascotzen.png';
+const mascotMirrorImg = '/mascotmirror.png';
+const mascotResultsImg = '/mascotresults.png';
 
 const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
+    const [isLenteInView, setIsLenteInView] = useState(false);
+    const lenteRef = useRef(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsLenteInView(true);
+                } else {
+                    setIsLenteInView(false);
+                }
+            },
+            { threshold: 0.5 }
+        );
+
+        if (lenteRef.current) {
+            observer.observe(lenteRef.current);
+        }
+
+        return () => {
+            if (lenteRef.current) {
+                observer.unobserve(lenteRef.current);
+            }
+        };
+    }, []);
+
     return (
         <div className="min-h-screen bg-[#fdf5eb] overflow-x-hidden font-outfit selection:bg-orange-200">
             {/* Minimalist Text-Only Header */}
@@ -97,7 +127,7 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                     </div>
 
                     {/* The Mascot - The Strong Capybara Hero */}
-                    <div className="relative z-20 w-[110%] md:w-[90%] max-w-[800px] mb-[-2%] mr-[-5%] md:mr-[-10%] group">
+                    <div className="relative z-20 w-[140%] sm:w-[120%] md:w-[90%] max-w-[800px] mb-[-5%] md:mb-[-2%] mr-[-10%] md:mr-[-10%] group">
                         {/* Floating shadow */}
                         <div className="absolute bottom-[10%] left-1/4 right-3 w-[60%] h-8 bg-black/10 rounded-full blur-xl group-hover:scale-110 transition-transform duration-1000"></div>
                         
@@ -124,27 +154,56 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                 </div>
 
                 <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 relative z-30">
-                    <div className="bg-white p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform h-fit">
-                        <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                            <Zap className="text-orange-500" size={40} />
-                        </div>
-                        <h3 className="text-2xl font-black text-slate-800 mb-4">Lente Mágica</h3>
-                        <p className="text-slate-500 font-medium">Compare suas fotos de "antes e depois" com zoom automático. Sua mudança é real!</p>
-                    </div>
-
-                    <div className="bg-white p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform translate-y-8 h-fit">
-                        <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                            <Smartphone className="text-blue-500" size={40} />
-                        </div>
+                    {/* Box 1: Controle Total (Now First) */}
+                    <div className="bg-white p-8 md:p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform h-fit">
                         <h3 className="text-2xl font-black text-slate-800 mb-4">Controle Total</h3>
-                        <p className="text-slate-500 font-medium">Nunca perca o dia da picada. Avisamos tudo sobre suas canetas e doses.</p>
+                        <p className="text-slate-500 font-medium mb-8">Nunca perca o dia da picada. Avisamos tudo sobre suas canetas e doses.</p>
+                        <div className="w-full bg-slate-50/50 rounded-[30px] shadow-inner min-h-[240px] md:min-h-[300px] relative flex items-center justify-center overflow-hidden">
+                            <img src={mascotImg} alt="Mounjoy Mascot" className="w-44 h-44 md:w-52 md:h-52 object-contain group-hover:scale-110 transition-transform duration-500" />
+                        </div>
                     </div>
 
-                    <div className="bg-white p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform h-fit">
-                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                            <Heart className="text-red-400" size={40} />
+                    {/* Box 2: Veja sua Evolução (Now Second with Y-Translate) */}
+                    <div 
+                        ref={lenteRef}
+                        className="bg-white p-8 md:p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform md:translate-y-8 h-fit cursor-pointer outline-none"
+                        tabIndex={0}
+                    >
+                        <div className="w-full bg-slate-50/50 rounded-[30px] shadow-inner min-h-[240px] md:min-h-[300px] mb-8 relative flex items-center justify-center">
+                            {/* Card 1: Mirror (Starts in Front) */}
+                            <div className={`absolute w-36 h-36 md:w-44 md:h-44 bg-white border-2 border-dashed border-slate-300 rounded-[24px] p-2 shadow-xl transition-all duration-700 ease-in-out
+                                ${isLenteInView ? 'rotate-[12deg] translate-x-12 z-10' : 'rotate-[-8deg] -translate-x-8 md:-translate-x-10 z-20'}
+                                group-hover:rotate-[12deg] group-hover:translate-x-12 group-hover:z-10
+                                group-active:rotate-[12deg] group-active:translate-x-12 group-active:z-10`}>
+                                <img 
+                                    src={mascotMirrorImg} 
+                                    alt="Mascot Mirror" 
+                                    className="w-full h-full object-contain rounded-[18px]" 
+                                />
+                            </div>
+                            
+                            {/* Card 2: Results (Starts in Back) */}
+                            <div className={`absolute w-36 h-36 md:w-44 md:h-44 bg-white border-2 border-dashed border-slate-300 rounded-[24px] p-2 shadow-xl transition-all duration-700 ease-in-out
+                                ${isLenteInView ? 'rotate-[-3deg] -translate-x-12 z-20 opacity-100' : 'rotate-[8deg] translate-x-8 md:translate-x-10 z-10 opacity-60 md:opacity-100'}
+                                group-hover:rotate-[-3deg] group-hover:-translate-x-12 group-hover:z-20 group-hover:opacity-100
+                                group-active:rotate-[-3deg] group-active:-translate-x-12 group-active:z-20 group-active:opacity-100`}>
+                                <img 
+                                    src={mascotResultsImg} 
+                                    alt="Mascot Results" 
+                                    className="w-full h-full object-contain rounded-[18px]" 
+                                />
+                            </div>
                         </div>
-                        <h3 className="text-2xl font-black text-slate-800 mb-4">Bio-Cuidados</h3>
+                        <h3 className="text-2xl font-black text-slate-800 mb-4">Veja sua Evolução</h3>
+                        <p className="text-slate-500 font-medium">Compare seu "antes e depois" e compartilhe seu progresso!</p>
+                    </div>
+
+                    {/* Box 3: Mantenha-se Saudável */}
+                    <div className="bg-white p-8 md:p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform h-fit">
+                        <div className="w-full bg-slate-50/50 rounded-[30px] shadow-inner min-h-[240px] md:min-h-[300px] mb-8 relative flex items-center justify-center overflow-hidden">
+                            <img src={mascotZenImg} alt="Mascot Zen" className="w-44 h-44 md:w-52 md:h-52 object-contain group-hover:scale-110 transition-transform duration-500" />
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-800 mb-4">Mantenha-se Saudável</h3>
                         <p className="text-slate-500 font-medium">Dicas de hidratação e proteínas para você se sentir bem todos os dias.</p>
                     </div>
                 </div>
@@ -158,12 +217,14 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                             <Users className="text-orange-300" size={48} />
                         </div>
                     </div>
-                    <div className="relative bg-orange-400 p-8 rounded-[40px] rounded-tl-none shadow-2xl text-white">
+                    <div className="relative bg-orange-400 p-8 rounded-[40px] rounded-tl-none md:rounded-tl-none md:rounded-tr-[40px] shadow-2xl text-white">
                         <p className="text-xl font-bold leading-relaxed italic">
-                            "Eu amei o mascote e a comunidade super animada! O Mounjoy fez com que o acompanhamento do meu tratamento parecesse um jogo divertido, não uma obrigação."
+                            "com o Mounjoy sinto que tenho o controle total da minha jornada. O app transformou o acompanhamento de meu tratamento em algo leve e até prazeroso de fazer todos os dias."
                         </p>
-                        {/* Little triangle for bubble */}
-                        <div className="absolute top-0 -left-4 w-4 h-4 bg-orange-400" style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}></div>
+                        {/* Little triangle for bubble - hidden on mobile, show on md */}
+                        <div className="hidden md:block absolute top-0 -left-4 w-4 h-4 bg-orange-400" style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}></div>
+                        {/* Little triangle for bubble - show on mobile, hidden on md */}
+                        <div className="md:hidden absolute -top-4 left-1/2 -translate-x-1/2 w-4 h-4 bg-orange-400" style={{ clipPath: 'polygon(50% 0, 0 100%, 100% 100%)' }}></div>
                     </div>
                 </div>
             </section>
@@ -172,7 +233,7 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
             <section className="px-6 pb-20">
                 <div className="max-w-6xl mx-auto bg-[#093466] rounded-[50px] p-10 md:p-20 flex flex-col md:flex-row items-center justify-between text-white relative overflow-hidden group">
                     <div className="flex-1 space-y-6 relative z-10">
-                        <h2 className="text-4xl md:text-6xl font-black">Pronto para entrar no jogo?</h2>
+                        <h2 className="text-4xl md:text-6xl font-black">Pronto para entrar nessa jornada?</h2>
                         <p className="text-xl opacity-80 font-medium">Baixe o Mounjoy agora e comece a se sentir incrível.</p>
                         <Button 
                             onClick={onStart}
@@ -212,6 +273,7 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                 .animate-popIn {
                     animation: popIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                 }
+
             ` }} />
         </div>
     );
