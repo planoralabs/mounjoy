@@ -25,7 +25,7 @@ export const Card = ({ children, className = '', onClick }) => (
 );
 
 export const Input = ({ label, value, onChange, type = "text", placeholder, suffix, ...props }) => (
-    <div className="mb-4">
+    <div className="px-1 mb-4">
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">{label}</label>
         <div className="relative">
             <input

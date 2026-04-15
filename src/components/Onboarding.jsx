@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Activity, ArrowRight, Check, Syringe, Droplet, Info } from 'lucide-react';
 import { Button, Input, Slider } from './ui/BaseComponents';
 import { MOCK_MEDICATIONS } from '../constants/medications';
@@ -19,8 +19,17 @@ const Onboarding = ({ onComplete, theme }) => {
     const [filterFocus, setFilterFocus] = useState('all'); // weight, diabetes
     const [selectedSubstance, setSelectedSubstance] = useState(null);
 
+    const scrollRef = useRef(null);
+
     const handleSubstanceClick = (substance) => {
+        const isOpening = selectedSubstance !== substance;
         setSelectedSubstance(selectedSubstance === substance ? null : substance);
+        
+        if (isOpening && scrollRef.current) {
+            setTimeout(() => {
+                scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
+        }
     };
 
     const handleChange = (field, value) => {
@@ -56,18 +65,17 @@ const Onboarding = ({ onComplete, theme }) => {
         <div className="flex flex-col h-full justify-center items-center text-center fade-in pb-20">
             {theme === 'fun' ? (
                 <div className="relative mb-8">
-                    <div className="absolute inset-0 bg-orange-200 rounded-full blur-3xl opacity-50 scale-150 animate-pulse"></div>
-                    <img src="/mascot11.png" alt="Mascot Mascot" className="h-48 w-auto relative z-10 drop-shadow-2xl animate-float" />
+                    <img src="/mascot.png" alt="Mascot Mascot" className="h-48 w-auto relative z-10 drop-shadow-2xl animate-in fade-in zoom-in-75 duration-1000" />
                 </div>
             ) : (
                 <img src="/logomount.png" alt="Mounjoy Logo" className="h-20 w-auto object-contain mb-8 text-brand-500" />
             )}
             <h1 className={`text-3xl font-black mb-2 ${theme === 'fun' ? 'text-orange-500' : 'text-slate-800'}`}>
-                {theme === 'fun' ? "Ei! Sou seu novo Moun-Amigo!" : "Bem-vindo ao Mounjoy"}
+                {theme === 'fun' ? "Olá, vamos começar?" : "Bem-vindo ao Mounjoy"}
             </h1>
             <p className="text-slate-500 mb-8 max-w-xs font-medium">
-                {theme === 'fun' 
-                    ? "Vou te ajudar a ficar incrível e acompanhar cada passinho da sua evolução!" 
+                {theme === 'fun'
+                    ? "Vou te ajudar a ficar incrível e acompanhar cada passo da sua evolução!"
                     : "Seu companheiro diário na jornada de transformação e saúde metabólica."}
             </p>
         </div>,
@@ -78,7 +86,7 @@ const Onboarding = ({ onComplete, theme }) => {
         </div>,
 
         // Step 2: Current Physical Data (Sliders)
-        <div className="flex flex-col h-full pt-10 fade-in overflow-y-auto pb-32 hide-scrollbar">
+        <div className="flex flex-col pt-10 fade-in">
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Seus Dados</h2>
             <Slider
                 label="Peso Atual"
@@ -101,17 +109,24 @@ const Onboarding = ({ onComplete, theme }) => {
         </div>,
 
         // Step 3: Goal Weight (Slider)
-        <div className="flex flex-col h-full pt-10 fade-in overflow-y-auto pb-32 hide-scrollbar">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Sua Meta</h2>
-            <Slider
-                label="Meta de Peso"
-                value={data.goalWeight}
-                onChange={(v) => handleChange('goalWeight', v)}
-                min={40}
-                max={200}
-                step={0.1}
-                suffix="kg"
-            />
+        <div className="flex flex-col pt-10 fade-in items-center">
+            <div className="w-full text-left">
+                <h2 className="text-2xl font-bold text-slate-800 mb-6 text-left">Sua Meta</h2>
+                <Slider
+                    label="Meta de Peso"
+                    value={data.goalWeight}
+                    onChange={(v) => handleChange('goalWeight', v)}
+                    min={40}
+                    max={200}
+                    step={0.1}
+                    suffix="kg"
+                />
+            </div>
+            {theme === 'fun' && (
+                <div className="mt-4 animate-in fade-in zoom-in-75 duration-1000">
+                    <img src="/mascotweight.png" alt="Mascot Weight" className="h-44 w-auto object-contain drop-shadow-2xl" />
+                </div>
+            )}
         </div>,
 
         // Step 4: Medication Selection (Focused Interaction)
@@ -172,7 +187,7 @@ const Onboarding = ({ onComplete, theme }) => {
                 />
             )}
 
-            <div className={`grid transition-all duration-500 gap-3 overflow-y-auto pb-52 max-h-[65vh] hide-scrollbar pr-1 relative ${selectedSubstance ? 'z-30 pointer-events-none' : 'z-20'
+            <div className={`grid transition-all duration-500 gap-3 relative p-1 ${selectedSubstance ? 'z-30 pointer-events-none' : 'z-20'
                 } ${selectedSubstance ? 'grid-cols-1 items-center justify-center' : 'grid-cols-2'}`}>
                 {Object.entries(
                     filteredMeds.reduce((acc, med) => {
@@ -218,6 +233,7 @@ const Onboarding = ({ onComplete, theme }) => {
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleChange('medicationId', med.id);
+                                                    setSelectedSubstance(null);
                                                 }}
                                                 className={`font-bold transition-all duration-500 relative group py-2.5 px-6 rounded-2xl text-[12px] bg-white/80 hover:bg-white border w-full active:scale-95 transform-gpu ${isSelected
                                                     ? 'text-brand-700 border-brand-600 bg-brand-50/50 max-w-[170px] scale-100 shadow-md ring-1 ring-brand-600/10'
@@ -243,7 +259,7 @@ const Onboarding = ({ onComplete, theme }) => {
         </div>,
 
         // Step 5: Dosage & Schedule
-        <div className="flex flex-col h-full pt-10 fade-in overflow-y-auto pb-32 hide-scrollbar">
+        <div className="flex flex-col pt-10 fade-in">
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Detalhes da Dose</h2>
 
             {data.medicationId && (
@@ -285,12 +301,12 @@ const Onboarding = ({ onComplete, theme }) => {
                 <div className={`mt-4 p-5 rounded-3xl border shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden ${theme === 'fun' ? 'bg-orange-50 border-orange-100' : 'bg-white border-slate-100'}`}>
                     <p className={`text-sm leading-relaxed relative z-10 ${theme === 'fun' ? 'text-orange-950 font-medium' : 'text-slate-600'}`}>
                         {theme === 'fun' ? "Tudo pronto! Seu plano com " : "Você iniciará seu protocolo com "}
-                        <strong className={theme === 'fun' ? 'text-orange-600' : 'text-slate-900'}>{selectedMed.brand}</strong> 
+                        <strong className={theme === 'fun' ? 'text-orange-600' : 'text-slate-900'}>{selectedMed.brand}</strong>
                         {theme === 'fun' ? " está montado, " : " (" + selectedMed.substance + "), "}
                         na dose de <strong className={theme === 'fun' ? 'text-orange-600' : 'text-brand-600'}>{data.currentDose}</strong>
-                        {theme === 'fun' 
-                          ? `, começando na próxima ${data.injectionDay}. Vamos nessa!` 
-                          : ", com aplicações toda " + data.injectionDay + "."}
+                        {theme === 'fun'
+                            ? `, começando na próxima ${data.injectionDay}. Vamos nessa!`
+                            : ", com aplicações toda " + data.injectionDay + "."}
                     </p>
                 </div>
             )}
@@ -298,31 +314,33 @@ const Onboarding = ({ onComplete, theme }) => {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 flex flex-col relative overflow-hidden">
-            {/* Progress Bar */}
-            <div 
-                className={`w-full bg-slate-200 rounded-full mb-8 overflow-hidden transition-all duration-700 ease-in-out shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] shrink-0`}
-                style={{ height: `${16 - (step / (steps.length - 1)) * 14}px` }}
-            >
+        <div className="h-screen bg-slate-50 flex flex-col font-outfit overflow-hidden">
+            <div className="w-full max-w-md mx-auto h-full flex flex-col px-6 pt-8 relative">
+                {/* Progress Bar (Fixed at Top) */}
                 <div
-                    className={`h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)] ${theme === 'fun' ? 'bg-orange-500 shadow-orange-500/30' : 'bg-brand-500 shadow-brand-500/30'}`}
-                    style={{ width: `${(step / (steps.length - 1)) * 100}%` }}
-                />
-            </div>
+                    className="w-full bg-slate-200 rounded-full mb-6 overflow-hidden transition-all duration-700 ease-in-out shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] shrink-0"
+                    style={{ height: `${16 - (step / (steps.length - 1)) * 14}px` }}
+                >
+                    <div
+                        className={`h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)] ${theme === 'fun' ? 'bg-orange-500 shadow-orange-500/30' : 'bg-brand-500 shadow-brand-500/30'}`}
+                        style={{ width: `${(step / (steps.length - 1)) * 100}%` }}
+                    />
+                </div>
 
-            <div className="flex-1 relative overflow-hidden">
-                {steps[step]}
-            </div>
+                {/* Content Area (Scrollable) */}
+                <div ref={scrollRef} className="flex-1 overflow-y-auto hide-scrollbar pb-32">
+                    {steps[step]}
+                </div>
 
-            {/* Fixed Bottom Navigation */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pt-12 z-40">
-                {/* Background Mascot for Summary Step - Only shows when EVERYTHING is selected */}
-                {theme === 'fun' && step === steps.length - 1 && data.currentDose && data.injectionDay && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 pointer-events-none opacity-20 transform-gpu animate-in fade-in slide-in-from-bottom-20 duration-1000">
-                        <img src="/mascotachieve.png" alt="Happy Mascot" className="h-64 object-contain" />
-                    </div>
-                )}
-                <div className="max-w-md mx-auto relative z-10">
+                {/* Bottom Navigation (Fixed at Bottom) */}
+                <div className="shrink-0 pt-4 pb-8 flex flex-col relative z-40 bg-slate-50">
+                    {/* Background Mascot for Summary Step */}
+                    {theme === 'fun' && step === steps.length - 1 && data.currentDose && data.injectionDay && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 translate-y-16 -z-10 pointer-events-none opacity-20 transform-gpu animate-in fade-in slide-in-from-bottom-20 duration-1000">
+                            <img src="/mascotstretch.png" alt="Happy Mascot" className="h-64 object-contain" />
+                        </div>
+                    )}
+
                     {/* Visual Confirmation Summary for Step 4 */}
                     {step === 4 && data.medicationId && (
                         <div className="mb-4 flex flex-col items-center animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -334,17 +352,23 @@ const Onboarding = ({ onComplete, theme }) => {
                             </div>
                         </div>
                     )}
-                    
+
                     <div className="flex gap-3">
                         {step > 0 && (
-                            <Button variant="ghost" onClick={prevStep} className="px-8">Voltar</Button>
+                            <Button
+                                variant="ghost"
+                                onClick={prevStep}
+                                className={`px-10 border-2 bg-white shadow-sm rounded-[28px] transition-all duration-300 ${theme === 'fun' ? 'border-orange-100 text-orange-400 hover:border-orange-400 hover:text-orange-600' : 'border-slate-100 text-slate-400 hover:border-brand-500 hover:text-brand-600'}`}
+                            >
+                                Voltar
+                            </Button>
                         )}
-                        <Button 
-                            onClick={step === steps.length - 1 ? () => onComplete(data) : nextStep} 
-                            className={`flex-1 shadow-lg ${step === 0 ? 'w-full' : ''} ${isNextDisabled() ? 'grayscale opacity-50' : 'shadow-brand-500/20'}`}
+                        <Button
+                            onClick={step === steps.length - 1 ? () => onComplete(data) : nextStep}
+                            className={`flex-1 shadow-lg transition-all active:scale-95 ${step === 0 ? 'w-full' : ''} ${isNextDisabled() ? 'grayscale opacity-50' : (theme === 'fun' ? 'bg-orange-500 shadow-orange-500/20' : 'bg-brand-600 shadow-brand-500/20')}`}
                             disabled={isNextDisabled()}
                         >
-                            {step === 0 ? 'Começar Configuração' : step === steps.length - 1 ? 'Finalizar' : 'Próximo'}
+                            {step === 0 ? 'Começar configuração' : step === steps.length - 1 ? 'Finalizar' : 'Próximo'}
                             {step === 0 && <ArrowRight size={18} />}
                         </Button>
                     </div>

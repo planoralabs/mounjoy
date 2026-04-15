@@ -25,6 +25,7 @@ class ErrorBoundary extends React.Component {
             return (
                 <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-8 text-center font-sans">
                     <img src="/logomount.png" alt="Mounjoy" className="h-12 w-auto mb-8 opacity-40 grayscale" />
+                    <img src="/mascotsurprise.png" alt="Opa!" className="h-48 w-auto mb-6 animate-in fade-in zoom-in-75 duration-1000 transition-transform" />
                     <h2 className="text-2xl font-black text-slate-800 mb-4 tracking-tight">Opa! Algo deu errado.</h2>
                     <p className="text-slate-500 mb-8 max-w-sm font-medium">
                         Ocorreu um erro inesperado no aplicativo. Por segurança, reiniciamos sua sessão.
