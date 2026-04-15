@@ -133,107 +133,115 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                 </div>
             </section>
 
-            {/* Features Section - Full Width Rounded Background */}
-            <section className="py-20 bg-[#fdf5eb] relative z-20">
-                <div className="w-full bg-[#093466] rounded-[60px] md:rounded-[100px] p-12 md:p-24 relative overflow-hidden z-20">
-                    {/* Interior Decoration */}
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+            {/* Features Section & Protocol Ticker - Fluid Shared Wrapper (Now Orange) */}
+            <div className="bg-orange-500">
+                {/* Blue Box Section with Orange Under-Layer */}
+                <section className="bg-orange-500 relative z-20">
+                    {/* Top Transition (Beige from Hero) */}
+                    <div className="bg-[#fdf5eb] h-32 md:h-48 w-full"></div>
+                    
+                    {/* Blue Box Container (Overlapping the Transition) */}
+                    <div className="-mt-32 md:-mt-48 px-0">
+                        <div className="w-full bg-[#093466] rounded-[60px] md:rounded-[100px] p-12 md:p-24 relative overflow-hidden z-20">
+                            {/* Interior Decoration */}
+                            <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                            <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
 
-                    <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 relative z-10">
-                        {/* Box 1: Controle Total */}
-                        <div className="bg-white p-8 md:p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform h-fit">
-                            <h3 className="text-2xl font-black text-slate-800 mb-4">Controle Total</h3>
-                            <p className="text-slate-500 font-medium mb-8">Nunca perca o dia da picada. Avisamos tudo sobre suas canetas e doses.</p>
-                            <div className="w-full bg-slate-50/50 rounded-[30px] shadow-inner min-h-[240px] md:min-h-[300px] relative flex items-center justify-center overflow-hidden">
-                                <img src={mascotImg} alt="Mounjoy Mascot" className="w-44 h-44 md:w-52 md:h-52 object-contain group-hover:scale-110 transition-transform duration-500" />
+                            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 relative z-10">
+                                {/* Box 1: Controle Total */}
+                                <div className="bg-white p-8 md:p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform h-fit">
+                                    <h3 className="text-2xl font-black text-slate-800 mb-4">Controle Total</h3>
+                                    <p className="text-slate-500 font-medium mb-8">Nunca perca o dia da picada. Avisamos tudo sobre suas canetas e doses.</p>
+                                    <div className="w-full bg-slate-50/50 rounded-[30px] shadow-inner min-h-[240px] md:min-h-[300px] relative flex items-center justify-center overflow-hidden">
+                                        <img src={mascotImg} alt="Mounjoy Mascot" className="w-44 h-44 md:w-52 md:h-52 object-contain group-hover:scale-110 transition-transform duration-500" />
+                                    </div>
+                                </div>
+
+                                {/* Box 2: Veja sua Evolução */}
+                                <div
+                                    ref={lenteRef}
+                                    className="bg-white p-8 md:p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform md:translate-y-8 h-fit cursor-pointer outline-none"
+                                    tabIndex={0}
+                                >
+                                    <div className="w-full bg-slate-50/50 rounded-[30px] shadow-inner min-h-[240px] md:min-h-[300px] mb-8 relative flex items-center justify-center">
+                                        {/* Card 1: Mirror */}
+                                        <div className={`absolute w-36 h-36 md:w-44 md:h-44 bg-white border-2 border-dashed border-slate-300 rounded-[24px] p-2 shadow-xl transition-all duration-700 ease-in-out
+                                            ${isLenteInView ? 'rotate-[5deg] translate-x-4 z-10' : 'rotate-0 translate-x-0 z-10 opacity-0'}
+                                            group-hover:rotate-[18deg] group-hover:translate-x-20 group-hover:z-10
+                                            group-active:rotate-[15deg] group-active:translate-x-16`}>
+                                            <img src={mascotMirrorImg} alt="Mascot Mirror" className="w-full h-full object-contain rounded-[18px]" />
+                                        </div>
+
+                                        {/* Card 2: Results */}
+                                        <div className={`absolute w-36 h-36 md:w-44 md:h-44 bg-white border-2 border-dashed border-slate-300 rounded-[24px] p-2 shadow-xl transition-all duration-700 ease-in-out
+                                            ${isLenteInView ? 'rotate-[-2deg] -translate-x-4 z-20 opacity-100' : 'rotate-0 translate-x-0 z-20 opacity-0'}
+                                            group-hover:rotate-[-10deg] group-hover:-translate-x-20 group-hover:z-20
+                                            group-active:rotate-[-8deg] group-active:-translate-x-16`}>
+                                            <img src={mascotResultsImg} alt="Mascot Results" className="w-full h-full object-contain rounded-[18px]" />
+                                        </div>
+                                    </div>
+                                    <h3 className="text-2xl font-black text-slate-800 mb-4">Veja sua Evolução</h3>
+                                    <p className="text-slate-500 font-medium">Compare seu "antes e depois" e compartilhe seu progresso!</p>
+                                </div>
+
+                                {/* Box 3: Mantenha-se Saudável */}
+                                <div className="bg-white p-8 md:p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform h-fit">
+                                    <div className="w-full bg-slate-50/50 rounded-[30px] shadow-inner min-h-[240px] md:min-h-[300px] mb-8 relative flex items-center justify-center overflow-hidden">
+                                        <img src={mascotZenImg} alt="Mascot Zen" className="w-44 h-44 md:w-52 md:h-52 object-contain group-hover:scale-110 transition-transform duration-500" />
+                                    </div>
+                                    <h3 className="text-2xl font-black text-slate-800 mb-4">Mantenha-se Saudável</h3>
+                                    <p className="text-slate-500 font-medium">Dicas de hidratação e proteínas para você se sentir bem todos os dias.</p>
+                                </div>
                             </div>
                         </div>
+                    </div>
+                </section>
 
-                        {/* Box 2: Veja sua Evolução */}
-                        <div
-                            ref={lenteRef}
-                            className="bg-white p-8 md:p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform md:translate-y-8 h-fit cursor-pointer outline-none"
-                            tabIndex={0}
-                        >
-                            <div className="w-full bg-slate-50/50 rounded-[30px] shadow-inner min-h-[240px] md:min-h-[300px] mb-8 relative flex items-center justify-center">
-                                {/* Card 1: Mirror */}
-                                <div className={`absolute w-36 h-36 md:w-44 md:h-44 bg-white border-2 border-dashed border-slate-300 rounded-[24px] p-2 shadow-xl transition-all duration-700 ease-in-out
-                                    ${isLenteInView ? 'rotate-[5deg] translate-x-4 z-10' : 'rotate-0 translate-x-0 z-10 opacity-0'}
-                                    group-hover:rotate-[18deg] group-hover:translate-x-20 group-hover:z-10
-                                    group-active:rotate-[15deg] group-active:translate-x-16`}>
-                                    <img src={mascotMirrorImg} alt="Mascot Mirror" className="w-full h-full object-contain rounded-[18px]" />
-                                </div>
+                {/* Expansion Section - Brand Ticker (Vibrant Orange) */}
+                <section className="px-0 pb-24 relative z-10 mt-[-40px] md:mt-[-80px] bg-[#fdf5eb]">
+                    {/* Top Orange Layer (for Blue Box overlap) */}
+                    <div className="bg-orange-500 h-48 w-full absolute top-0 left-0 z-0"></div>
+                    
+                    <div className="w-full bg-orange-500 rounded-b-[60px] md:rounded-b-[100px] pt-32 md:pt-48 pb-20 relative z-10 overflow-hidden shadow-2xl">
+                        <div className="max-w-7xl mx-auto mb-12 text-center">
+                            <p className="text-white/70 font-bold uppercase tracking-[0.2em] text-[10px] mb-4">Compatibilidade total</p>
+                            <h3 className="text-3xl md:text-5xl font-black text-white tracking-tight">
+                                Funciona com todos os protocolos
+                            </h3>
+                        </div>
 
-                                {/* Card 2: Results */}
-                                <div className={`absolute w-36 h-36 md:w-44 md:h-44 bg-white border-2 border-dashed border-slate-300 rounded-[24px] p-2 shadow-xl transition-all duration-700 ease-in-out
-                                    ${isLenteInView ? 'rotate-[-2deg] -translate-x-4 z-20 opacity-100' : 'rotate-0 translate-x-0 z-20 opacity-0'}
-                                    group-hover:rotate-[-10deg] group-hover:-translate-x-20 group-hover:z-20
-                                    group-active:rotate-[-8deg] group-active:-translate-x-16`}>
-                                    <img src={mascotResultsImg} alt="Mascot Results" className="w-full h-full object-contain rounded-[18px]" />
-                                </div>
+                        <div className="relative flex overflow-hidden group">
+                            <div className="flex animate-ticker whitespace-nowrap gap-12 py-4">
+                                {[
+                                    'Mounjaro', 'Ozempic', 'Zepbound', 'Wegovy', 
+                                    'Saxenda', 'Victoza', 'Trulicity', 'Rybelsus'
+                                ].map((brand, i) => (
+                                    <div key={i} className="flex items-center gap-4 bg-white/10 px-10 py-6 rounded-[30px] border border-white/20 transition-all hover:bg-white/20 hover:-translate-y-1">
+                                        <span className="text-3xl font-black text-white italic tracking-tighter">
+                                            {brand}
+                                        </span>
+                                    </div>
+                                ))}
+                                {/* Repeat for seamless loop */}
+                                {[
+                                    'Mounjaro', 'Ozempic', 'Zepbound', 'Wegovy', 
+                                    'Saxenda', 'Victoza', 'Trulicity', 'Rybelsus'
+                                ].map((brand, i) => (
+                                    <div key={`repeat-${i}`} className="flex items-center gap-4 bg-white/10 px-10 py-6 rounded-[30px] border border-white/20 transition-all hover:bg-white/20 hover:-translate-y-1">
+                                        <span className="text-3xl font-black text-white italic tracking-tighter">
+                                            {brand}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
-                            <h3 className="text-2xl font-black text-slate-800 mb-4">Veja sua Evolução</h3>
-                            <p className="text-slate-500 font-medium">Compare seu "antes e depois" e compartilhe seu progresso!</p>
-                        </div>
 
-                        {/* Box 3: Mantenha-se Saudável */}
-                        <div className="bg-white p-8 md:p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform h-fit">
-                            <div className="w-full bg-slate-50/50 rounded-[30px] shadow-inner min-h-[240px] md:min-h-[300px] mb-8 relative flex items-center justify-center overflow-hidden">
-                                <img src={mascotZenImg} alt="Mascot Zen" className="w-44 h-44 md:w-52 md:h-52 object-contain group-hover:scale-110 transition-transform duration-500" />
-                            </div>
-                            <h3 className="text-2xl font-black text-slate-800 mb-4">Mantenha-se Saudável</h3>
-                            <p className="text-slate-500 font-medium">Dicas de hidratação e proteínas para você se sentir bem todos os dias.</p>
+                            {/* Gradient Masks (Orange to Transparent) */}
+                            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-orange-500 to-transparent z-10 pointer-events-none"></div>
+                            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-orange-500 to-transparent z-10 pointer-events-none"></div>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            {/* Expansion Section - Brand Ticker (White Overlapped) */}
-            <section className="px-0 pb-24 bg-[#fdf5eb] -mt-48 relative z-10">
-                <div className="w-full bg-white rounded-[60px] md:rounded-[100px] pt-48 pb-20 shadow-xl border-b border-slate-100 relative z-10 overflow-hidden">
-                    <div className="max-w-7xl mx-auto mb-12 text-center">
-                        <p className="text-orange-500 font-bold uppercase tracking-[0.2em] text-[10px] mb-4">Compatibilidade total</p>
-                        <h3 className="text-3xl md:text-4xl font-black text-[#093466] tracking-tight">
-                            Funciona com todos os protocolos
-                        </h3>
-                    </div>
-
-                    <div className="relative flex overflow-hidden group">
-                        <div className="flex animate-ticker whitespace-nowrap gap-12 py-4">
-                            {[
-                                'Mounjaro', 'Ozempic', 'Zepbound', 'Wegovy', 
-                                'Saxenda', 'Victoza', 'Trulicity', 'Rybelsus'
-                            ].map((brand, i) => (
-                                <div key={i} className="flex items-center gap-4 bg-slate-50 px-10 py-6 rounded-[30px] border border-slate-100 transition-all hover:-translate-y-1 hover:shadow-lg">
-                                    <span className="text-3xl font-black text-slate-800 italic tracking-tighter">
-                                        {(brand === 'Mounjaro' || brand === 'Ozempic') ? (
-                                            <span className="text-orange-500">{brand}</span>
-                                        ) : brand}
-                                    </span>
-                                </div>
-                            ))}
-                            {/* Repeat for seamless loop */}
-                            {[
-                                'Mounjaro', 'Ozempic', 'Zepbound', 'Wegovy', 
-                                'Saxenda', 'Victoza', 'Trulicity', 'Rybelsus'
-                            ].map((brand, i) => (
-                                <div key={`repeat-${i}`} className="flex items-center gap-4 bg-slate-50 px-10 py-6 rounded-[30px] border border-slate-100 transition-all hover:-translate-y-1 hover:shadow-lg">
-                                    <span className="text-3xl font-black text-slate-800 italic tracking-tighter">
-                                        {(brand === 'Mounjaro' || brand === 'Ozempic') ? (
-                                            <span className="text-orange-500">{brand}</span>
-                                        ) : brand}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Gradient Masks */}
-                        <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
-                        <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
-                    </div>
-                </div>
-            </section>
+                </section>
+            </div>
 
             {/* Testimonial */}
             <section className="px-6 py-32 max-w-4xl mx-auto">
@@ -305,6 +313,18 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                 }
                 .animate-bubbleIn {
                     animation: bubbleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                @keyframes ticker {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                }
+                .animate-ticker {
+                    display: flex;
+                    width: fit-content;
+                    animation: ticker 30s linear infinite;
+                }
+                .animate-ticker:hover {
+                    animation-play-state: paused;
                 }
             ` }} />
         </div>
