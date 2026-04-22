@@ -259,3 +259,15 @@
 .animate-bounce-subtle {
   animation: bounce-subtle 2s ease-in-out infinite;
 }
+
+/* Mascot Stretch Spritesheet Animation */
+@keyframes mascotStretch {
+  from { background-position: 0 0; }
+  to { background-position: -800% 0; }
+}
+
+.mascot-stretch-anim {
+  background-image: url('/mascot_stretch_anim.png');
+  background-size: 900% 100%;
+  animation: mascotStretch 1.8s steps(8) infinite;
+}

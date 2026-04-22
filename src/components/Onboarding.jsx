@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Activity, ArrowRight, Check, Syringe, Droplet, Info } from 'lucide-react';
+import { Activity, ArrowRight, ArrowLeft, Check, Syringe, Droplet, Info } from 'lucide-react';
 import { Button, Input, Slider } from './ui/BaseComponents';
 import { MOCK_MEDICATIONS } from '../constants/medications';
 
@@ -24,7 +24,7 @@ const Onboarding = ({ onComplete, theme }) => {
     const handleSubstanceClick = (substance) => {
         const isOpening = selectedSubstance !== substance;
         setSelectedSubstance(selectedSubstance === substance ? null : substance);
-        
+
         if (isOpening && scrollRef.current) {
             setTimeout(() => {
                 scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
@@ -308,6 +308,13 @@ const Onboarding = ({ onComplete, theme }) => {
                             ? `, começando na próxima ${data.injectionDay}. Vamos nessa!`
                             : ", com aplicações toda " + data.injectionDay + "."}
                     </p>
+                    
+                    {/* Mascot below summary */}
+                    {theme === 'fun' && (
+                        <div className="mt-6 flex justify-center animate-in fade-in zoom-in-75 duration-1000">
+                            <img src="/mascotstretch1.png" alt="Happy Mascot" className="h-48 w-auto object-contain drop-shadow-xl" />
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -316,15 +323,25 @@ const Onboarding = ({ onComplete, theme }) => {
     return (
         <div className="h-screen bg-slate-50 flex flex-col font-outfit overflow-hidden">
             <div className="w-full max-w-md mx-auto h-full flex flex-col px-6 pt-8 relative">
-                {/* Progress Bar (Fixed at Top) */}
-                <div
-                    className="w-full bg-slate-200 rounded-full mb-6 overflow-hidden transition-all duration-700 ease-in-out shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] shrink-0"
-                    style={{ height: `${16 - (step / (steps.length - 1)) * 14}px` }}
-                >
+                {/* Header Navigation (Fixed at Top) */}
+                <div className="flex items-center gap-4 mb-6 shrink-0">
+                    {step > 0 && (
+                        <button
+                            onClick={prevStep}
+                            className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90 ${theme === 'fun' ? 'bg-orange-50 text-orange-500' : 'bg-slate-100 text-slate-400'}`}
+                        >
+                            <ArrowLeft size={20} strokeWidth={3} />
+                        </button>
+                    )}
                     <div
-                        className={`h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)] ${theme === 'fun' ? 'bg-orange-500 shadow-orange-500/30' : 'bg-brand-500 shadow-brand-500/30'}`}
-                        style={{ width: `${(step / (steps.length - 1)) * 100}%` }}
-                    />
+                        className="flex-1 bg-slate-200 rounded-full overflow-hidden transition-all duration-700 ease-in-out shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]"
+                        style={{ height: `${16 - (step / (steps.length - 1)) * 14}px` }}
+                    >
+                        <div
+                            className={`h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(0,0,0,0.1)] ${theme === 'fun' ? 'bg-orange-500 shadow-orange-500/30' : 'bg-brand-500 shadow-brand-500/30'}`}
+                            style={{ width: `${(step / (steps.length - 1)) * 100}%` }}
+                        />
+                    </div>
                 </div>
 
                 {/* Content Area (Scrollable) */}
@@ -335,11 +352,7 @@ const Onboarding = ({ onComplete, theme }) => {
                 {/* Bottom Navigation (Fixed at Bottom) */}
                 <div className="shrink-0 pt-4 pb-8 flex flex-col relative z-40 bg-slate-50">
                     {/* Background Mascot for Summary Step */}
-                    {theme === 'fun' && step === steps.length - 1 && data.currentDose && data.injectionDay && (
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 translate-y-16 -z-10 pointer-events-none opacity-20 transform-gpu animate-in fade-in slide-in-from-bottom-20 duration-1000">
-                            <img src="/mascotstretch.png" alt="Happy Mascot" className="h-64 object-contain" />
-                        </div>
-                    )}
+
 
                     {/* Visual Confirmation Summary for Step 4 */}
                     {step === 4 && data.medicationId && (
@@ -354,22 +367,13 @@ const Onboarding = ({ onComplete, theme }) => {
                     )}
 
                     <div className="flex gap-3">
-                        {step > 0 && (
-                            <Button
-                                variant="ghost"
-                                onClick={prevStep}
-                                className={`px-10 border-2 bg-white shadow-sm rounded-[28px] transition-all duration-300 ${theme === 'fun' ? 'border-orange-100 text-orange-400 hover:border-orange-400 hover:text-orange-600' : 'border-slate-100 text-slate-400 hover:border-brand-500 hover:text-brand-600'}`}
-                            >
-                                Voltar
-                            </Button>
-                        )}
                         <Button
                             onClick={step === steps.length - 1 ? () => onComplete(data) : nextStep}
-                            className={`flex-1 shadow-lg transition-all active:scale-95 ${step === 0 ? 'w-full' : ''} ${isNextDisabled() ? 'grayscale opacity-50' : (theme === 'fun' ? 'bg-orange-500 shadow-orange-500/20' : 'bg-brand-600 shadow-brand-500/20')}`}
+                            className={`flex-1 shadow-lg transition-all active:scale-95 ${isNextDisabled() ? 'grayscale opacity-50' : (theme === 'fun' ? 'bg-orange-500 shadow-orange-500/20' : 'bg-brand-600 shadow-brand-500/20')}`}
                             disabled={isNextDisabled()}
                         >
                             {step === 0 ? 'Começar configuração' : step === steps.length - 1 ? 'Finalizar' : 'Próximo'}
-                            {step === 0 && <ArrowRight size={18} />}
+                            {step === 0 && <ArrowRight size={18} className="ml-2" />}
                         </Button>
                     </div>
                 </div>

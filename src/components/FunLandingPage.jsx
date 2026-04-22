@@ -97,18 +97,10 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                             <path d="M-50,190 C100,170 300,140 450,170" fill="none" stroke="white" strokeWidth="2" strokeDasharray="10 10" />
                             <path d="M-50,170 C100,150 300,120 450,150" fill="none" stroke="white" strokeWidth="2" strokeDasharray="10 10" />
                         </svg>
-
+                        
                         <div className="absolute top-[30%] left-[10%] w-20 h-8 bg-white/20 rounded-full blur-md"></div>
                         <div className="absolute top-[45%] right-[15%] w-24 h-10 bg-white/20 rounded-full blur-md"></div>
 
-                        <div className="absolute bottom-[20%] left-[20%] z-10">
-                            <div className="w-10 h-10 bg-[#2359ac] rounded-full"></div>
-                            <div className="w-1.5 h-6 bg-[#2359ac] mx-auto -mt-1 rounded-sm opacity-50"></div>
-                        </div>
-                        <div className="absolute bottom-[35%] right-[25%] z-10 opacity-60 scale-75">
-                            <div className="w-10 h-10 bg-[#2359ac] rounded-full"></div>
-                            <div className="w-1.5 h-6 bg-[#2359ac] mx-auto -mt-1 rounded-sm opacity-50"></div>
-                        </div>
                     </div>
 
                     <div className="relative z-20 w-[140%] sm:w-[120%] md:w-[90%] max-w-[800px] mb-[-5%] md:mb-[-2%] mr-[-10%] md:mr-[-10%] group">
@@ -141,10 +133,10 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                     <div className="bg-[#fdf5eb] h-32 md:h-48 w-full"></div>
                     
                     {/* Blue Box Container (Overlapping the Transition) */}
-                    <div className="-mt-32 md:-mt-48 px-0">
-                        <div className="w-full bg-[#093466] rounded-[60px] md:rounded-[100px] p-12 md:p-24 relative overflow-hidden z-20">
+                    <div className="-mt-48 md:-mt-80 px-0">
+                        <div className="w-full bg-[#093466] rounded-[30px] md:rounded-[40px] p-12 md:p-24 relative overflow-hidden z-20">
                             {/* Interior Decoration */}
-                            <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-orange-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
                             <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
 
                             <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 relative z-10">
@@ -202,7 +194,7 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                     {/* Top Orange Layer (for Blue Box overlap) */}
                     <div className="bg-orange-500 h-48 w-full absolute top-0 left-0 z-0"></div>
                     
-                    <div className="w-full bg-orange-500 rounded-b-[60px] md:rounded-b-[100px] pt-32 md:pt-48 pb-20 relative z-10 overflow-hidden shadow-2xl">
+                    <div className="w-full bg-orange-500 rounded-b-[30px] md:rounded-b-[40px] pt-32 md:pt-48 pb-20 relative z-10 overflow-hidden shadow-2xl">
                         <div className="max-w-7xl mx-auto mb-12 text-center">
                             <p className="text-white/70 font-bold uppercase tracking-[0.2em] text-[10px] mb-4">Compatibilidade total</p>
                             <h3 className="text-3xl md:text-5xl font-black text-white tracking-tight">
@@ -261,21 +253,31 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                 </div>
             </section>
 
-            {/* Bottom CTA Section */}
             <section className="px-6 pb-20">
-                <div className="max-w-6xl mx-auto bg-[#093466] rounded-[50px] p-10 md:p-20 flex flex-col md:flex-row items-center justify-between text-white relative overflow-hidden group">
-                    <div className="flex-1 space-y-6 relative z-10">
-                        <h2 className="text-4xl md:text-6xl font-black">Pronto para entrar nessa jornada?</h2>
-                        <p className="text-xl opacity-80 font-medium">Baixe o Mounjoy agora e comece a se sentir incrível.</p>
-                        <Button
-                            onClick={onStart}
-                            className="bg-orange-400 hover:bg-orange-500 text-white font-black py-6 px-12 rounded-[30px] text-xl shadow-xl shadow-orange-950/20 w-full sm:w-auto mt-6"
-                        >
-                            Quero meu Mounjoy!
-                        </Button>
-                    </div>
-                    <div className="mt-12 md:mt-0 flex items-center justify-center relative translate-y-10 group-hover:translate-y-0 transition-transform duration-700">
-                        <img src="/scalade.png" alt="Mounjoy Mascot" className="h-64 object-contain" />
+                <div className="max-w-5xl mx-auto">
+                    {/* Blue Box with Footer Image Inside */}
+                    <div className="bg-[#093466] rounded-[30px] md:rounded-[40px] p-6 md:p-12 flex flex-col md:flex-row items-center justify-between text-white relative overflow-hidden group">
+                        <div className="flex-1 space-y-4 md:space-y-6 relative z-10 text-center md:text-left">
+                            <h2 className="text-3xl md:text-5xl font-black leading-tight">Pronto para entrar nessa jornada?</h2>
+                            <p className="text-lg md:text-xl opacity-80 font-medium">Baixe o Mounjoy agora e comece a se sentir incrível.</p>
+                            <Button
+                                onClick={onStart}
+                                className="bg-orange-400 hover:bg-orange-500 text-white font-black py-4 px-10 md:py-6 md:px-12 rounded-[24px] md:rounded-[30px] text-lg md:text-xl shadow-xl shadow-orange-950/20 w-full sm:w-auto mt-4 md:mt-6"
+                            >
+                                Quero meu Mounjoy!
+                            </Button>
+                        </div>
+                        
+                        <div className="mt-10 md:mt-0 relative z-10 flex items-center justify-center">
+                            <img 
+                                src="/footer.png" 
+                                alt="Mounjoy Mascot" 
+                                className="h-48 md:h-72 object-contain drop-shadow-2xl" 
+                            />
+                        </div>
+
+                        {/* Subtle background decoration */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
                     </div>
                 </div>
             </section>
