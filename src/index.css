@@ -271,3 +271,11 @@
   background-size: 900% 100%;
   animation: mascotStretch 1.8s steps(8) infinite;
 }
+
+.text-outline-white {
+  text-shadow: 
+    -1.5px -1.5px 0 #fff,  
+     1.5px -1.5px 0 #fff,
+    -1.5px  1.5px 0 #fff,
+     1.5px  1.5px 0 #fff;
+}

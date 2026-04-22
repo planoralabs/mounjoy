@@ -50,8 +50,17 @@ const ConfettiExplosion = React.memo(() => {
                     70% { opacity: 1; }
                     100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) rotate(var(--r)) scale(0.5); opacity: 0; }
                 }
+                @keyframes mascot-rise {
+                    0% { transform: translateY(120%); opacity: 0; }
+                    20% { transform: translateY(0); opacity: 1; }
+                    80% { transform: translateY(0); opacity: 1; }
+                    100% { transform: translateY(120%); opacity: 0; }
+                }
                 .animate-pop {
                     animation: confetti-pop 1.5s cubic-bezier(0.15, 0.9, 0.3, 1) forwards;
+                }
+                .animate-mascot-rise {
+                    animation: mascot-rise 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                 }
             `}</style>
             {particles.map(p => (
@@ -88,6 +97,15 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
     const [filterAdmin, setFilterAdmin] = useState('all');
     const [filterFocus, setFilterFocus] = useState('all');
     const [selectedSubstance, setSelectedSubstance] = useState(null);
+    const [showHydratedMascot, setShowHydratedMascot] = useState(false);
+    const [isHydrationZooming, setIsHydrationZooming] = useState(false);
+    const hydrationTimerRef = React.useRef(null);
+    const [showProteinMascot, setShowProteinMascot] = useState(false);
+    const [isProteinZooming, setIsProteinZooming] = useState(false);
+    const proteinTimerRef = React.useRef(null);
+    const [showFiberMascot, setShowFiberMascot] = useState(false);
+    const [isFiberZooming, setIsFiberZooming] = useState(false);
+    const fiberTimerRef = React.useRef(null);
 
     // Get date key for daily tracking
     const today = new Date().toISOString().split('T')[0];
@@ -123,6 +141,38 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
         });
 
         setAnimatingAsset(type);
+        if (type === 'water' && amount > 0) {
+            setShowHydratedMascot(true);
+            setIsHydrationZooming(true);
+            setTimeout(() => setIsHydrationZooming(false), 200);
+
+            if (hydrationTimerRef.current) clearTimeout(hydrationTimerRef.current);
+            hydrationTimerRef.current = setTimeout(() => {
+                setShowHydratedMascot(false);
+            }, 1500);
+        }
+
+        if (type === 'protein' && amount > 0) {
+            setShowProteinMascot(true);
+            setIsProteinZooming(true);
+            setTimeout(() => setIsProteinZooming(false), 200);
+
+            if (proteinTimerRef.current) clearTimeout(proteinTimerRef.current);
+            proteinTimerRef.current = setTimeout(() => {
+                setShowProteinMascot(false);
+            }, 1500);
+        }
+
+        if (type === 'fiber' && amount > 0) {
+            setShowFiberMascot(true);
+            setIsFiberZooming(true);
+            setTimeout(() => setIsFiberZooming(false), 200);
+
+            if (fiberTimerRef.current) clearTimeout(fiberTimerRef.current);
+            fiberTimerRef.current = setTimeout(() => {
+                setShowFiberMascot(false);
+            }, 1500);
+        }
         setTimeout(() => setAnimatingAsset(null), 300);
     };
 
@@ -719,23 +769,38 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                             </div>
                         </div>
 
-                        <div className="w-full relative flex flex-col items-center gap-3 my-2 z-10">
-                            <div className="relative w-full h-28 flex items-center justify-center">
-                                <img src={waterImg} alt="Water" className={`h-full w-auto object-contain drop-shadow-[-4px_5px_0_rgba(148,163,184,0.4)] transform transition-all duration-300 absolute ${animatingAsset === 'water' ? 'scale-125' : 'scale-100 hover:scale-110'} animate-float`} />
-                                {theme === 'fun' && waterPercentage < 50 && (
-                                    <img src={mascotHydrated} alt="Mascot Hydrated" className="absolute -top-6 -right-2 w-16 h-16 animate-bounce-subtle z-20 pointer-events-none" />
-                                )}
+                        {theme === 'fun' && (
+                            <div 
+                                className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none transition-all duration-700 ease-out ${
+                                    showHydratedMascot 
+                                    ? 'translate-y-[10%] opacity-100' 
+                                    : 'translate-y-[100%] opacity-0'
+                                }`}
+                            >
+                                <img 
+                                    src={mascotHydrated} 
+                                    alt="Mascot Hydrated" 
+                                    className={`h-[150%] w-auto object-contain drop-shadow-2xl transition-transform duration-200 ${
+                                        isHydrationZooming ? 'scale-110' : 'scale-100'
+                                    }`} 
+                                />
                             </div>
-                            <div className="w-full flex items-center gap-2 px-1">
-                                <span className={`text-2xl font-black tabular-nums leading-none transition-colors duration-700 ${isWaterComplete ? 'text-white' : 'text-slate-800'}`}>{dailyData.water}</span>
-                                <div className={`flex-1 h-2 rounded-full overflow-hidden transition-colors duration-700 ${isWaterComplete ? 'bg-blue-400' : 'bg-blue-50'}`}>
+                        )}
+
+                        <div className="w-full relative flex flex-col items-center gap-3 my-2">
+                            <div className="relative w-full h-28 flex items-center justify-center z-0">
+                                <img src={waterImg} alt="Water" className={`h-full w-auto object-contain drop-shadow-[-4px_5px_0_rgba(148,163,184,0.4)] transform transition-all duration-300 absolute ${animatingAsset === 'water' ? 'scale-125' : 'scale-100 hover:scale-110'} animate-float`} />
+                            </div>
+                            <div className="w-full flex items-center gap-2 px-1 relative z-20">
+                                <span className={`text-2xl font-black tabular-nums leading-none transition-colors duration-700 text-outline-white ${isWaterComplete ? 'text-slate-900' : 'text-slate-800'}`}>{dailyData.water}</span>
+                                <div className={`flex-1 h-2 rounded-full overflow-hidden transition-colors duration-700 border border-white/50 ${isWaterComplete ? 'bg-blue-400' : 'bg-blue-50'}`}>
                                     <div className={`h-full rounded-full transition-all duration-1000 ease-out ${isWaterComplete ? 'bg-white' : 'bg-blue-500'}`} style={{ width: `${waterPercentage}%` }}></div>
                                 </div>
-                                <span className={`text-[10px] font-black transition-colors duration-700 ${isWaterComplete ? 'text-white' : 'text-blue-300'}`}>{Math.round(waterPercentage)}%</span>
+                                <span className={`text-[10px] font-black transition-colors duration-700 text-outline-white ${isWaterComplete ? 'text-slate-900' : 'text-blue-300'}`}>{Math.round(waterPercentage)}%</span>
                             </div>
                         </div>
 
-                        <div className="flex w-full gap-2 z-10 mt-auto">
+                        <div className="flex w-full gap-2 z-30 mt-auto relative">
                             <button onClick={() => updateIntake('water', -0.2)} className={`flex-1 py-3 rounded-2xl border font-bold transition-colors duration-700 text-xl leading-none active:scale-90 ${isWaterComplete ? 'bg-blue-600 border-blue-600 text-blue-100 hover:bg-blue-700' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}>−</button>
                             <button onClick={() => updateIntake('water', 0.2)} className={`flex-1 py-3 rounded-2xl font-bold transition-colors duration-700 text-xl leading-none active:scale-90 ${isWaterComplete ? 'bg-white text-blue-600 hover:bg-blue-50 shadow-md' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>+</button>
                         </div>
@@ -755,20 +820,38 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                                 </div>
                             </div>
 
-                            <div className="w-full relative flex flex-col items-center gap-3 my-2 z-10">
-                                <div className="relative w-full h-28 flex items-center justify-center">
+                            {theme === 'fun' && (
+                                <div 
+                                    className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none transition-all duration-700 ease-out ${
+                                        showProteinMascot 
+                                        ? 'translate-y-[10%] opacity-100' 
+                                        : 'translate-y-[100%] opacity-0'
+                                    }`}
+                                >
+                                    <img 
+                                        src="/mascotfeed.png" 
+                                        alt="Mascot Eating" 
+                                        className={`h-[150%] w-auto object-contain drop-shadow-2xl transition-transform duration-200 ${
+                                            isProteinZooming ? 'scale-110' : 'scale-100'
+                                        }`} 
+                                    />
+                                </div>
+                            )}
+
+                            <div className="w-full relative flex flex-col items-center gap-3 my-2">
+                                <div className="relative w-full h-28 flex items-center justify-center z-0">
                                     <img src={proteinImg} alt="Protein" className={`h-[130%] w-auto object-contain drop-shadow-[-4px_5px_0_rgba(148,163,184,0.4)] transform transition-all duration-300 absolute ${animatingAsset === 'protein' ? 'scale-125' : 'scale-100 hover:scale-110'} animate-float`} />
                                 </div>
-                                <div className="w-full flex items-center gap-2 px-1">
-                                    <span className={`text-2xl font-black tabular-nums leading-none transition-colors duration-700 ${isProteinComplete ? 'text-white' : 'text-slate-800'}`}>{dailyData.protein}</span>
-                                    <div className={`flex-1 h-2 rounded-full overflow-hidden transition-colors duration-700 ${isProteinComplete ? 'bg-black/10' : 'bg-orange-50'}`}>
+                                <div className="w-full flex items-center gap-2 px-1 relative z-20">
+                                    <span className={`text-2xl font-black tabular-nums leading-none transition-colors duration-700 text-outline-white ${isProteinComplete ? 'text-slate-900' : 'text-slate-800'}`}>{dailyData.protein}</span>
+                                    <div className={`flex-1 h-2 rounded-full overflow-hidden transition-colors duration-700 border border-white/50 ${isProteinComplete ? 'bg-black/10' : 'bg-orange-50'}`}>
                                         <div className={`h-full rounded-full transition-all duration-1000 ease-out ${isProteinComplete ? 'bg-white' : 'bg-orange-500'}`} style={{ width: `${proteinPercentage}%` }}></div>
                                     </div>
-                                    <span className={`text-[10px] font-black transition-colors duration-700 ${isProteinComplete ? 'text-white' : 'text-orange-300'}`}>{Math.round(proteinPercentage)}%</span>
+                                    <span className={`text-[10px] font-black transition-colors duration-700 text-outline-white ${isProteinComplete ? 'text-slate-900' : 'text-orange-300'}`}>{Math.round(proteinPercentage)}%</span>
                                 </div>
                             </div>
 
-                            <div className="flex w-full gap-2 z-10 mt-auto">
+                            <div className="flex w-full gap-2 z-30 mt-auto relative">
                                 <button onClick={() => updateIntake('protein', -5)} className={`flex-1 py-3 rounded-2xl border font-bold transition-colors duration-700 text-xl leading-none active:scale-90 ${isProteinComplete ? 'bg-white/20 border-transparent text-white hover:bg-white/30' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}>−</button>
                                 <button onClick={() => updateIntake('protein', 5)} className={`flex-1 py-3 rounded-2xl font-bold transition-colors duration-700 text-xl leading-none active:scale-90 ${isProteinComplete ? 'bg-white text-black/80 hover:bg-white/90 shadow-md' : 'bg-orange-500 text-white hover:bg-orange-600'}`}>+</button>
                             </div>
@@ -788,20 +871,38 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                                 </div>
                             </div>
 
-                            <div className="w-full relative flex flex-col items-center gap-3 my-2 z-10">
-                                <div className="relative w-full h-28 flex items-center justify-center">
+                            {theme === 'fun' && (
+                                <div 
+                                    className={`absolute inset-0 flex items-center justify-center z-10 pointer-events-none transition-all duration-700 ease-out ${
+                                        showFiberMascot 
+                                        ? 'translate-y-[10%] opacity-100' 
+                                        : 'translate-y-[100%] opacity-0'
+                                    }`}
+                                >
+                                    <img 
+                                        src="/mascotfeed.png" 
+                                        alt="Mascot Eating" 
+                                        className={`h-[150%] w-auto object-contain drop-shadow-2xl transition-transform duration-200 ${
+                                            isFiberZooming ? 'scale-110' : 'scale-100'
+                                        }`} 
+                                    />
+                                </div>
+                            )}
+
+                            <div className="w-full relative flex flex-col items-center gap-3 my-2">
+                                <div className="relative w-full h-28 flex items-center justify-center z-0">
                                     <img src={fiberImg} alt="Fiber" className={`h-full w-auto object-contain drop-shadow-[-4px_5px_0_rgba(148,163,184,0.4)] transform transition-all duration-300 absolute ${animatingAsset === 'fiber' ? 'scale-125' : 'scale-100 hover:scale-110'} animate-float`} />
                                 </div>
-                                <div className="w-full flex items-center gap-2 px-1">
-                                    <span className={`text-2xl font-black tabular-nums leading-none transition-colors duration-700 ${isFiberComplete ? 'text-white' : 'text-slate-800'}`}>{Math.round(dailyData.fiber)}</span>
-                                    <div className={`flex-1 h-2 rounded-full overflow-hidden transition-colors duration-700 ${isFiberComplete ? 'bg-emerald-400' : 'bg-emerald-50'}`}>
+                                <div className="w-full flex items-center gap-2 px-1 relative z-20">
+                                    <span className={`text-2xl font-black tabular-nums leading-none transition-colors duration-700 text-outline-white ${isFiberComplete ? 'text-slate-900' : 'text-slate-800'}`}>{Math.round(dailyData.fiber)}</span>
+                                    <div className={`flex-1 h-2 rounded-full overflow-hidden transition-colors duration-700 border border-white/50 ${isFiberComplete ? 'bg-emerald-400' : 'bg-emerald-50'}`}>
                                         <div className={`h-full rounded-full transition-all duration-1000 ease-out ${isFiberComplete ? 'bg-white' : 'bg-emerald-500'}`} style={{ width: `${fiberPercentage}%` }}></div>
                                     </div>
-                                    <span className={`text-[10px] font-black transition-colors duration-700 ${isFiberComplete ? 'text-white' : 'text-emerald-300'}`}>{Math.round(fiberPercentage)}%</span>
+                                    <span className={`text-[10px] font-black transition-colors duration-700 text-outline-white ${isFiberComplete ? 'text-slate-900' : 'text-emerald-300'}`}>{Math.round(fiberPercentage)}%</span>
                                 </div>
                             </div>
 
-                            <div className="flex w-full gap-2 z-10 mt-auto">
+                            <div className="flex w-full gap-2 z-30 mt-auto relative">
                                 <button onClick={() => updateIntake('fiber', -5)} className={`flex-1 py-3 rounded-2xl border font-bold transition-colors duration-700 text-xl leading-none active:scale-90 ${isFiberComplete ? 'bg-emerald-600 border-emerald-600 text-emerald-100 hover:bg-emerald-700' : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'}`}>−</button>
                                 <button onClick={() => updateIntake('fiber', 5)} className={`flex-1 py-3 rounded-2xl font-bold transition-colors duration-700 text-xl leading-none active:scale-90 ${isFiberComplete ? 'bg-white text-emerald-600 hover:bg-emerald-50 shadow-md' : 'bg-emerald-500 text-white hover:bg-emerald-600'}`}>+</button>
                             </div>
