@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Image as ImageIcon, Scale, BookOpen, Droplet, Activity, X } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Image as ImageIcon, Scale, BookOpen, Droplet, Activity, X, Plus } from 'lucide-react';
+import { Modal } from './ui/BaseComponents';
 
-const CalendarView = ({ user, setUser }) => {
+const CalendarView = ({ user, setUser, setActiveTab }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(null);
 
     const [isFullscreenPhoto, setIsFullscreenPhoto] = useState(false);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
+    const [showAddMemoryModal, setShowAddMemoryModal] = useState(false);
+    const [modalMemoryNote, setModalMemoryNote] = useState('');
+    const [modalSelectedDate, setModalSelectedDate] = useState(new Date());
+    const [showMonthPicker, setShowMonthPicker] = useState(false);
+    const scrollContainerRef = useRef(null);
 
     const prevMonth = () => {
         setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
@@ -57,12 +64,51 @@ const CalendarView = ({ user, setUser }) => {
         setCurrentPhotoIndex((prev) => (prev - 1 + user.photos.length) % user.photos.length);
     };
 
+    const handleSaveMemory = () => {
+        if (!modalMemoryNote.trim()) return;
+
+        const newLog = {
+            date: modalSelectedDate.toISOString(),
+            foodNoise: 0, // Default for memories
+            symptoms: [],
+            note: modalMemoryNote,
+            isMemoryOnly: true
+        };
+
+        const updatedUser = {
+            ...user,
+            sideEffectsLogs: [newLog, ...(user.sideEffectsLogs || [])]
+        };
+
+        setUser(updatedUser);
+        setModalMemoryNote('');
+        setShowAddMemoryModal(false);
+    };
+
+    const generateDateRange = () => {
+        const dates = [];
+        const baseDate = selectedDate || new Date();
+        for (let i = -7; i <= 7; i++) {
+            const d = new Date(baseDate);
+            d.setDate(d.getDate() + i);
+            dates.push(d);
+        }
+        return dates;
+    };
+
+    const scrollDates = (direction) => {
+        if (scrollContainerRef.current) {
+            const scrollAmount = direction === 'left' ? -150 : 150;
+            scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    };
+
     return (
         <div className="flex flex-col gap-6 pb-24">
             {/* Header section */}
             <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mt-2">
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500">
                         <CalendarIcon size={24} />
                     </div>
                     <div>
@@ -173,17 +219,17 @@ const CalendarView = ({ user, setUser }) => {
                                     onClick={() => {
                                         setSelectedDate(prev => prev && prev.getTime() === dayDate.getTime() ? null : dayDate);
                                     }}
-                                    className={`h-10 rounded-xl flex flex-col items-center justify-center text-sm font-bold relative transition-all cursor-pointer hover:scale-110 scale-100 ${selectedDate && selectedDate.getTime() === dayDate.getTime()
+                                    className={`h-10 rounded-xl flex flex-col items-center justify-center text-sm font-bold relative transition-all cursor-pointer active:scale-95 scale-100 ${selectedDate && selectedDate.getTime() === dayDate.getTime()
                                         ? 'bg-slate-800 text-white shadow-md'
-                                        : isToday ? 'bg-indigo-500 text-white shadow-md' :
-                                            hasLoggedWeight ? 'bg-indigo-50 text-indigo-700 font-black' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                                        : isToday ? 'bg-blue-500 text-white shadow-md' :
+                                            hasLoggedWeight ? 'bg-blue-50 text-blue-700 font-black' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                                         }`}
                                 >
                                     {day}
                                     <div className="flex gap-0.5 mt-0.5">
                                         {dayData.hasDose && <div className="w-1 h-1 rounded-full bg-blue-500 shadow-[0_0_4px_rgba(59,130,246,0.5)]"></div>}
                                         {dayData.hasSymptoms && <div className="w-1 h-1 rounded-full bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]"></div>}
-                                        {hasLoggedWeight && <div className={`w-1 h-1 rounded-full ${selectedDate && selectedDate.getTime() === dayDate.getTime() ? 'bg-white' : 'bg-indigo-500'}`}></div>}
+                                        {hasLoggedWeight && <div className={`w-1 h-1 rounded-full ${selectedDate && selectedDate.getTime() === dayDate.getTime() ? 'bg-white' : 'bg-blue-500'}`}></div>}
                                     </div>
                                 </div>
                             );
@@ -240,12 +286,22 @@ const CalendarView = ({ user, setUser }) => {
             </div>
 
             {/* Daily Records Section */}
-            <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mt-6">
-                <div className="flex items-center justify-between mb-6">
+            <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mt-6 relative overflow-hidden">
+                <div className="flex items-center justify-between mb-6 relative z-10">
                     <div className="flex items-center gap-2">
                         <BookOpen size={18} className="text-slate-500" />
                         <h3 className="font-bold text-slate-800">Registros de Bem-estar</h3>
                     </div>
+                    <button 
+                        onClick={() => {
+                            setModalSelectedDate(selectedDate || new Date());
+                            setShowAddMemoryModal(true);
+                        }}
+                        className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 active:scale-90 transition-all hover:bg-blue-600"
+                        title="Adicionar Novo Registro"
+                    >
+                        <Plus size={20} strokeWidth={3} />
+                    </button>
                 </div>
 
                 <div className="space-y-4">
@@ -257,31 +313,35 @@ const CalendarView = ({ user, setUser }) => {
                         if (logsToShow.length > 0) {
                             return logsToShow.map((log, idx) => (
                                 <div key={idx} className="w-full bg-slate-50 border border-slate-100/50 rounded-2xl p-4 transition-all hover:bg-slate-100/50">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className="flex flex-col gap-1">
+                                    <div className="flex justify-between items-start gap-4 mb-3">
+                                        <div className="flex flex-col gap-1 shrink-0">
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                 {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(log.date))}
                                             </span>
                                             {log.foodNoise !== undefined && (
                                                 <div className="flex items-center gap-1.5 mt-1">
-                                                    <div className={`w-2 h-2 rounded-full ${log.foodNoise <= 3 ? 'bg-brand-500' : log.foodNoise <= 7 ? 'bg-amber-500' : 'bg-red-500'}`}></div>
+                                                    <div className={`w-2 h-2 rounded-full ${log.foodNoise <= 3 ? 'bg-blue-500' : log.foodNoise <= 7 ? 'bg-amber-500' : 'bg-red-500'}`}></div>
                                                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Food Noise: {log.foodNoise}/10</span>
                                                 </div>
                                             )}
                                         </div>
-                                        {log.symptoms?.length > 0 && (
-                                            <div className="flex gap-1">
-                                                {log.symptoms.map(s => {
-                                                    const emoji = { nausea: '🤢', vomito: '🤮', fadiga: '🥱', azia: '🔥', constipação: '🧱' }[s] || '🤒';
-                                                    return <span key={s} title={s} className="text-sm">{emoji}</span>;
-                                                })}
-                                            </div>
-                                        )}
+
+                                        <div className="flex flex-col items-end gap-2 text-right">
+                                            {log.symptoms?.length > 0 && (
+                                                <div className="flex gap-1">
+                                                    {log.symptoms.map(s => {
+                                                        const emoji = { nausea: '🤢', vomito: '🤮', fadiga: '🥱', azia: '🔥', constipação: '🧱' }[s] || '🤒';
+                                                        return <span key={s} title={s} className="text-sm">{emoji}</span>;
+                                                    })}
+                                                </div>
+                                            )}
+                                            {log.note && (
+                                                <p className="text-xs text-slate-600 italic leading-relaxed line-clamp-3">
+                                                    {log.note}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
-                                    
-                                    {log.note && (
-                                        <p className="text-sm text-slate-700 italic border-l-2 border-slate-200 pl-3 leading-relaxed mb-2">"{log.note}"</p>
-                                    )}
                                     {log.trigger && (
                                         <div className="bg-orange-50/50 self-start px-2 py-1 rounded text-[10px] font-bold text-orange-600 inline-block">
                                             Gatilho: {log.trigger}
@@ -314,7 +374,138 @@ const CalendarView = ({ user, setUser }) => {
                 }
             `}</style>
 
-            {/* Fullscreen Photo Overlay */}
+            {/* Modal: Adicionar Memória */}
+            <Modal
+                isOpen={showAddMemoryModal}
+                onClose={() => {
+                    setShowAddMemoryModal(false);
+                    setShowMonthPicker(false);
+                }}
+                title={showMonthPicker ? "Escolher Data" : "Nova Memória"}
+            >
+                <div className="space-y-6">
+                    {!showMonthPicker ? (
+                        <>
+                            {/* Horizontal Date Selector + Calendar Icon */}
+                            <div className="flex items-center gap-1.5 w-full">
+                                {/* Left Arrow */}
+                                <button 
+                                    onClick={() => scrollDates('left')}
+                                    className="shrink-0 w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-white transition-all active:scale-90 shadow-sm"
+                                >
+                                    <ChevronLeft size={16} />
+                                </button>
+
+                                <div className="relative flex-1 overflow-hidden">
+                                    <div 
+                                        ref={scrollContainerRef}
+                                        className="flex gap-2 overflow-x-auto snap-x scroll-smooth hide-scrollbar py-2 px-4"
+                                    >
+                                        {generateDateRange().map((date, idx) => {
+                                            const isSelected = modalSelectedDate.toDateString() === date.toDateString();
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => setModalSelectedDate(date)}
+                                                    className={`shrink-0 w-10 h-14 rounded-xl flex flex-col items-center justify-center transition-all snap-center ${
+                                                        isSelected 
+                                                        ? 'bg-blue-500 text-white shadow-lg scale-110 z-10' 
+                                                        : 'bg-slate-50 text-slate-400 border border-slate-100'
+                                                    }`}
+                                                >
+                                                    <span className="text-[8px] font-black uppercase tracking-tighter opacity-60">
+                                                        {new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(date).replace('.', '')}
+                                                    </span>
+                                                    <span className="text-base font-black">{date.getDate()}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {/* Subtle Gradient Fades */}
+                                    <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent pointer-events-none z-20"></div>
+                                    <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent pointer-events-none z-20"></div>
+                                </div>
+
+                                {/* Right Arrow */}
+                                <button 
+                                    onClick={() => scrollDates('right')}
+                                    className="shrink-0 w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-white transition-all active:scale-90 shadow-sm"
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
+
+                                {/* Month Picker Trigger */}
+                                <button 
+                                    onClick={() => setShowMonthPicker(true)}
+                                    className="shrink-0 w-10 h-14 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 hover:bg-blue-100 transition-all active:scale-90 shadow-sm"
+                                    title="Ver Mês Inteiro"
+                                >
+                                    <CalendarIcon size={18} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">O que você está pensando?</label>
+                                <textarea
+                                    value={modalMemoryNote}
+                                    onChange={(e) => setModalMemoryNote(e.target.value)}
+                                    placeholder="Escreva aqui sua memória..."
+                                    className="w-full bg-slate-50 border-none rounded-3xl p-5 text-sm text-slate-700 placeholder-slate-300 focus:ring-2 focus:ring-blue-500 transition-all resize-none h-32"
+                                />
+                            </div>
+
+                            <button 
+                                onClick={handleSaveMemory}
+                                className="w-full bg-blue-500 text-white py-4 rounded-[24px] text-sm font-black uppercase tracking-widest border-b-4 border-blue-700 active:translate-y-1 active:border-b-0 transition-all shadow-xl"
+                            >
+                                Salvar Memória
+                            </button>
+                        </>
+                    ) : (
+                        <div className="space-y-6 animate-fadeIn">
+                            <div className="bg-slate-50 p-4 rounded-3xl">
+                                <div className="flex items-center justify-between mb-4 px-2">
+                                    <span className="text-sm font-black text-slate-800 uppercase tracking-widest">
+                                        {modalSelectedDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-7 gap-2 text-center">
+                                    {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(d => (
+                                        <span key={d} className="text-[10px] font-black text-slate-300">{d}</span>
+                                    ))}
+                                    {[...Array(new Date(modalSelectedDate.getFullYear(), modalSelectedDate.getMonth(), 1).getDay())].map((_, i) => (
+                                        <div key={`emp-${i}`} />
+                                    ))}
+                                    {[...Array(new Date(modalSelectedDate.getFullYear(), modalSelectedDate.getMonth() + 1, 0).getDate())].map((_, i) => {
+                                        const day = i + 1;
+                                        const date = new Date(modalSelectedDate.getFullYear(), modalSelectedDate.getMonth(), day);
+                                        const isSelected = modalSelectedDate.toDateString() === date.toDateString();
+                                        return (
+                                            <button
+                                                key={day}
+                                                onClick={() => setModalSelectedDate(date)}
+                                                className={`h-10 rounded-xl text-xs font-bold transition-all ${
+                                                    isSelected ? 'bg-blue-500 text-white shadow-md' : 'hover:bg-white text-slate-600'
+                                                }`}
+                                            >
+                                                {day}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setShowMonthPicker(false)}
+                                className="w-full bg-slate-900 text-white py-4 rounded-[24px] text-sm font-black uppercase tracking-widest active:scale-95 transition-all"
+                            >
+                                Confirmar Data
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </Modal>
+
+            {/* Photo & Weight Section (Existing Overlays...) */}
             {isFullscreenPhoto && user.photos && user.photos.length > 0 && (
                 <div
                     className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm"

@@ -175,25 +175,25 @@ const BodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
 
                         {/* Rotation Logic */}
                         <div className="space-y-3 bg-emerald-50/50 p-5 rounded-[32px] border border-emerald-100">
-                            <div className="flex items-center gap-2 text-emerald-600">
-                                <RefreshCw size={18} className="animate-spin-slow" />
-                                <h4 className="font-black text-xs uppercase tracking-widest">Rotação Essencial</h4>
+                            <div className="flex items-center gap-2">
+                                <RefreshCw size={18} className="animate-spin-slow text-emerald-600" />
+                                <h4 className="font-black text-xs uppercase tracking-widest text-slate-800">Rotação Essencial</h4>
                             </div>
-                            <p className="text-xs text-emerald-800/80 leading-relaxed font-medium">
+                            <p className="text-xs text-slate-600 leading-relaxed font-medium">
                                 Alternar os pontos evita cicatrizes, irritações e <strong>lipodistrofia</strong> (nódulos de gordura), mantendo a medicação eficaz.
                             </p>
-                            <div className="bg-white/60 p-3 rounded-2xl text-[10px] font-black text-emerald-700 border border-emerald-100 uppercase tracking-tight">
+                            <div className="bg-white/60 p-3 rounded-2xl text-[10px] font-black text-slate-800 border border-slate-100 uppercase tracking-tight">
                                 Ex: S1 (Abdômen D) → S2 (Abdômen E) → S3 (Coxa D)...
                             </div>
                         </div>
 
                         {/* Critical Care */}
                         <div className="space-y-3 bg-amber-50/50 p-5 rounded-[32px] border border-amber-100 mb-4">
-                            <div className="flex items-center gap-2 text-amber-600">
-                                <AlertTriangle size={18} />
-                                <h4 className="font-black text-xs uppercase tracking-widest">Cuidados Importantes</h4>
+                            <div className="flex items-center gap-2">
+                                <AlertTriangle size={18} className="text-amber-600" />
+                                <h4 className="font-black text-xs uppercase tracking-widest text-slate-800">Cuidados Importantes</h4>
                             </div>
-                            <ul className="text-xs text-amber-800/80 space-y-2 list-disc list-inside font-medium">
+                            <ul className="text-xs text-slate-600 space-y-2 list-disc list-inside font-medium">
                                 <li>Limpar o local com álcool antes de aplicar</li>
                                 <li>Não aplicar sobre hematomas ou peles machucadas</li>
                                 <li><strong>Não massagear</strong> a área após a picada</li>

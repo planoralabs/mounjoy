@@ -13,34 +13,16 @@ const InjectionSwipeCard = ({
     onShowBodyGuide
 }) => {
     const [isApplied, setIsApplied] = useState(false);
-    const dragX = useMotionValue(0);
-    const controls = useAnimation();
-    
-    // Aggressive horizontal squeeze (compression) effect - fixed at left margin
-    const cardScaleX = useTransform(dragX, [-160, 0], [0.45, 1]);
-    const cardScaleY = useTransform(dragX, [-160, 0], [1.08, 1]);
-    
-    // Pen must track the right edge as it moves left during compression
-    // We calibrate the speed to keep the needle tip tangent to the card's moving right edge.
-    const penX = useTransform(dragX, [-160, 0], [-425, 0]); 
-    const penOpacity = useTransform(dragX, [-100, -5], [1, 0]);
+    const lastHistoryCount = React.useRef(user.doseHistory?.length || 0);
 
-    const handleDragEnd = (_, info) => {
-        if (info.offset.x < -100) {
-            triggerSuccess();
-        } else {
-            // Animate the motion value back to 0 to reset all linked transforms
-            animate(dragX, 0, { type: "spring", stiffness: 300, damping: 30 });
+    // Detect new injection confirmation from modal
+    React.useEffect(() => {
+        if (user.doseHistory?.length > lastHistoryCount.current) {
+            setIsApplied(true);
+            setTimeout(() => setIsApplied(false), 4000);
         }
-    };
-
-    const triggerSuccess = async () => {
-        setIsApplied(true);
-        handleConfirmInjection();
-        // Animate the squeeze back to normal
-        await animate(dragX, 0, { type: "spring", stiffness: 300, damping: 25 });
-        setTimeout(() => setIsApplied(false), 3000);
-    };
+        lastHistoryCount.current = user.doseHistory?.length || 0;
+    }, [user.doseHistory]);
 
     const weekNumber = useMemo(() => {
         if (!user.startDate) return 1;
@@ -48,136 +30,146 @@ const InjectionSwipeCard = ({
         return Math.ceil(diff / (1000 * 60 * 60 * 24 * 7)) || 1;
     }, [user.startDate]);
 
+    // Calculate fill level based on days since last dose
+    // cycleInfo.daysSinceDose is 0 on injection day, up to 7+ days.
+    const daysSinceDose = cycleInfo.daysSinceDose ?? 7;
+    const fillLevel = isApplied ? 100 : Math.max(8, Math.min(100, ((7 - daysSinceDose) / 7) * 100));
+
     return (
-        <div className="relative w-full overflow-hidden p-2 min-h-[190px] flex items-center justify-end">
-            {/* SVG da Caneta (Acompanha o deslize) */}
-            <motion.div 
-                style={{ opacity: penOpacity, x: penX }}
-                className="absolute right-[-240px] top-1/2 -translate-y-1/2 z-0 pointer-events-none"
-            >
-                <svg width="240" height="80" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="rotate-[-2deg]">
-                    <defs>
-                        <filter id="softShadow" x="0" y="0" width="200" height="60" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                            <feFlood floodOpacity="0" result="BackgroundImageFix"/>
-                            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-                            <feOffset dy="2"/>
-                            <feGaussianBlur stdDeviation="3"/>
-                            <feComposite in2="hardAlpha" operator="out"/>
-                            <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0"/>
-                            <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1"/>
-                            <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1" result="shape"/>
-                        </filter>
-                    </defs>
-
-                    <g filter="url(#softShadow)">
-                        <rect x="40" y="15" width="145" height="30" rx="15" fill="#F8FAFC" stroke="#E2E8F0" strokeWidth="1.5"/>
-                        <rect x="65" y="22" width="28" height="16" rx="4" fill="#F0FDFA" stroke="#CCFBF1" strokeWidth="1"/>
-                        <rect x="70" y="26" width="3" height="8" rx="1.5" fill="#2DD4BF" fillOpacity="0.6"/>
-                        <rect x="155" y="15" width="30" height="30" rx="6" fill="#0D9488"/>
-                        <path d="M165 22H175M165 26H175M165 30H175" stroke="#5EEAD4" strokeWidth="1.5" strokeLinecap="round"/>
-                        <path d="M40 20L25 30L40 40V20Z" fill="#CBD5E1"/>
-                        <line x1="25" y1="30" x2="8" y2="30" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round"/>
-                    </g>
-                </svg>
-            </motion.div>
-
-            {/* The actual card is now the pan/drag surface */}
+        <div className="relative w-full overflow-hidden p-2 min-h-[190px]">
+            {/* The actual card */}
             <motion.div
-                onPan={!isApplied ? (_, info) => {
-                    const val = Math.max(-160, Math.min(0, info.offset.x));
-                    dragX.set(val);
-                } : undefined}
-                onPanEnd={!isApplied ? (_, info) => {
-                    if (info.offset.x < -100) {
-                        triggerSuccess();
-                    } else {
-                        animate(dragX, 0, { type: "spring", stiffness: 300, damping: 30 });
-                    }
-                } : undefined}
-                animate={controls}
-                style={{ 
-                    scaleX: cardScaleX, 
-                    scaleY: cardScaleY, 
-                    originX: 0,
-                    width: '100%' 
-                }}
-                className={`relative z-10 bg-white p-5 rounded-[32px] shadow-lg border border-slate-100 flex flex-col gap-4 transition-colors duration-500 ${isApplied ? 'border-brand-200 bg-brand-50/20' : 'cursor-grab active:cursor-grabbing'}`}
+                className={`relative z-10 bg-white p-6 rounded-[40px] shadow-2xl shadow-slate-200/50 border border-slate-100 flex flex-col gap-5 transition-colors duration-500 overflow-hidden ${isApplied ? 'border-brand-200 bg-brand-50/20' : ''}`}
             >
-                <div className="flex items-center justify-between pointer-events-none">
+                {/* Background Mascot Decoration */}
+                <div className="absolute -right-8 -top-8 w-40 h-40 opacity-[0.03] pointer-events-none rotate-12">
+                    <img src="/mascotstrong.png" alt="Mascot" className="w-full h-auto" />
+                </div>
+
+                <div className="flex items-start justify-between relative z-10">
                     <div className="flex-1">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-outfit">
-                            {isApplied ? 'Aplicação Realizada' : 'Próxima Aplicação'}
-                        </span>
-                        <div className="flex items-center gap-2 mt-1">
-                            <h3 className="text-xl font-black text-slate-800 tracking-tight">
-                                {isApplied ? 'Sucesso!' : (timeRemaining === 'Hoje!' ? "Dia de Injetar!" : `Em ${timeRemaining}`)}
-                            </h3>
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${isApplied ? 'bg-brand-100 text-brand-600' : 'bg-slate-100 text-slate-600'}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] font-outfit">
+                                {isApplied ? 'Finalizado' : 'Próxima Aplicação'}
+                            </span>
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase ${isApplied ? 'bg-brand-100 text-brand-600' : 'bg-slate-100 text-slate-500'}`}>
                                 Semana {weekNumber}
                             </span>
                         </div>
+                        <h3 className="text-3xl font-black text-slate-800 tracking-tight leading-none mb-1">
+                            {isApplied ? 'Sucesso! 🎈' : (timeRemaining === 'Hoje!' ? "Dia de Injetar!" : `Em ${timeRemaining}`)}
+                        </h3>
                     </div>
-                    <div className="p-2">
-                        <AnimatePresence mode="wait">
-                            {isApplied ? (
-                                <motion.div
-                                    key="check"
-                                    initial={{ scale: 0, rotate: -45 }}
-                                    animate={{ scale: 1, rotate: 0 }}
-                                    exit={{ scale: 0 }}
-                                >
-                                    <CheckCircle2 className="w-10 h-10 text-brand-500" />
-                                </motion.div>
-                            ) : (
-                                <motion.div 
-                                    key="swipe"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="flex flex-col items-end"
-                                >
-                                    <span className="text-[10px] font-black text-brand-500 animate-pulse uppercase tracking-[0.2em]">Deslize</span>
-                                    <div className="flex gap-1 mt-1">
-                                        {[1, 2, 3].map(i => (
-                                            <motion.div 
-                                                key={i}
-                                                animate={{ opacity: [0.2, 1, 0.2], x: [0, -5, 0] }}
-                                                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
-                                                className="w-1.5 h-1.5 bg-brand-300 rounded-full"
-                                            />
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                    
+                    {/* Action Button - 3D Physical Design */}
+                    <div className="shrink-0">
+                        <motion.button
+                            key="apply-btn"
+                            whileTap={{ y: 4 }}
+                            onClick={onShowBodyGuide}
+                            className="group relative flex flex-col items-center outline-none select-none transition-opacity duration-300"
+                        >
+                            {/* Physical Depth Base */}
+                            <div className="w-24 h-24 rounded-[32px] bg-[#ea580c] absolute top-1 left-0 w-full h-full" />
+                            
+                            {/* Button Face */}
+                            <div className="w-24 h-24 rounded-[32px] bg-[#f97316] flex flex-col items-center justify-center border-t border-white/30 shadow-lg relative z-10 -translate-y-1 group-active:translate-y-0 transition-all duration-100">
+                                <div className="relative w-10 h-10 mb-1 transition-transform">
+                                    <svg viewBox="0 0 24 24" className="w-full h-full">
+                                        <defs>
+                                            <linearGradient id="carvedGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stopColor="#9a3412" />
+                                                <stop offset="100%" stopColor="#ea580c" />
+                                            </linearGradient>
+                                            <linearGradient id="liquidGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stopColor="#fde047" />
+                                                <stop offset="100%" stopColor="#f59e0b" />
+                                            </linearGradient>
+                                            <clipPath id="dropClip">
+                                                <motion.rect 
+                                                    initial={false}
+                                                    animate={{ y: 24 - (24 * fillLevel / 100) }}
+                                                    transition={{ type: "spring", stiffness: 60, damping: 15 }}
+                                                    x="0" width="24" height="24" 
+                                                />
+                                            </clipPath>
+                                        </defs>
+                                        
+                                        {/* Hollow/Carved Background */}
+                                        <path 
+                                            d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" 
+                                            fill="url(#carvedGradient)"
+                                            className="drop-shadow-[0_1px_1px_rgba(255,255,255,0.2)]"
+                                        />
+                                        
+                                        {/* Glowing Liquid Fill */}
+                                        <path 
+                                            d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" 
+                                            fill="url(#liquidGlow)"
+                                            clipPath="url(#dropClip)"
+                                            className="blur-[0.5px]"
+                                        />
+
+                                        {/* Surface Shine/Depth */}
+                                        <path 
+                                            d="M12 4c.5 1 1 2 2 4M9 12a3 3 0 0 0 6 0" 
+                                            stroke="white" 
+                                            strokeOpacity="0.15" 
+                                            fill="none" 
+                                            strokeLinecap="round"
+                                        />
+                                    </svg>
+                                    
+                                    {/* Success Flash Effect */}
+                                    {isApplied && (
+                                        <motion.div 
+                                            initial={{ scale: 0.5, opacity: 1 }}
+                                            animate={{ scale: 2, opacity: 0 }}
+                                            className="absolute inset-0 bg-amber-200 rounded-full blur-xl z-20"
+                                        />
+                                    )}
+                                </div>
+                                <span className="text-[9px] font-black text-white uppercase tracking-widest mt-1">
+                                    {isApplied ? 'Sucesso!' : 'Injetar'}
+                                </span>
+                            </div>
+                        </motion.button>
                     </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-[32px] border-t-4 border-brand-500 shadow-sm pointer-events-none">
-                    <div className="flex justify-between items-center mb-1">
-                        <span className="text-[10px] font-black text-brand-500 uppercase tracking-widest">Protocolo Semanal: {medication?.name || 'GLP-1'}</span>
-                        <span className="bg-brand-50 text-brand-700 px-2 py-0.5 rounded text-[10px] font-black italic">Dose: {user.currentDose}</span>
+                {/* Protocol Area - Integrated Pill Design */}
+                <div className="flex items-center justify-between bg-slate-50/50 rounded-2xl p-4 border border-slate-100/50 relative z-10">
+                    <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Seu Protocolo</span>
+                        <span className="text-sm font-black text-slate-700">{medication?.name || 'GLP-1'}</span>
+                    </div>
+                    <div className="bg-brand-500 text-white px-3 py-1.5 rounded-xl text-xs font-black">
+                        {user.currentDose}
                     </div>
                 </div>
 
                 {!isApplied && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 relative z-10">
                         <button 
                             onPointerDown={(e) => e.stopPropagation()}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onShowBodyGuide?.();
                             }}
-                            className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col gap-1 text-left hover:bg-slate-100 transition-all active:scale-95 shadow-sm"
+                            className="bg-white rounded-2xl p-4 border-2 border-dashed border-slate-200 flex flex-col gap-2 text-left hover:border-brand-300 hover:bg-brand-50/10 transition-all active:translate-y-1 active:shadow-none shadow-[0_4px_0_0_rgba(226,232,240,1)] group/btn relative"
                         >
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Local Sugerido</span>
                             <div className="flex items-center gap-2">
-                                <span className="text-lg">{injectionSuggestion.icon}</span>
-                                <span className="text-sm font-black text-slate-800">{injectionSuggestion.label}</span>
+                                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-sm group-hover/btn:scale-110 transition-transform">
+                                    {injectionSuggestion.icon}
+                                </div>
+                                <span className="text-xs font-black text-slate-800">{injectionSuggestion.label}</span>
                             </div>
                         </button>
-                        <div className="bg-brand-50/50 rounded-2xl p-4 border border-brand-100/50 flex flex-col gap-1">
-                            <span className="text-[9px] font-black text-brand-600 uppercase tracking-widest">Status do Ciclo</span>
-                            <p className={`text-[11px] font-bold ${cycleInfo.color} leading-none`}>{cycleInfo.message}</p>
+                        
+                        <div className="bg-brand-50/30 rounded-2xl p-4 border border-brand-100/30 flex flex-col gap-2">
+                            <span className="text-[9px] font-black text-brand-600 uppercase tracking-widest">Dica de Ciclo</span>
+                            <p className={`text-[10px] font-bold ${cycleInfo.color} leading-tight`}>{cycleInfo.message}</p>
                         </div>
                     </div>
                 )}

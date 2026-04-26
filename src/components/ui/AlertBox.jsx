@@ -3,10 +3,10 @@ import { AlertTriangle, Info, CheckCircle, Flame } from 'lucide-react';
 
 const AlertBox = ({ type = 'info', title, message }) => {
     const styles = {
-        danger: "bg-red-50 border-red-100 text-red-900", // Perda rápida / Risco
-        warning: "bg-orange-50 border-orange-100 text-orange-900", // Platô / Atenção
-        info: "bg-blue-50 border-blue-100 text-blue-900", // Dicas gerais
-        success: "bg-brand-50 border-brand-100 text-brand-900" // Metas batidas
+        danger: "bg-red-50 border-red-100 text-slate-800", 
+        warning: "bg-orange-50 border-orange-100 text-slate-800",
+        info: "bg-blue-50 border-blue-100 text-slate-800",
+        success: "bg-brand-50 border-brand-100 text-slate-800"
     };
 
     const icons = {

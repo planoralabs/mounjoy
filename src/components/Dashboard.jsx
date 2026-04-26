@@ -80,6 +80,7 @@ const ConfettiExplosion = React.memo(() => {
 });
 
 const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
+    const [simulatedDays, setSimulatedDays] = useState(0); // DEBUG_ONLY
     const medication = MOCK_MEDICATIONS.find(m => m.id === user.medicationId);
     const [showWeightModal, setShowWeightModal] = useState(false);
     const [newWeight, setNewWeight] = useState('');
@@ -107,6 +108,28 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
     const [isFiberZooming, setIsFiberZooming] = useState(false);
     const fiberTimerRef = React.useRef(null);
 
+    // Mouse Drag Scrolling for Carousel
+    const scrollRef = React.useRef(null);
+    const [isDragging, setIsDragging] = React.useState(false);
+    const [startX, setStartX] = React.useState(0);
+    const [scrollLeft, setScrollLeft] = React.useState(0);
+
+    const handleMouseDown = (e) => {
+        setIsDragging(true);
+        setStartX(e.pageX - scrollRef.current.offsetLeft);
+        setScrollLeft(scrollRef.current.scrollLeft);
+    };
+
+    const handleMouseLeave = () => setIsDragging(false);
+    const handleMouseUp = () => setIsDragging(false);
+    const handleMouseMove = (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = (x - startX) * 2; 
+        scrollRef.current.scrollLeft = scrollLeft - walk;
+    };
+
     // Get date key for daily tracking
     const today = new Date().toISOString().split('T')[0];
     const dailyData = user.dailyIntakeHistory[today] || { water: 0, protein: 0, fiber: 0 };
@@ -120,8 +143,15 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
     const fiberPercentage = Math.min(100, (dailyData.fiber / (user.settings?.fiberGoal || 25)) * 100);
     const isFiberComplete = fiberPercentage >= 100;
 
-    const reminder = ReminderService.calculateNextDose(user.doseHistory || []);
+    // DEBUG_ONLY logic for reminder
+    const getSimulatedDate = () => {
+        const d = new Date();
+        d.setDate(d.getDate() + simulatedDays);
+        return d;
+    };
+    const reminder = ReminderService.calculateNextDose(user.doseHistory || [], 7, getSimulatedDate());
     const timeRemaining = ReminderService.formatTimeRemaining(reminder.daysRemaining, reminder.status);
+    // END DEBUG_ONLY
 
     const updateIntake = (type, amount) => {
         const currentAmount = dailyData[type] || 0;
@@ -328,6 +358,7 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
 
         const lastDoseDate = new Date(lastDose.date);
         const todayDate = new Date();
+        todayDate.setDate(todayDate.getDate() + simulatedDays); // DEBUG_ONLY
         const daysSinceDose = Math.floor((todayDate - lastDoseDate) / (1000 * 60 * 60 * 24));
 
         const drugLevel = Math.exp(-0.138 * daysSinceDose) * 100;
@@ -346,7 +377,7 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
         }
 
         return { message, level: drugLevel, color, daysSinceDose };
-    }, [user.doseHistory]);
+    }, [user.doseHistory, simulatedDays]); // DEBUG_ONLY
 
     const injectionSuggestion = useMemo(() => {
         return suggestNextInjection(user.doseHistory || []);
@@ -357,8 +388,12 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
         const siteId = isOral ? null : (selectedSiteId || injectionSuggestion.id);
         const site = isOral ? null : getSiteById(siteId);
 
+        // DEBUG_ONLY: Use simulated date for the record
+        const recordDate = new Date();
+        recordDate.setDate(recordDate.getDate() + simulatedDays);
+        
         const newRecord = {
-            date: new Date().toISOString(),
+            date: recordDate.toISOString(),
             dose: user.currentDose,
             medication: user.medicationId,
             siteId: siteId,
@@ -373,7 +408,10 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
 
         setUser(updatedUser);
         localStorage.setItem('mounjoy_user2', JSON.stringify(updatedUser));
+        
+        // Close all possible modals
         setShowInjectionModal(false);
+        setShowBodyMap(false); // Fix: Close the new guide modal
         setSelectedSiteId(null);
         setIsEditingProtocol(false);
     };
@@ -500,11 +538,10 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                             <div className="absolute -right-4 -bottom-4 w-32 h-32 opacity-20 group-hover:scale-125 transition-transform">
                                 <img src={mascotZen} alt="Zen Mascot" className="w-full h-auto" />
                             </div>
-                            <div className="relative z-10 flex gap-4 items-center">
-                                <div className="w-20 h-20 shrink-0 bg-white/20 rounded-3xl flex items-center justify-center p-2">
-                                    <img src={mascotRemember} alt="Remember" className="h-full w-auto animate-float" />
-                                </div>
-                                <div className="flex-1">
+                            <div className="relative z-10 flex gap-0 items-center">
+                                <div className="w-20 shrink-0 h-24" /> {/* Spacer for mascot */}
+                                <img src={mascotZen} alt="Zen Mascot" className="absolute -bottom-4 -left-4 w-28 h-auto drop-shadow-2xl z-20 transition-transform group-hover:scale-110 duration-700" />
+                                <div className="flex-1 py-2 pl-4">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-blue-100 mb-1">Dia de Brilhar 💉</p>
                                     <h4 className="text-xl font-black mb-1 leading-tight">Dia da sua dose!</h4>
                                     <p className="text-xs font-medium opacity-90 leading-relaxed">Prepare tudo com calma e respire fundo. Você está indo bem!</p>
@@ -514,6 +551,29 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                     ) : null}
                 </div>
             )}
+
+            {/* DEBUG_ONLY: Time Simulation Controls */}
+            <div className="flex items-center justify-center gap-4 py-2 bg-slate-50/50 rounded-2xl border border-slate-100 mb-6">
+                <button 
+                    onClick={() => setSimulatedDays(prev => prev - 1)}
+                    className="p-2 rounded-full hover:bg-slate-200 transition-colors text-slate-400"
+                >
+                    <ChevronLeft size={20} />
+                </button>
+                <div className="flex flex-col items-center">
+                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Simulador</span>
+                    <span className="text-xs font-bold text-slate-500">
+                        {simulatedDays === 0 ? "Tempo Real" : `${simulatedDays > 0 ? '+' : ''}${simulatedDays} Dias`}
+                    </span>
+                </div>
+                <button 
+                    onClick={() => setSimulatedDays(prev => prev + 1)}
+                    className="p-2 rounded-full hover:bg-slate-200 transition-colors text-slate-400"
+                >
+                    <ChevronRight size={20} />
+                </button>
+            </div>
+            {/* END DEBUG_ONLY */}
 
             {/* Gallery and Vertical Progress */}
             <div className="stagger-2 fade-in grid grid-cols-2 gap-4">
@@ -731,8 +791,8 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                             <TrendingUp size={20} />
                         </div>
                         <div className="flex-1">
-                            <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Alerta de Platô</p>
-                            <p className="text-xs text-amber-600 font-medium leading-tight">Peso estável há 14 dias. Tente variar a rotina de exercícios ou hidratação.</p>
+                            <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Alerta de Platô</p>
+                            <p className="text-xs text-slate-600 font-medium leading-tight">Peso estável há 14 dias. Tente variar a rotina de exercícios ou hidratação.</p>
                         </div>
                     </div>
                 )}
@@ -743,8 +803,8 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                             <Zap size={20} />
                         </div>
                         <div className="flex-1">
-                            <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest">Baixa Fome Detectada</p>
-                            <p className="text-xs text-brand-600 font-medium leading-tight">Priorize refeições leves e densas em proteína: ovos, iogurte ou shake.</p>
+                            <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Baixa Fome Detectada</p>
+                            <p className="text-xs text-slate-600 font-medium leading-tight">Priorize refeições leves e densas em proteína: ovos, iogurte ou shake.</p>
                         </div>
                     </div>
                 )}
@@ -758,9 +818,17 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                         Taxa: {stats.weeklyRate} kg/sem
                     </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div 
+                    ref={scrollRef}
+                    onMouseDown={handleMouseDown}
+                    onMouseLeave={handleMouseLeave}
+                    onMouseUp={handleMouseUp}
+                    onMouseMove={handleMouseMove}
+                    className={`flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 snap-x snap-mandatory hide-scrollbar select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab md:cursor-default'}`}
+                    style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
+                >
                     {/* Água Card - New Clean Minimalist Design */}
-                    <div className={`p-4 lg:p-5 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center gap-3 transition-colors duration-700 border overflow-hidden relative ${isWaterComplete ? 'bg-blue-500 border-blue-600' : 'bg-white border-slate-100'}`}>
+                    <div className={`min-w-[280px] flex-1 snap-center p-4 lg:p-5 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center gap-3 transition-colors duration-700 border overflow-hidden relative ${isWaterComplete ? 'bg-blue-500 border-blue-600' : 'bg-white border-slate-100'}`}>
                         {isWaterComplete && <ConfettiExplosion />}
                         <div className="w-full flex justify-between items-center z-10">
                             <div className="flex flex-col">
@@ -807,9 +875,9 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                     </div>
 
                     {/* Proteína Card - New Clean Minimalist Design */}
-                    <div className="w-full relative flex flex-col gap-2">
+                    <div className="min-w-[280px] flex-1 snap-center relative flex flex-col gap-2">
                         <div
-                            className={`p-4 lg:p-5 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center gap-3 transition-colors duration-700 border overflow-hidden relative ${isProteinComplete ? 'border-transparent' : 'bg-white border-slate-100'}`}
+                            className={`p-4 lg:p-5 h-full rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center gap-3 transition-colors duration-700 border overflow-hidden relative ${isProteinComplete ? 'border-transparent' : 'bg-white border-slate-100'}`}
                             style={isProteinComplete ? { backgroundColor: `hsl(20, 90%, 55%)` } : {}}
                         >
                             {isProteinComplete && <ConfettiExplosion />}
@@ -859,9 +927,9 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
                     </div>
 
                     {/* Fibra Card - New Clean Minimalist Design */}
-                    <div className="w-full relative flex flex-col gap-2">
+                    <div className="min-w-[280px] flex-1 snap-center relative flex flex-col gap-2">
                         <div
-                            className={`p-4 lg:p-5 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center gap-3 transition-colors duration-700 border overflow-hidden relative ${isFiberComplete ? 'bg-emerald-500 border-emerald-600' : 'bg-white border-slate-100'}`}
+                            className={`p-4 lg:p-5 h-full rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center gap-3 transition-colors duration-700 border overflow-hidden relative ${isFiberComplete ? 'bg-emerald-500 border-emerald-600' : 'bg-white border-slate-100'}`}
                         >
                             {isFiberComplete && <ConfettiExplosion />}
                             <div className="w-full flex justify-between items-center z-10">
@@ -1259,29 +1327,63 @@ const Dashboard = ({ user, setUser, setActiveTab, theme }) => {
             <Modal
                 isOpen={showBodyMap}
                 onClose={() => setShowBodyMap(false)}
-                title="Guia de Aplicação"
+                title="Protocolo de Aplicação"
             >
                 <div className="space-y-6">
-                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">
-                        Selecione o local para ver os detalhes
-                    </p>
-                    
-                    <BodySelector
-                        selectedSiteId={selectedSiteId || injectionSuggestion.id}
-                        onSelect={setSelectedSiteId}
-                        suggestedSiteId={injectionSuggestion.id}
-                        lastSiteId={user.doseHistory?.[0]?.siteId}
-                    />
+                    {/* Dose Review Header */}
+                    <div className="bg-slate-50 p-5 rounded-[32px] border border-slate-100 flex items-center justify-between">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Medicamento & Dose</span>
+                            <h4 className="text-lg font-black text-slate-800">{medication?.name} <span className="text-brand-500">{user.currentDose}</span></h4>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center">
+                            <img src="/mascotstrong.png" alt="Mascot" className="w-8 h-8 opacity-20" />
+                        </div>
+                    </div>
+
+                    {/* Anticipation Warning */}
+                    {cycleInfo.daysSinceDose !== null && cycleInfo.daysSinceDose < 6 && (
+                        <AlertBox 
+                            type="warning"
+                            title="Intervalo Reduzido"
+                            message={`Faltam apenas ${cycleInfo.daysSinceDose} dias desde sua última dose. Aplicar o medicamento antes do intervalo de 6-7 dias pode aumentar os riscos de efeitos colaterais e sobrecarga. Deseja prosseguir mesmo assim?`}
+                        />
+                    )}
+
+                    <div className="space-y-3">
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">
+                            Selecione o local de hoje
+                        </p>
+                        
+                        <BodySelector
+                            selectedSiteId={selectedSiteId || injectionSuggestion.id}
+                            onSelect={setSelectedSiteId}
+                            suggestedSiteId={injectionSuggestion.id}
+                            lastSiteId={user.doseHistory?.[0]?.siteId}
+                        />
+                    </div>
 
                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <p className="text-[10px] text-slate-500 leading-relaxed italic">
+                        <p className="text-xs text-slate-500 leading-relaxed italic">
                             *A rotação dos locais é fundamental para evitar lipodistrofia e garantir a absorção correta do medicamento.
                         </p>
                     </div>
 
-                    <Button onClick={() => setShowBodyMap(false)} className="w-full py-4 rounded-2xl text-sm font-black">
-                        Fechar Guia
-                    </Button>
+                    <div className="flex items-stretch gap-3 pt-4">
+                        <button 
+                            onClick={() => setShowBodyMap(false)}
+                            className="flex-1 bg-slate-100 text-slate-500 py-4 rounded-[24px] text-xs font-black uppercase tracking-widest border-b-4 border-slate-200 active:translate-y-1 active:border-b-0 transition-all"
+                        >
+                            Sair
+                        </button>
+
+                        <button 
+                            onClick={handleConfirmInjection} 
+                            className="flex-[2] bg-brand-500 text-white py-4 rounded-[24px] text-xs font-black uppercase tracking-widest border-b-4 border-brand-700 active:translate-y-1 active:border-b-0 transition-all"
+                        >
+                            Confirmar
+                        </button>
+                    </div>
                 </div>
             </Modal>
         </div>

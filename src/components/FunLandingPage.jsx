@@ -208,7 +208,7 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                                     'Mounjaro', 'Ozempic', 'Zepbound', 'Wegovy', 
                                     'Saxenda', 'Victoza', 'Trulicity', 'Rybelsus'
                                 ].map((brand, i) => (
-                                    <div key={i} className="flex items-center gap-4 bg-white/10 px-10 py-6 rounded-[30px] border border-white/20 transition-all hover:bg-white/20 hover:-translate-y-1">
+                                    <div key={i} className="flex items-center gap-4 bg-white/10 px-10 py-6 rounded-[30px] border border-white/20 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:bg-white/20 hover:scale-[0.85]">
                                         <span className="text-3xl font-black text-white italic tracking-tighter">
                                             {brand}
                                         </span>
@@ -219,7 +219,7 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                                     'Mounjaro', 'Ozempic', 'Zepbound', 'Wegovy', 
                                     'Saxenda', 'Victoza', 'Trulicity', 'Rybelsus'
                                 ].map((brand, i) => (
-                                    <div key={`repeat-${i}`} className="flex items-center gap-4 bg-white/10 px-10 py-6 rounded-[30px] border border-white/20 transition-all hover:bg-white/20 hover:-translate-y-1">
+                                    <div key={`repeat-${i}`} className="flex items-center gap-4 bg-white/10 px-10 py-6 rounded-[30px] border border-white/20 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:bg-white/20 hover:scale-[0.85]">
                                         <span className="text-3xl font-black text-white italic tracking-tighter">
                                             {brand}
                                         </span>
@@ -257,7 +257,7 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                 <div className="max-w-5xl mx-auto">
                     {/* Blue Box with Footer Image Inside */}
                     <div className="bg-[#093466] rounded-[30px] md:rounded-[40px] p-6 md:p-12 flex flex-col md:flex-row items-center justify-between text-white relative overflow-hidden group">
-                        <div className="flex-1 space-y-4 md:space-y-6 relative z-10 text-center md:text-left">
+                        <div className="flex-1 space-y-4 md:space-y-6 relative z-10 text-center md:text-left md:pr-[25%]">
                             <h2 className="text-3xl md:text-5xl font-black leading-tight">Pronto para entrar nessa jornada?</h2>
                             <p className="text-lg md:text-xl opacity-80 font-medium">Baixe o Mounjoy agora e comece a se sentir incrível.</p>
                             <Button
@@ -268,11 +268,11 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                             </Button>
                         </div>
                         
-                        <div className="mt-10 md:mt-0 relative z-10 flex items-center justify-center">
+                        <div className="absolute top-6 md:top-12 -bottom-16 md:-bottom-24 right-[-30px] md:right-[10%] z-0 flex items-start justify-center group-hover:scale-110 transition-transform duration-700">
                             <img 
                                 src="/footer.png" 
                                 alt="Mounjoy Mascot" 
-                                className="h-48 md:h-72 object-contain drop-shadow-2xl" 
+                                className="h-full w-auto object-contain drop-shadow-2xl" 
                             />
                         </div>
 

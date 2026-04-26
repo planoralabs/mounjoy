@@ -118,29 +118,34 @@ const Logs = ({ user, setUser }) => {
                     </span>
                 </div>
 
-                <div className="relative h-2 w-full bg-slate-100 rounded-full mb-8">
-                    <div
-                        className={`absolute top-0 left-0 h-full rounded-full transition-all duration-300 ${getSliderColor()}`}
-                        style={{ width: `${(foodNoise / 10) * 100}%` }}
-                    />
-                    <input
-                        type="range"
-                        min="0"
-                        max="10"
-                        value={foodNoise}
-                        onChange={(e) => setFoodNoise(e.target.value)}
-                        className="absolute -top-2 left-0 w-full h-6 opacity-0 cursor-pointer z-10"
-                    />
-                    <div
-                        className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-white border-2 rounded-full shadow-md transition-all pointer-events-none`}
-                        style={{
-                            left: `calc(${(foodNoise / 10) * 100}% - 12px)`,
-                            borderColor: foodNoise <= 3 ? 'var(--brand-500)' : foodNoise <= 7 ? '#f97316' : '#ef4444'
-                        }}
-                    />
+                <div className="flex items-center gap-4 mb-2">
+                    <div className="relative h-2 flex-1 bg-slate-100 rounded-full">
+                        <div
+                            className={`absolute top-0 left-0 h-full rounded-full transition-all duration-300 ${getSliderColor()}`}
+                            style={{ width: `${(foodNoise / 10) * 100}%` }}
+                        />
+                        <input
+                            type="range"
+                            min="0"
+                            max="10"
+                            value={foodNoise}
+                            onChange={(e) => setFoodNoise(e.target.value)}
+                            className="absolute -top-2 left-0 w-full h-6 opacity-0 cursor-pointer z-10"
+                        />
+                        <div
+                            className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-white border-2 rounded-full shadow-md transition-all pointer-events-none`}
+                            style={{
+                                left: `calc(${(foodNoise / 10) * 100}% - 12px)`,
+                                borderColor: foodNoise <= 3 ? '#f97316' : foodNoise <= 7 ? '#f97316' : '#ef4444' // Using theme colors directly as fallback
+                            }}
+                        />
+                    </div>
+                    <div className={`w-10 text-center text-2xl font-black tabular-nums transition-colors ${foodNoise <= 3 ? 'text-brand-500' : foodNoise <= 7 ? 'text-orange-500' : 'text-red-500'}`}>
+                        {foodNoise}
+                    </div>
                 </div>
 
-                <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-widest px-1">
+                <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-widest px-1 pr-14">
                     <span>Silencioso</span>
                     <span>Intenso</span>
                 </div>
@@ -177,16 +182,16 @@ const Logs = ({ user, setUser }) => {
                         O "ruído alimentar" são aqueles pensamentos constantes e intrusivos sobre comida que podem dificultar o controle do peso.
                     </p>
                     <div className="space-y-3">
-                        <div className="flex gap-3 items-start bg-brand-50 p-3 rounded-xl border border-brand-100">
-                            <div className="font-bold text-brand-600 text-sm">0-3</div>
+                        <div className="flex gap-3 items-center bg-brand-50 p-3 rounded-xl border border-brand-100">
+                            <div className="font-bold text-brand-600 text-sm shrink-0 min-w-[36px]">0-3</div>
                             <p className="text-xs"><strong>Silencioso:</strong> Você só pensa em comida quando está com fome física real.</p>
                         </div>
-                        <div className="flex gap-3 items-start bg-orange-50 p-3 rounded-xl border border-orange-100">
-                            <div className="font-bold text-orange-500 text-sm">4-7</div>
+                        <div className="flex gap-3 items-center bg-orange-50 p-3 rounded-xl border border-orange-100">
+                            <div className="font-bold text-orange-500 text-sm shrink-0 min-w-[36px]">4-7</div>
                             <p className="text-xs"><strong>Moderado:</strong> Pensamentos ocasionais sobre comida ou desejo por snacks específicos.</p>
                         </div>
-                        <div className="flex gap-3 items-start bg-red-50 p-3 rounded-xl border border-red-100">
-                            <div className="font-bold text-red-500 text-sm">8-10</div>
+                        <div className="flex gap-3 items-center bg-red-50 p-3 rounded-xl border border-red-100">
+                            <div className="font-bold text-red-500 text-sm shrink-0 min-w-[36px]">8-10</div>
                             <p className="text-xs"><strong>Alto:</strong> Pensamentos constantes sobre a próxima refeição ou snacks.</p>
                         </div>
                     </div>

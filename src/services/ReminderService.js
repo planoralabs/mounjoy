@@ -10,14 +10,16 @@ export const ReminderService = {
      * @param {number} intervalDays - Frequency (default 7)
      * @returns {Object} { daysRemaining, status, nextDoseDate }
      */
-    calculateNextDose: (history = [], intervalDays = 7) => {
+    calculateNextDose: (history = [], intervalDays = 7, referenceDate = new Date()) => {
         if (!history || history.length === 0) {
-            return { daysRemaining: 0, status: 'first_dose', nextDoseDate: new Date() };
+            return { daysRemaining: 0, status: 'first_dose', nextDoseDate: referenceDate };
         }
 
         const lastDose = new Date(history[0].date);
-        const nextDose = new Date(lastDose.getTime() + intervalDays * 24 * 60 * 60 * 1000);
-        const now = new Date();
+        const nextDose = new Date(lastDose.getTime() + (Number(intervalDays) * 24 * 60 * 60 * 1000));
+        
+        // Use referenceDate for calculations (important for simulator)
+        const now = referenceDate;
 
         // Reset hours for clean day comparison
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -31,7 +33,7 @@ export const ReminderService = {
         if (diffDays < 0) status = 'overdue';
 
         return {
-            daysRemaining: Math.max(0, diffDays),
+            daysRemaining: isNaN(diffDays) ? 0 : Math.max(0, diffDays),
             overdueDays: diffDays < 0 ? Math.abs(diffDays) : 0,
             status,
             nextDoseDate: nextDose

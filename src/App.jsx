@@ -123,7 +123,7 @@ const MainApp = ({ guestUser, setGuestUser, theme, setTheme }) => {
         switch (activeTab) {
             case 'home': return <Dashboard user={user} setUser={handleUpdateUser} setActiveTab={setActiveTab} theme={theme} />;
             case 'logs': return <Logs user={user} setUser={handleUpdateUser} />;
-            case 'calendar': return <CalendarView user={user} setUser={handleUpdateUser} />;
+            case 'calendar': return <CalendarView user={user} setUser={handleUpdateUser} setActiveTab={setActiveTab} />;
             case 'charts': return <Charts user={user} />;
             case 'profile': return <Profile user={user} onReset={handleReset} setUser={handleUpdateUser} theme={theme} setTheme={setTheme} />;
             default: return <Dashboard user={user} setUser={handleUpdateUser} setActiveTab={setActiveTab} />;
