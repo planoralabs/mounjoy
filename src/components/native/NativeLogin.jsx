@@ -34,13 +34,13 @@ const NativeLogin = ({ onBack }) => {
                 style={styles.content}
             >
                 <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-                    <ChevronLeft size={24} color="#64748B" />
+                    <ChevronLeft size={24} color="#EA580C" />
                     <Text style={styles.backText}>Voltar</Text>
                 </TouchableOpacity>
 
                 <View style={styles.header}>
                     <View style={styles.iconBox}>
-                        <ShieldCheck size={40} color="#14B8A6" />
+                        <ShieldCheck size={40} color="#EA580C" />
                     </View>
                     <Text style={styles.title}>Bem-vindo de volta</Text>
                     <Text style={styles.subtitle}>Acesse sua conta para continuar sua jornada.</Text>
@@ -93,16 +93,16 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#FAF7F2' },
     content: { flex: 1, padding: 24, justifyContent: 'center' },
     backBtn: { flexDirection: 'row', alignItems: 'center', position: 'absolute', top: 20, left: 24, gap: 4 },
-    backText: { color: '#64748B', fontWeight: 'bold' },
+    backText: { color: '#EA580C', fontFamily: 'Outfit_700Bold', fontSize: 14 },
     header: { alignItems: 'center', marginBottom: 40 },
-    iconBox: { width: 80, height: 80, backgroundColor: '#F0FDFA', borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
-    title: { fontSize: 28, fontWeight: 'bold', color: '#0F172A', marginBottom: 8 },
-    subtitle: { fontSize: 16, color: '#64748B', textAlign: 'center' },
+    iconBox: { width: 80, height: 80, backgroundColor: '#FFF7ED', borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+    title: { fontSize: 28, fontFamily: 'Outfit_900Black', color: '#0F172A', marginBottom: 8 },
+    subtitle: { fontSize: 16, fontFamily: 'Outfit_600SemiBold', color: '#64748B', textAlign: 'center', lineHeight: 22 },
     form: { width: '100%' },
     loginBtn: { marginTop: 12, paddingVertical: 18 },
     forgotBtn: { alignSelf: 'center', marginTop: 24 },
-    forgotText: { color: '#94A3B8', fontSize: 14, fontWeight: '600' },
+    forgotText: { color: '#94A3B8', fontSize: 14, fontFamily: 'Outfit_700Bold' },
     footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 40 },
-    footerText: { color: '#64748B' },
-    signUpText: { color: '#14B8A6', fontWeight: 'bold' }
+    footerText: { color: '#64748B', fontFamily: 'Outfit_600SemiBold' },
+    signUpText: { color: '#EA580C', fontFamily: 'Outfit_700Bold' }
 });

@@ -6,7 +6,6 @@ import Charts from './components/Charts';
 import Profile from './components/Profile';
 import CalendarView from './components/CalendarView';
 import Onboarding from './components/Onboarding';
-import LandingPage from './components/LandingPage';
 import FunLandingPage from './components/FunLandingPage';
 import { Modal, Button } from './components/ui/BaseComponents';
 
@@ -141,20 +140,15 @@ const MainApp = ({ guestUser, setGuestUser, theme, setTheme }) => {
     const medicationName = user.medicationId ? (user.medicationId.charAt(0).toUpperCase() + user.medicationId.slice(1)) : 'Protocolo';
 
     return (
-        <div className={`min-h-screen pb-24 selection:bg-brand-100 transition-colors duration-500 ${theme === 'fun' ? 'bg-[#fdf5eb]' : 'bg-[#f8fafc]'}`}>
+        <div className={`min-h-screen pb-24 selection:bg-brand-100 transition-colors duration-500 bg-[#fdf5eb]`}>
             <header className="px-6 py-6 flex justify-between items-center bg-transparent max-w-md mx-auto">
                 <div>
-                    {theme === 'fun' ? (
-                        <div className="flex items-center gap-2">
-                           <img src="/logomount.png" alt="Mounjoy" className="h-6 w-auto" />
-                           <h1 className="text-xl font-black text-orange-600 tracking-tight">Oi, {user.name}! 🎈</h1>
-                        </div>
-                    ) : (
-                        <h1 className="text-2xl font-bold text-brand-900 tracking-tight">Olá, {user.name}</h1>
-                    )}
-                    <p className={`text-sm font-semibold font-outfit ${theme === 'fun' ? 'text-orange-400' : 'text-slate-500'}`}>
-                        {theme === 'fun' ? "Você está arrasando na " : "Você está na "}
-                        {getWeekNumber()}ª semana de {medicationName}
+                    <div className="flex items-center gap-2">
+                       <img src="/logomount.png" alt="Mounjoy" className="h-6 w-auto" />
+                       <h1 className="text-xl font-black text-orange-600 tracking-tight">Oi, {user.name}! 🎈</h1>
+                    </div>
+                    <p className="text-sm font-semibold font-outfit text-orange-400">
+                        Você está arrasando na {getWeekNumber()}ª semana de {medicationName}
                     </p>
                 </div>
                 <div
@@ -236,16 +230,11 @@ const AppContent = () => {
     const { currentUser, userData } = useAuth();
     const [startedOnboarding, setStartedOnboarding] = useState(false);
     const [showLogin, setShowLogin] = useState(false);
-    const [theme, setTheme] = useState(() => localStorage.getItem('mounjoy_theme') || 'default');
+    const [theme, setTheme] = useState('fun');
 
     useEffect(() => {
-        if (theme === 'default') {
-            document.documentElement.removeAttribute('data-theme');
-        } else {
-            document.documentElement.setAttribute('data-theme', theme);
-        }
-        localStorage.setItem('mounjoy_theme', theme);
-    }, [theme]);
+        document.documentElement.setAttribute('data-theme', 'fun');
+    }, []);
 
     const { logout } = useAuth();
     
@@ -321,10 +310,6 @@ const AppContent = () => {
     const hasAnyUser = userData || guestUser;
 
     // If we have a user (logged in or guest), we show the main app
-    // HOWEVER: If a user IS logged in but Firestore hasn't loaded yet (userData is null),
-    // and they DON'T have guest data, we might show a loading state or the MainApp will handle it.
-    // Given AuthProvider handles loading, if currentUser exists, userData will eventually follow.
-    // If we have a user (logged in or guest) AND we have their data, we show the main app
     if ((currentUser || guestUser) && hasAnyUser) {
         return <MainApp guestUser={guestUser} setGuestUser={setGuestUser} theme={theme} setTheme={setTheme} />;
     }
@@ -339,22 +324,11 @@ const AppContent = () => {
         return <Onboarding onComplete={handleOnboardingComplete} theme={theme} />;
     }
 
-    // Default: Show the Landing Page (toggle between Standard and Fun)
-    if (theme === 'fun') {
-        return (
-            <FunLandingPage
-                onStart={() => setStartedOnboarding(true)}
-                onLogin={() => setShowLogin(true)}
-                onToggleTheme={() => setTheme('default')}
-            />
-        );
-    }
-
     return (
-        <LandingPage
+        <FunLandingPage
             onStart={() => setStartedOnboarding(true)}
             onLogin={() => setShowLogin(true)}
-            onToggleTheme={() => setTheme('fun')}
+            onToggleTheme={null}
         />
     );
 };

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
-import { Home, BarChart2, Settings, Calendar, PenTool } from 'lucide-react-native';
+import { Home, BarChart3, Settings, CalendarDays, PenLine } from 'lucide-react-native';
+import { useFonts, Outfit_400Regular, Outfit_600SemiBold, Outfit_700Bold, Outfit_900Black } from '@expo-google-fonts/outfit';
 
 import NativeLandingPage from './src/components/native/NativeLandingPage';
 import NativeOnboarding from './src/components/native/NativeOnboarding';
@@ -43,7 +44,7 @@ const NativeMain = () => {
                 site: 'Não registrado'
             }],
             dailyIntakeHistory: {},
-            settings: { proteinGoal: 100, waterGoal: 2.5 }
+            settings: { proteinGoal: 100, waterGoal: 2.5, fiberGoal: 25 }
         };
         setGuestUser(newUser);
         setView('home');
@@ -68,7 +69,7 @@ const NativeMain = () => {
     if (!user) {
         return (
             <View style={styles.center}>
-                <ActivityIndicator color="#14B8A6" size="large" />
+                <ActivityIndicator color="#EA580C" size="large" />
                 <Text style={{ marginTop: 12, color: '#64748B' }}>Carregando perfil...</Text>
             </View>
         );
@@ -76,12 +77,12 @@ const NativeMain = () => {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'home': return <NativeDashboard user={user} setUser={setUser} />;
+            case 'home': return <NativeDashboard user={user} setUser={setUser} setActiveTab={setActiveTab} />;
             case 'logs': return <NativeLogs user={user} setUser={setUser} />;
             case 'calendar': return <NativeCalendar user={user} setUser={setUser} />;
             case 'stats': return <NativeEvolution user={user} />;
-            case 'profile': return <NativeProfile user={user} onLogout={logout} />;
-            default: return <NativeDashboard user={user} setUser={setUser} />;
+            case 'profile': return <NativeProfile user={user} setUser={setUser} onLogout={logout} />;
+            default: return <NativeDashboard user={user} setUser={setUser} setActiveTab={setActiveTab} />;
         }
     };
 
@@ -91,23 +92,23 @@ const NativeMain = () => {
 
             <View style={styles.tabBar}>
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('home')}>
-                    <Home color={activeTab === 'home' ? '#14B8A6' : '#94A3B8'} size={22} />
+                    <Home color={activeTab === 'home' ? '#EA580C' : '#94A3B8'} size={22} />
                     <Text style={[styles.tabText, activeTab === 'home' && styles.tabTextActive]}>Home</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('logs')}>
-                    <PenTool color={activeTab === 'logs' ? '#14B8A6' : '#94A3B8'} size={22} />
+                    <PenLine color={activeTab === 'logs' ? '#EA580C' : '#94A3B8'} size={22} />
                     <Text style={[styles.tabText, activeTab === 'logs' && styles.tabTextActive]}>Diário</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('calendar')}>
-                    <Calendar color={activeTab === 'calendar' ? '#14B8A6' : '#94A3B8'} size={22} />
+                    <CalendarDays color={activeTab === 'calendar' ? '#EA580C' : '#94A3B8'} size={22} />
                     <Text style={[styles.tabText, activeTab === 'calendar' && styles.tabTextActive]}>Agenda</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('stats')}>
-                    <BarChart2 color={activeTab === 'stats' ? '#14B8A6' : '#94A3B8'} size={22} />
+                    <BarChart3 color={activeTab === 'stats' ? '#EA580C' : '#94A3B8'} size={22} />
                     <Text style={[styles.tabText, activeTab === 'stats' && styles.tabTextActive]}>Dados</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('profile')}>
-                    <Settings color={activeTab === 'profile' ? '#14B8A6' : '#94A3B8'} size={22} />
+                    <Settings color={activeTab === 'profile' ? '#EA580C' : '#94A3B8'} size={22} />
                     <Text style={[styles.tabText, activeTab === 'profile' && styles.tabTextActive]}>Perfil</Text>
                 </TouchableOpacity>
             </View>
@@ -116,6 +117,21 @@ const NativeMain = () => {
 };
 
 export default function App() {
+    const [fontsLoaded] = useFonts({
+        Outfit_400Regular,
+        Outfit_600SemiBold,
+        Outfit_700Bold,
+        Outfit_900Black,
+    });
+
+    if (!fontsLoaded) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAF7F2' }}>
+                <ActivityIndicator color="#EA580C" size="large" />
+            </View>
+        );
+    }
+
     return (
         <AuthProvider>
             <NativeMain />
@@ -145,6 +161,6 @@ const styles = StyleSheet.create({
         shadowRadius: 20,
     },
     tabItem: { alignItems: 'center', justifyContent: 'center' },
-    tabText: { fontSize: 10, fontWeight: 'bold', color: '#94A3B8', marginTop: 4 },
-    tabTextActive: { color: '#14B8A6' }
+    tabText: { fontSize: 10, fontFamily: 'Outfit_700Bold', color: '#94A3B8', marginTop: 4 },
+    tabTextActive: { color: '#EA580C' }
 });
