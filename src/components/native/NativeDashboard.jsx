@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, Modal, Input } from './NativeUI';
+import NativeBodySelector from './NativeBodySelector';
 import { MOCK_MEDICATIONS } from '../../constants/medications';
 import { ReminderService } from '../../services/ReminderService';
 import { suggestNextInjection, getSiteById } from '../../services/InjectionService';
@@ -32,7 +33,8 @@ import {
     Activity, 
     Camera,
     Trash2,
-    X
+    X,
+    AlertCircle
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -104,6 +106,17 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
     const [btnPressed, setBtnPressed] = useState(false);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
     const [isFullscreenPhoto, setIsFullscreenPhoto] = useState(false);
+    const [showDoseModal, setShowDoseModal] = useState(false);
+    const [selectedSiteId, setSelectedSiteId] = useState(null);
+
+    const siteOptions = [
+        { id: 'arm-right', name: 'Braço Direito' },
+        { id: 'arm-left', name: 'Braço Esquerdo' },
+        { id: 'abdomen-left', name: 'Abdômen Esquerdo' },
+        { id: 'abdomen-right', name: 'Abdômen Direito' },
+        { id: 'thigh-right', name: 'Coxa Direita' },
+        { id: 'thigh-left', name: 'Coxa Esquerda' }
+    ];
 
     useEffect(() => {
         if (user.photos && user.photos.length > 0) {
@@ -325,13 +338,16 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
         const isOral = medication?.route === 'oral';
         const recordDate = getSimulatedDate();
         
+        const siteId = selectedSiteId || injectionSuggestion.id;
+        const site = getSiteById(siteId);
+
         const newRecord = {
             date: recordDate.toISOString(),
             dose: user.currentDose,
             medication: user.medicationId,
-            siteId: isOral ? null : injectionSuggestion.id,
-            area: isOral ? 'Oral' : injectionSuggestion.area || 'Abdômen',
-            side: isOral ? 'N/A' : injectionSuggestion.side || 'E'
+            siteId: isOral ? null : siteId,
+            area: isOral ? 'Oral' : site?.area || 'Abdômen',
+            side: isOral ? 'N/A' : site?.side || 'E'
         };
 
         setUser({
@@ -339,6 +355,8 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
             doseHistory: [newRecord, ...(user.doseHistory || [])]
         });
 
+        setShowDoseModal(false);
+        setSelectedSiteId(null);
         setIsApplied(true);
         setTimeout(() => {
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -597,7 +615,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                             <TouchableWithoutFeedback
                                 onPressIn={() => setBtnPressed(true)}
                                 onPressOut={() => setBtnPressed(false)}
-                                onPress={handleConfirmInjection}
+                                onPress={() => setShowDoseModal(true)}
                             >
                                 <View style={styles.physicalBtnContainer}>
                                     <View style={styles.physicalBtnBase} />
@@ -628,13 +646,17 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
 
                         {!isApplied && (
                             <View style={styles.suggestedRow}>
-                                <View style={styles.suggestedSiteCard}>
+                                <TouchableOpacity 
+                                    style={styles.suggestedSiteCard}
+                                    onPress={() => setShowDoseModal(true)}
+                                    activeOpacity={0.8}
+                                >
                                     <Text style={styles.suggestedSiteLabel}>Local Sugerido</Text>
                                     <View style={styles.suggestedSiteValueRow}>
                                         <Text style={styles.suggestedSiteIcon}>📍</Text>
                                         <Text style={styles.suggestedSiteText}>{injectionSuggestion.label}</Text>
                                     </View>
-                                </View>
+                                </TouchableOpacity>
 
                                 <View style={styles.cycleTipCard}>
                                     <Text style={styles.cycleTipLabel}>Dica de Ciclo</Text>
@@ -658,8 +680,9 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                 <ScrollView 
                     horizontal 
                     showsHorizontalScrollIndicator={false}
-                    snapToInterval={width - 48 + 16}
+                    snapToInterval={width - 80 + 16}
                     decelerationRate="fast"
+                    style={styles.carouselScrollView}
                     contentContainerStyle={styles.carouselContainer}
                 >
                     {/* ÁGUA Card */}
@@ -891,6 +914,52 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                 </TouchableOpacity>
             </Modal>
 
+            {/* Modal: Protocolo de Aplicação (Registrar Dose) */}
+            <Modal visible={showDoseModal} onClose={() => setShowDoseModal(false)} title="Protocolo de Aplicação">
+                <ScrollView contentContainerStyle={{ paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
+                    <View style={styles.modalWeightStatusCard}>
+                        <View style={styles.modalWeightCol}>
+                            <Text style={styles.modalWeightBadgeLabel}>Medicamento & Dose</Text>
+                            <Text style={styles.modalWeightBadgeVal}>
+                                {medication?.name} <Text style={{ fontSize: 16, color: '#EA580C', fontFamily: 'Outfit_700Bold' }}>{user.currentDose}</Text>
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Anticipation Warning (Reduced Interval) */}
+                    {cycleInfo.daysSinceDose !== null && cycleInfo.daysSinceDose < 6 && (
+                        <View style={styles.warningBox}>
+                            <AlertCircle size={20} color="#EA580C" style={{ marginTop: 2 }} />
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.warningTitle}>Intervalo Reduzido</Text>
+                                <Text style={styles.warningText}>
+                                    Faltam apenas {cycleInfo.daysSinceDose} dias desde sua última dose. Aplicar o medicamento antes do intervalo de 6-7 dias pode aumentar os riscos de efeitos colaterais e sobrecarga. Deseja prosseguir mesmo assim?
+                                </Text>
+                            </View>
+                        </View>
+                    )}
+
+                    <Text style={styles.modalSubLabelText}>Selecione o local de hoje</Text>
+                    <View style={{ marginVertical: 12, width: '100%' }}>
+                        <NativeBodySelector 
+                            selectedSiteId={selectedSiteId || injectionSuggestion.id}
+                            onSelect={setSelectedSiteId}
+                            suggestedSiteId={injectionSuggestion.id}
+                        />
+                    </View>
+
+                    <View style={styles.tipBox}>
+                        <Text style={styles.tipText}>
+                            * A rotação dos locais é fundamental para evitar lipodistrofia e garantir a absorção correta do medicamento.
+                        </Text>
+                    </View>
+
+                    <Button onClick={handleConfirmInjection} style={{ width: '100%', marginTop: 16 }}>
+                        Confirmar Aplicação
+                    </Button>
+                </ScrollView>
+            </Modal>
+
             {/* Fullscreen Photo Zoom Modal */}
             <RNModal visible={isFullscreenPhoto} transparent animationType="fade">
                 <TouchableOpacity 
@@ -898,7 +967,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                     onPress={() => setIsFullscreenPhoto(false)}
                     style={styles.fullscreenOverlay}
                 >
-                    <View style={styles.fullscreenContent} onStartShouldSetResponder={() => true}>
+                    <View style={styles.fullscreenContent}>
                         {user.photos && user.photos.length > 0 && (
                             <Image 
                                 source={{ uri: typeof user.photos[currentPhotoIndex] === 'string' ? user.photos[currentPhotoIndex] : user.photos[currentPhotoIndex].url }} 
@@ -1167,10 +1236,48 @@ const styles = StyleSheet.create({
     rateBadge: { backgroundColor: '#FFF7ED', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 8 },
     rateBadgeText: { fontSize: 9, fontFamily: 'Outfit_900Black', color: '#EA580C', textTransform: 'uppercase', letterSpacing: 0.5 },
     
-    carouselContainer: { gap: 16, paddingRight: 48 },
-    carouselCard: { width: width - 48, minHeight: 320, borderRadius: 36, borderWidth: 1, borderColor: '#F1F5F9', padding: 20, flexDirection: 'col', justifyContent: 'space-between', shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 3, overflow: 'hidden', position: 'relative' },
-    mascotPopupContainer: { position: 'absolute', inset: 0, justifyContent: 'center', alignItems: 'center', zIndex: 50, backgroundColor: 'rgba(255,255,255,0.05)' },
-    mascotPopupImage: { width: '100%', height: '100%', position: 'absolute', bottom: 0 },
+    carouselScrollView: {
+        marginLeft: -24,
+        marginRight: -24,
+    },
+    carouselContainer: {
+        paddingLeft: 24,
+        paddingRight: 24,
+        gap: 16,
+    },
+    carouselCard: { 
+        width: width - 80, 
+        minHeight: 320, 
+        borderRadius: 36, 
+        borderWidth: 1, 
+        borderColor: '#F1F5F9', 
+        padding: 20, 
+        flexDirection: 'column', 
+        justifyContent: 'space-between', 
+        shadowColor: '#000', 
+        shadowOffset: { width: 0, height: 6 }, 
+        shadowOpacity: 0.03, 
+        shadowRadius: 10, 
+        elevation: 3, 
+        overflow: 'hidden', 
+        position: 'relative' 
+    },
+    mascotPopupContainer: { 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        zIndex: 50, 
+        backgroundColor: 'rgba(255,255,255,0.92)', 
+        borderRadius: 36 
+    },
+    mascotPopupImage: { 
+        width: '80%', 
+        height: '80%',
+    },
 
     cardHeader: { flexDirection: 'column', gap: 2 },
     cardTitleText: { fontSize: 14, fontFamily: 'Outfit_900Black', color: '#1E293B' },
@@ -1231,5 +1338,49 @@ const styles = StyleSheet.create({
     fullscreenNavBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
     fullscreenDotsRow: { flexDirection: 'row', gap: 6 },
     fullscreenDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' },
-    fullscreenDotActive: { width: 16, backgroundColor: '#FFFFFF' }
+    fullscreenDotActive: { width: 16, backgroundColor: '#FFFFFF' },
+
+    siteGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+    siteChip: { flex: 1, minWidth: '45%', paddingVertical: 12, borderRadius: 16, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' },
+    siteChipActive: { backgroundColor: '#EA580C', borderColor: '#EA580C' },
+    siteChipSuggested: { borderColor: '#BBF7D0', backgroundColor: '#F0FDF4' },
+    siteChipText: { fontSize: 13, fontFamily: 'Outfit_700Bold', color: '#475569' },
+    siteChipTextActive: { color: '#FFFFFF' },
+    warningBox: {
+        flexDirection: 'row',
+        gap: 12,
+        backgroundColor: '#FEF3C7',
+        borderColor: '#FDE68A',
+        borderWidth: 1,
+        borderRadius: 24,
+        padding: 16,
+        marginBottom: 16,
+    },
+    warningTitle: {
+        fontSize: 14,
+        fontFamily: 'Outfit_700Bold',
+        color: '#78350F',
+        marginBottom: 2,
+    },
+    warningText: {
+        fontSize: 11,
+        fontFamily: 'Outfit_600SemiBold',
+        color: '#78350F',
+        lineHeight: 15,
+    },
+    tipBox: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 16,
+    },
+    tipText: {
+        fontSize: 11,
+        fontFamily: 'Outfit_600SemiBold',
+        color: '#64748B',
+        fontStyle: 'italic',
+        lineHeight: 15,
+    },
 });

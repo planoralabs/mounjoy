@@ -72,3 +72,17 @@ Ambos os ambientes compartilham a estrutura lógica das informações do usuári
 - **Solução**: 
   1. Adicionado o comando `evt.currentTarget.requestDisallowInterceptTouchEvent(true)` nos manipuladores `onPanResponderGrant` e `onPanResponderMove`. Isso bloqueia temporariamente a rolagem do `ScrollView` enquanto o usuário ajusta o slider.
   2. Substituído o cálculo baseado em `locationX` (que é relativo ao elemento tocado e causa saltos no slider se o usuário tocar na bolinha) por `pageX` absoluto. Ao obter a largura e a coordenada X inicial da barra (cados obtidos dinamicamente na primeira montagem com `ref` e `onLayout`), conseguimos uma precisão de arrasto de 100% livre de bugs de renderização.
+
+### 3.2 Livre Movimentação na Rolagem de Páginas
+- **Problema**: O uso excessivo de interceptadores de toque (`onStartShouldSetResponder={() => true}`) em containers de modais e carrosséis travava a rolagem vertical natural do aplicativo caso o usuário tocasse ou iniciasse o movimento com o dedo posicionado acima destes elementos.
+- **Solução**: Removemos as declarações de responder invasivas de todos os wrappers de cartões e modais na home e no calendário, devolvendo a prioridade ao `ScrollView` raiz e garantindo uma navegação fluida em todo o app.
+
+---
+
+## 4. Seletor de Local de Aplicação Nativo (`NativeBodySelector.jsx`)
+
+Para garantir paridade com a versão Web, o aplicativo mobile foi atualizado para utilizar um mapa corporal totalmente interativo desenvolvido em SVG (`react-native-svg`):
+- **Visualização Humana**: Renderização de caminhos SVG correspondentes aos Braços, Abdômen e Coxas do paciente.
+- **Interatividade Tátil**: Cada região responde individualmente ao toque (`onPress` nas tags `Path` do SVG), atualizando instantaneamente o local selecionado.
+- **Destaque Visual Dinâmico**: O componente diferencia as cores dos membros baseando-se no estado: laranja para o local atualmente selecionado e esmeralda para a recomendação gerada pelo algoritmo de rotação inteligente.
+- **Integração Consistente**: O seletor visual foi integrado aos fluxos de registro de aplicação no Dashboard e no Perfil do usuário.

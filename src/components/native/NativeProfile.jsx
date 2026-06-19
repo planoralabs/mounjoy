@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, Modal, Input } from './NativeUI';
+import NativeBodySelector from './NativeBodySelector';
 import { 
     User, 
     Shield, 
@@ -448,31 +449,13 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                     </Text>
                 </View>
 
-                <Text style={styles.modalSubLabelText}>Local da Aplicação (Sugerido: {injectionSuggestion.label})</Text>
-                <View style={styles.siteGrid}>
-                    {siteOptions.map(opt => {
-                        const isSuggested = opt.id === injectionSuggestion.id;
-                        const isSelected = selectedSiteId === opt.id || (!selectedSiteId && isSuggested);
-                        return (
-                            <TouchableOpacity 
-                                key={opt.id}
-                                onPress={() => setSelectedSiteId(opt.id)}
-                                style={[
-                                    styles.siteChip,
-                                    isSelected && styles.siteChipActive,
-                                    isSuggested && !isSelected && styles.siteChipSuggested
-                                ]}
-                            >
-                                <Text style={[
-                                    styles.siteChipText,
-                                    isSelected && styles.siteChipTextActive,
-                                    isSuggested && !isSelected && { color: '#16A34A' }
-                                ]}>
-                                    {opt.name} {isSuggested && '📍'}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
+                <Text style={styles.modalSubLabelText}>Local da Aplicação</Text>
+                <View style={{ marginVertical: 12, width: '100%' }}>
+                    <NativeBodySelector 
+                        selectedSiteId={selectedSiteId || injectionSuggestion.id}
+                        onSelect={setSelectedSiteId}
+                        suggestedSiteId={injectionSuggestion.id}
+                    />
                 </View>
 
                 <Button onClick={handleAddDoseRecord} style={{ width: '100%', marginTop: 24 }}>

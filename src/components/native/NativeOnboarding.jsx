@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, Dimensions, Platform, LayoutAnimation, UIManager } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, Dimensions, Platform, LayoutAnimation, UIManager, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Button, Input, Slider } from './NativeUI';
 import { MOCK_MEDICATIONS } from '../../constants/medications';
 import { ArrowLeft, Check } from 'lucide-react-native';
@@ -303,33 +303,45 @@ const NativeOnboarding = ({ onComplete }) => {
     ];
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.headerNav}>
-                {step > 0 && (
-                    <TouchableOpacity onPress={prevStep} style={styles.backBtn}>
-                        <ArrowLeft size={20} color="#EA580C" />
-                    </TouchableOpacity>
-                )}
-                <View style={[styles.progressContainer, { height: 16 - (step / (steps.length - 1)) * 14 }]}>
-                    <View style={[styles.progressBar, { width: `${(step / (steps.length - 1)) * 100}%` }]} />
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <SafeAreaView style={styles.container}>
+                <View style={styles.headerNav}>
+                    {step > 0 && (
+                        <TouchableOpacity onPress={prevStep} style={styles.backBtn}>
+                            <ArrowLeft size={20} color="#EA580C" />
+                        </TouchableOpacity>
+                    )}
+                    <View style={[styles.progressContainer, { height: 16 - (step / (steps.length - 1)) * 14 }]}>
+                        <View style={[styles.progressBar, { width: `${(step / (steps.length - 1)) * 100}%` }]} />
+                    </View>
                 </View>
-            </View>
-            
-            <View style={styles.content}>
-                {steps[step]}
-            </View>
+                
+                <View style={styles.content}>
+                    {steps[step]}
+                </View>
 
-            <View style={styles.footer}>
-                <Button 
-                    variant="primary" 
-                    onClick={nextStep} 
-                    disabled={isNextDisabled()}
-                    style={styles.actionBtn}
-                >
-                    {step === 0 ? 'Começar configuração' : step === steps.length - 1 ? 'Finalizar' : 'Próximo'}
-                </Button>
-            </View>
-        </SafeAreaView>
+                <View style={styles.footer}>
+                    {step === 4 && data.medicationId && selectedMed && (
+                        <View style={styles.selectionPreview}>
+                            <Text style={styles.selectionPreviewLabel}>Selecionado</Text>
+                            <View style={styles.selectionPreviewRow}>
+                                <Text style={styles.selectionPreviewBrand}>{selectedMed.brand}</Text>
+                                <Text style={styles.selectionPreviewSeparator}>|</Text>
+                                <Text style={styles.selectionPreviewSubstance}>{selectedMed.substance}</Text>
+                            </View>
+                        </View>
+                    )}
+                    <Button 
+                        variant="primary" 
+                        onClick={nextStep} 
+                        disabled={isNextDisabled()}
+                        style={styles.actionBtn}
+                    >
+                        {step === 0 ? 'Começar configuração' : step === steps.length - 1 ? 'Finalizar' : 'Próximo'}
+                    </Button>
+                </View>
+            </SafeAreaView>
+        </TouchableWithoutFeedback>
     );
 };
 
@@ -410,8 +422,8 @@ const styles = StyleSheet.create({
         borderColor: '#FFEDD5',
         backgroundColor: '#FFFBF7',
     },
-    substanceTitle: { fontSize: 16, fontFamily: 'Outfit_700Bold', color: '#0F172A', textAlign: 'center', lineHeight: 20 },
-    substanceTitleFocused: { fontSize: 20, color: '#EA580C', marginBottom: 16, textAlign: 'left' },
+    substanceTitle: { fontSize: 18, fontFamily: 'Outfit_900Black', color: '#431407', textAlign: 'center', lineHeight: 22 },
+    substanceTitleFocused: { fontSize: 22, fontFamily: 'Outfit_900Black', color: '#431407', marginBottom: 16, textAlign: 'center' },
     substanceSelectedBrandText: { fontSize: 11, fontFamily: 'Outfit_900Black', color: '#EA580C', marginTop: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
 
     brandsList: { gap: 10 },
@@ -423,16 +435,19 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E2E8F0',
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         alignItems: 'center',
+        position: 'relative',
     },
     brandButtonActive: {
         borderColor: '#EA580C',
         backgroundColor: '#FFF7ED',
     },
-    brandButtonText: { fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#475569' },
+    brandButtonText: { fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#475569', textAlign: 'center' },
     brandButtonTextActive: { color: '#EA580C' },
     brandCheckIndicator: {
+        position: 'absolute',
+        right: 12,
         width: 20,
         height: 20,
         borderRadius: 10,
@@ -464,5 +479,40 @@ const styles = StyleSheet.create({
 
     // Footer
     footer: { padding: 24, backgroundColor: '#FAF7F2' },
-    actionBtn: { width: '100%' }
+    actionBtn: { width: '100%' },
+
+    selectionPreview: {
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    selectionPreviewLabel: {
+        fontSize: 10,
+        fontFamily: 'Outfit_900Black',
+        color: '#94A3B8',
+        textTransform: 'uppercase',
+        letterSpacing: 2,
+        marginBottom: 4,
+    },
+    selectionPreviewRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    selectionPreviewBrand: {
+        fontSize: 20,
+        color: '#EA580C',
+        fontStyle: 'italic',
+        fontWeight: '900',
+    },
+    selectionPreviewSeparator: {
+        fontSize: 16,
+        color: '#CBD5E1',
+    },
+    selectionPreviewSubstance: {
+        fontSize: 14,
+        fontFamily: 'Outfit_700Bold',
+        color: '#64748B',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
 });

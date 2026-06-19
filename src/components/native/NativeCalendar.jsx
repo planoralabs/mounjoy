@@ -606,7 +606,7 @@ const NativeCalendar = ({ user, setUser }) => {
                     onPress={() => setIsFullscreenPhoto(false)}
                     style={styles.fullscreenOverlay}
                 >
-                    <View style={styles.fullscreenContent} onStartShouldSetResponder={() => true}>
+                    <View style={styles.fullscreenContent}>
                         {user.photos && user.photos.length > 0 && (
                             <Image 
                                 source={{ uri: typeof user.photos[currentPhotoIndex] === 'string' ? user.photos[currentPhotoIndex] : user.photos[currentPhotoIndex].url }} 

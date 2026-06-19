@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Button, Input } from './NativeUI';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShieldCheck, ChevronLeft } from 'lucide-react-native';
@@ -29,10 +28,11 @@ const NativeLogin = ({ onBack }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView 
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.content}
-            >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                <KeyboardAvoidingView 
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.content}
+                >
                 <TouchableOpacity onPress={onBack} style={styles.backBtn}>
                     <ChevronLeft size={24} color="#EA580C" />
                     <Text style={styles.backText}>Voltar</Text>
@@ -83,6 +83,7 @@ const NativeLogin = ({ onBack }) => {
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
+            </TouchableWithoutFeedback>
         </SafeAreaView>
     );
 };

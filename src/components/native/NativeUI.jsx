@@ -66,6 +66,14 @@ export const Input = ({ label, value, onChangeText, placeholder, ...props }) => 
 export const Slider = ({ label, value, onChange, min, max, step, suffix }) => {
     const parsedValue = parseFloat(value) || min;
     const percentage = Math.max(0, Math.min(100, ((parsedValue - min) / (max - min)) * 100));
+    
+    // Store props in a ref to avoid stale closures in PanResponder callbacks
+    const propsRef = useRef({ min, max, step, onChange });
+    useEffect(() => {
+        propsRef.current = { min, max, step, onChange };
+    }, [min, max, step, onChange]);
+
+    const trackWidthRef = useRef(0);
     const [trackWidth, setTrackWidth] = useState(0);
 
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -87,17 +95,15 @@ export const Slider = ({ label, value, onChange, min, max, step, suffix }) => {
     }, [pulseAnim]);
 
     const trackRef = useRef(null);
-    const [trackPageX, setTrackPageX] = useState(0);
+    const initialValueRef = useRef(parsedValue);
+    const isDraggingRef = useRef(false);
 
-    const handleTouch = (pageX) => {
-        if (trackWidth <= 0) return;
-        const relativeX = pageX - trackPageX;
-        const pct = Math.max(0, Math.min(1, relativeX / trackWidth));
-        const rawVal = min + pct * (max - min);
-        const stepped = Math.round(rawVal / step) * step;
-        const finalVal = Math.max(min, Math.min(max, stepped));
-        onChange(finalVal.toFixed(step < 1 ? (step < 0.1 ? 2 : 1) : 0));
-    };
+    // Keep initialValueRef updated if props value changes externally (but not during drag)
+    useEffect(() => {
+        if (!isDraggingRef.current) {
+            initialValueRef.current = parsedValue;
+        }
+    }, [parsedValue]);
 
     const panResponder = useRef(
         PanResponder.create({
@@ -106,28 +112,54 @@ export const Slider = ({ label, value, onChange, min, max, step, suffix }) => {
             onMoveShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponderCapture: () => true,
             onPanResponderTerminationRequest: () => false,
-            onPanResponderGrant: (evt) => {
+            onPanResponderGrant: (evt, gestureState) => {
+                isDraggingRef.current = true;
                 if (evt.currentTarget && evt.currentTarget.requestDisallowInterceptTouchEvent) {
                     evt.currentTarget.requestDisallowInterceptTouchEvent(true);
                 }
-                handleTouch(evt.nativeEvent.pageX);
+                const currentWidth = trackWidthRef.current;
+                const { min: currentMin, max: currentMax, step: currentStep, onChange: currentOnChange } = propsRef.current;
+                
+                if (currentWidth > 0) {
+                    const locationX = evt.nativeEvent.locationX;
+                    const pct = Math.max(0, Math.min(1, locationX / currentWidth));
+                    const rawVal = currentMin + pct * (currentMax - currentMin);
+                    const stepped = Math.round(rawVal / currentStep) * currentStep;
+                    const finalVal = Math.max(currentMin, Math.min(currentMax, stepped));
+                    
+                    initialValueRef.current = finalVal;
+                    currentOnChange(finalVal.toFixed(currentStep < 1 ? (currentStep < 0.1 ? 2 : 1) : 0));
+                }
             },
-            onPanResponderMove: (evt) => {
+            onPanResponderMove: (evt, gestureState) => {
                 if (evt.currentTarget && evt.currentTarget.requestDisallowInterceptTouchEvent) {
                     evt.currentTarget.requestDisallowInterceptTouchEvent(true);
                 }
-                handleTouch(evt.nativeEvent.pageX);
+                const currentWidth = trackWidthRef.current;
+                const { min: currentMin, max: currentMax, step: currentStep, onChange: currentOnChange } = propsRef.current;
+                
+                if (currentWidth > 0) {
+                    const deltaPct = gestureState.dx / currentWidth;
+                    const deltaVal = deltaPct * (currentMax - currentMin);
+                    const rawVal = initialValueRef.current + deltaVal;
+                    const stepped = Math.round(rawVal / currentStep) * currentStep;
+                    const finalVal = Math.max(currentMin, Math.min(currentMax, stepped));
+                    currentOnChange(finalVal.toFixed(currentStep < 1 ? (currentStep < 0.1 ? 2 : 1) : 0));
+                }
+            },
+            onPanResponderRelease: () => {
+                isDraggingRef.current = false;
+            },
+            onPanResponderTerminate: () => {
+                isDraggingRef.current = false;
             },
         })
     ).current;
 
     const handleLayout = (e) => {
-        setTrackWidth(e.nativeEvent.layout.width);
-        trackRef.current?.measure((x, y, w, h, pageX, pageY) => {
-            if (pageX !== undefined) {
-                setTrackPageX(pageX);
-            }
-        });
+        const w = e.nativeEvent.layout.width;
+        setTrackWidth(w);
+        trackWidthRef.current = w;
     };
 
     return (
@@ -291,6 +323,7 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 40,
         position: 'relative',
+        backgroundColor: 'rgba(0,0,0,0)',
     },
     sliderTrackBg: {
         height: 12,
