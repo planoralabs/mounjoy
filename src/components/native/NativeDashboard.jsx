@@ -38,6 +38,7 @@ import {
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
+const cardWidth = Math.min(width - 80, 340);
 
 const waterImg = require('../../../assets/water.png');
 const proteinImg = require('../../../assets/protein.png');
@@ -383,6 +384,26 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
         return Math.ceil(diff / (1000 * 60 * 60 * 24 * 7)) || 1;
     }, [user.startDate]);
 
+    const stats = useMemo(() => {
+        const startWeight = user.history?.[0] || user.currentWeight || 80.0;
+        const currentWeight = user.currentWeight;
+        const totalKgLost = startWeight - currentWeight;
+
+        const startDate = new Date(user.startDate || new Date());
+        const todayDate = getSimulatedDate();
+        const diffWeeks = Math.max(1, (todayDate - startDate) / (1000 * 60 * 60 * 24 * 7));
+        const weeklyRate = (totalKgLost / diffWeeks).toFixed(2);
+
+        const entries = user.history || [];
+        const isPlateau = entries.length >= 3 &&
+            entries[entries.length - 1] === entries[entries.length - 2] &&
+            entries[entries.length - 1] === entries[entries.length - 3];
+
+        const isLowHunger = (dailyData.protein || 0) < ((user.settings?.proteinGoal || 100) * 0.4);
+
+        return { weeklyRate, isPlateau, isLowHunger };
+    }, [user, dailyData, simulatedDays]);
+
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -390,7 +411,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.greeting}>Oi, {user.name || 'Usuário'}! 🎈</Text>
-                        <Text style={styles.subtitle}>Você está arrasando na {weekNumber}ª semana!</Text>
+                        <Text style={styles.subtitle}>Você está arrasando na {weekNumber}ª semana de {medication?.name || 'Protocolo'}!</Text>
                     </View>
                     <TouchableOpacity 
                         style={styles.avatar}
@@ -667,6 +688,33 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                     </View>
                 )}
 
+                {/* Intelligence Alerts */}
+                <View style={{ gap: 10, marginBottom: 16 }}>
+                    {stats.isPlateau && (
+                        <View style={styles.alertPlateau}>
+                            <View style={styles.alertIconPlateauBox}>
+                                <TrendingUp size={20} color="#D97706" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.alertTitlePlateau}>Alerta de Platô</Text>
+                                <Text style={styles.alertDescPlateau}>Peso estável há 14 dias. Tente variar a rotina de exercícios ou hidratação.</Text>
+                            </View>
+                        </View>
+                    )}
+
+                    {stats.isLowHunger && (
+                        <View style={styles.alertLowHunger}>
+                            <View style={styles.alertIconLowHungerBox}>
+                                <Zap size={20} color="#EA580C" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.alertTitleLowHunger}>Baixa Fome Detectada</Text>
+                                <Text style={styles.alertDescLowHunger}>Priorize refeições leves e densas em proteína: ovos, iogurte ou shake.</Text>
+                            </View>
+                        </View>
+                    )}
+                </View>
+
                 {/* Daily wellness Snap Carousel */}
                 <View style={styles.carouselHeader}>
                     <Text style={styles.carouselTitle}>Meta do Dia</Text>
@@ -680,7 +728,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                 <ScrollView 
                     horizontal 
                     showsHorizontalScrollIndicator={false}
-                    snapToInterval={width - 80 + 16}
+                    snapToInterval={cardWidth + 16}
                     decelerationRate="fast"
                     style={styles.carouselScrollView}
                     contentContainerStyle={styles.carouselContainer}
@@ -1246,7 +1294,7 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     carouselCard: { 
-        width: width - 80, 
+        width: cardWidth, 
         minHeight: 320, 
         borderRadius: 36, 
         borderWidth: 1, 
@@ -1381,6 +1429,70 @@ const styles = StyleSheet.create({
         fontFamily: 'Outfit_600SemiBold',
         color: '#64748B',
         fontStyle: 'italic',
+        lineHeight: 15,
+    },
+    alertPlateau: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: '#FEF3C7',
+        borderColor: '#FDE68A',
+        borderWidth: 1,
+        borderRadius: 24,
+        padding: 16,
+    },
+    alertIconPlateauBox: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#FFFBEB',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    alertTitlePlateau: {
+        fontSize: 10,
+        fontFamily: 'Outfit_900Black',
+        color: '#78350F',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 2,
+    },
+    alertDescPlateau: {
+        fontSize: 11,
+        fontFamily: 'Outfit_600SemiBold',
+        color: '#78350F',
+        lineHeight: 15,
+    },
+    alertLowHunger: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: '#FFF7ED',
+        borderColor: '#FFEDD5',
+        borderWidth: 1,
+        borderRadius: 24,
+        padding: 16,
+    },
+    alertIconLowHungerBox: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#FFE5D9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    alertTitleLowHunger: {
+        fontSize: 10,
+        fontFamily: 'Outfit_900Black',
+        color: '#EA580C',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 2,
+    },
+    alertDescLowHunger: {
+        fontSize: 11,
+        fontFamily: 'Outfit_600SemiBold',
+        color: '#EA580C',
         lineHeight: 15,
     },
 });

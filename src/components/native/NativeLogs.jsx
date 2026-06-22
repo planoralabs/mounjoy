@@ -1,7 +1,105 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Platform } from 'react-native';
-import { Button, Input, Modal, Slider } from './NativeUI';
-import { Info, AlertCircle, CheckCircle2, MessageSquare } from 'lucide-react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Platform, PanResponder } from 'react-native';
+import { Button, Modal } from './NativeUI';
+import { Info, AlertCircle } from 'lucide-react-native';
+
+const FoodNoiseSlider = ({ value, onChange }) => {
+    const percentage = Math.max(0, Math.min(100, (value / 10) * 100));
+    const [trackWidth, setTrackWidth] = useState(0);
+    const trackWidthRef = useRef(0);
+    const initialValueRef = useRef(value);
+    const isDraggingRef = useRef(false);
+
+    const propsRef = useRef({ onChange, value });
+    useEffect(() => {
+        propsRef.current = { onChange, value };
+    }, [onChange, value]);
+
+    useEffect(() => {
+        if (!isDraggingRef.current) {
+            initialValueRef.current = value;
+        }
+    }, [value]);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onStartShouldSetPanResponderCapture: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponderCapture: () => true,
+            onPanResponderTerminationRequest: () => false,
+            onPanResponderGrant: (evt, gestureState) => {
+                isDraggingRef.current = true;
+                const currentWidth = trackWidthRef.current;
+                const { onChange: currentOnChange } = propsRef.current;
+                if (currentWidth > 0) {
+                    const locationX = evt.nativeEvent.locationX;
+                    const pct = Math.max(0, Math.min(1, locationX / currentWidth));
+                    const rawVal = pct * 10;
+                    const stepped = Math.max(0, Math.min(10, Math.round(rawVal)));
+                    initialValueRef.current = stepped;
+                    currentOnChange(stepped);
+                }
+            },
+            onPanResponderMove: (evt, gestureState) => {
+                const currentWidth = trackWidthRef.current;
+                const { onChange: currentOnChange } = propsRef.current;
+                if (currentWidth > 0) {
+                    const deltaPct = gestureState.dx / currentWidth;
+                    const deltaVal = deltaPct * 10;
+                    const rawVal = initialValueRef.current + deltaVal;
+                    const stepped = Math.max(0, Math.min(10, Math.round(rawVal)));
+                    currentOnChange(stepped);
+                }
+            },
+            onPanResponderRelease: () => { isDraggingRef.current = false; },
+            onPanResponderTerminate: () => { isDraggingRef.current = false; },
+        })
+    ).current;
+
+    const handleLayout = (e) => {
+        const w = e.nativeEvent.layout.width;
+        setTrackWidth(w);
+        trackWidthRef.current = w;
+    };
+
+    const getColor = () => {
+        if (value <= 3) return '#EA580C';
+        if (value <= 7) return '#F97316';
+        return '#EF4444';
+    };
+
+    return (
+        <View style={styles.sliderContainer}>
+            <View style={styles.sliderRow}>
+                <View 
+                    style={styles.sliderTrackWrapper}
+                    onLayout={handleLayout}
+                    {...panResponder.panHandlers}
+                >
+                    <View style={styles.sliderTrackBg} pointerEvents="none" />
+                    <View style={[styles.sliderTrackFill, { width: `${percentage}%`, backgroundColor: getColor() }]} pointerEvents="none" />
+                    <View 
+                        style={[
+                            styles.sliderThumb, 
+                            { 
+                                left: `${percentage}%`,
+                                transform: [{ translateX: -12 }],
+                                borderColor: getColor()
+                            }
+                        ]} 
+                        pointerEvents="none" 
+                    />
+                </View>
+                <Text style={[styles.sliderValueText, { color: getColor() }]}>{value}</Text>
+            </View>
+            <View style={styles.sliderLabelsRow}>
+                <Text style={styles.sliderLabelText}>Silencioso</Text>
+                <Text style={styles.sliderLabelText}>Intenso</Text>
+            </View>
+        </View>
+    );
+};
 
 const NativeLogs = ({ user, setUser }) => {
     const [foodNoise, setFoodNoise] = useState(3);
@@ -56,7 +154,7 @@ const NativeLogs = ({ user, setUser }) => {
 
     const getSliderColor = () => {
         if (foodNoise <= 3) return '#EA580C';
-        if (foodNoise <= 7) return '#F59E0B';
+        if (foodNoise <= 7) return '#F97316';
         return '#EF4444';
     };
 
@@ -73,7 +171,7 @@ const NativeLogs = ({ user, setUser }) => {
 
                 {/* Symptoms Section */}
                 <View style={styles.card}>
-                    <Text style={styles.cardLabel}>Sintomas do Dia</Text>
+                    <Text style={[styles.cardLabel, styles.cardLabelWithMargin]}>Sintomas do Dia</Text>
                     <View style={styles.symptomsGrid}>
                         {symptoms.map((s) => (
                             <TouchableOpacity 
@@ -118,32 +216,28 @@ const NativeLogs = ({ user, setUser }) => {
                         </View>
                     </View>
                     
-                    <Slider
-                        label=""
-                        value={foodNoise}
-                        onChange={(v) => setFoodNoise(Math.round(parseFloat(v)))}
-                        min={0}
-                        max={10}
-                        step={1}
-                        suffix=""
-                    />
+                    <FoodNoiseSlider value={foodNoise} onChange={setFoodNoise} />
                 </View>
 
                 {/* Daily Note */}
                 <View style={styles.card}>
-                    <Text style={styles.cardLabel}>Notas Rápidas</Text>
+                    <Text style={[styles.cardLabel, styles.cardLabelWithMargin]}>Diário Rápido</Text>
                     <TextInput 
                         style={styles.textArea}
                         multiline
                         numberOfLines={4}
-                        placeholder="Como você se sente hoje?"
+                        placeholder="Como você se sentiu hoje? Ex: Senti um pouco de tontura ao levantar..."
                         placeholderTextColor="#CBD5E1"
                         value={note}
                         onChangeText={setNote}
                     />
                 </View>
 
-                <Button onClick={handleSave} disabled={isSaving}>
+                <Button 
+                    onClick={handleSave} 
+                    disabled={isSaving}
+                    style={{ backgroundColor: '#0F172A', shadowColor: '#000', elevation: 4 }}
+                >
                     {isSaving ? 'Salvando...' : 'Salvar Registro'}
                 </Button>
             </ScrollView>
@@ -189,9 +283,9 @@ export default NativeLogs;
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#FAF7F2' },
     scroll: { padding: 24, paddingBottom: 110 },
-    title: { fontSize: 24, fontFamily: 'Outfit_700Bold', color: '#0F172A', marginBottom: 24, marginTop: Platform.OS === 'android' ? 20 : 0 },
+    title: { fontSize: 24, fontFamily: 'Outfit_900Black', color: '#0F172A', marginBottom: 24, marginTop: Platform.OS === 'android' ? 20 : 0 },
     card: { 
-        backgroundColor: '#fff', 
+        backgroundColor: '#FFFFFF', 
         borderRadius: 32, 
         padding: 24, 
         marginBottom: 16, 
@@ -203,22 +297,41 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 2,
     },
-    cardLabel: { fontSize: 11, fontFamily: 'Outfit_900Black', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 },
-    symptomsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    symptomItem: { width: '30%', padding: 12, borderRadius: 20, backgroundColor: '#F8FAFC', alignItems: 'center', borderWidth: 1, borderColor: '#F1F5F9' },
-    symptomActive: { backgroundColor: '#FFF7ED', borderColor: '#EA580C' },
-    emoji: { fontSize: 24, marginBottom: 4 },
-    symptomLabel: { fontSize: 10, fontFamily: 'Outfit_700Bold', color: '#64748B' },
+    cardLabel: { fontSize: 13, fontFamily: 'Outfit_700Bold', color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 },
+    cardLabelWithMargin: { marginBottom: 16 },
+    symptomsGrid: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
+    symptomItem: { width: '18%', aspectRatio: 1, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 3, elevation: 1 },
+    symptomActive: { backgroundColor: '#FFF7ED', borderColor: '#EA580C', borderWidth: 2 },
+    emoji: { fontSize: 22, marginBottom: 2 },
+    symptomLabel: { fontSize: 8, fontFamily: 'Outfit_900Black', color: '#94A3B8', textTransform: 'uppercase', textAlign: 'center' },
     symptomLabelActive: { color: '#EA580C' },
 
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
     badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100 },
     badgeText: { fontSize: 10, fontFamily: 'Outfit_700Bold', color: '#fff' },
-    sliderMock: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, marginBottom: 10 },
-    sliderStep: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#E2E8F0' },
-    sliderStepActive: { backgroundColor: '#EA580C', transform: [{ scale: 1.5 }] },
-    sliderLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-    sliderSubText: { fontSize: 10, fontFamily: 'Outfit_700Bold', color: '#94A3B8' },
 
-    textArea: { backgroundColor: '#F8FAFC', borderRadius: 20, padding: 16, height: 100, textAlignVertical: 'top', color: '#0F172A', fontFamily: 'Outfit_600SemiBold' }
+    // Custom Slider Styles
+    sliderContainer: { width: '100%', marginBottom: 8 },
+    sliderRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 8 },
+    sliderTrackWrapper: { flex: 1, height: 24, position: 'relative', justifyContent: 'center' },
+    sliderTrackBg: { height: 8, backgroundColor: '#F1F5F9', borderRadius: 4 },
+    sliderTrackFill: { height: 8, borderRadius: 4, position: 'absolute', left: 0 },
+    sliderThumb: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFFFFF', borderWidth: 2, position: 'absolute', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 2 },
+    sliderValueText: { fontSize: 24, fontFamily: 'Outfit_900Black', width: 40, textAlign: 'center', tabularNums: true },
+    sliderLabelsRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2, marginTop: 4, marginRight: 56 },
+    sliderLabelText: { fontSize: 10, fontFamily: 'Outfit_900Black', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 },
+
+    // Note Area
+    textArea: { backgroundColor: '#F8FAFC', borderRadius: 20, padding: 16, height: 100, textAlignVertical: 'top', color: '#0F172A', fontFamily: 'Outfit_600SemiBold', fontSize: 13 },
+
+    // Trigger Field
+    triggerField: { marginTop: 16, padding: 16, backgroundColor: '#FFF7ED', borderRadius: 20, borderWidth: 1, borderColor: '#FFEDD5' },
+    triggerLabel: { fontSize: 10, fontFamily: 'Outfit_900Black', color: '#EA580C', textTransform: 'uppercase', letterSpacing: 0.5 },
+    triggerInput: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, fontSize: 13, color: '#0F172A', fontFamily: 'Outfit_600SemiBold', marginTop: 8 },
+
+    // Modal Info styles
+    modalText: { fontSize: 13, fontFamily: 'Outfit_600SemiBold', color: '#475569', lineHeight: 18 },
+    infoRowBadge: { flexDirection: 'row', gap: 12, padding: 12, borderRadius: 16, borderWidth: 1, alignItems: 'center' },
+    infoRowBadgeVal: { fontSize: 14, fontFamily: 'Outfit_900Black', minWidth: 32 },
+    infoRowBadgeText: { flex: 1, fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#475569', lineHeight: 15 }
 });

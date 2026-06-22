@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, View, TextInput, Platform, Dimensions, Modal as RNModal, PanResponder, Animated } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, TextInput, Platform, Dimensions, Modal as RNModal, PanResponder, Animated, Pressable } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -207,21 +207,94 @@ export const Slider = ({ label, value, onChange, min, max, step, suffix }) => {
     );
 };
 
-export const Modal = ({ visible, onClose, title, children }) => (
-    <RNModal visible={visible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>{title}</Text>
-                    <TouchableOpacity onPress={onClose}>
-                        <Text style={styles.closeText}>Fechar</Text>
-                    </TouchableOpacity>
+export const Modal = ({ visible, onClose, title, children }) => {
+    const [renderModal, setRenderModal] = useState(visible);
+    const panY = useRef(new Animated.Value(600)).current;
+
+    useEffect(() => {
+        if (visible) {
+            setRenderModal(true);
+            Animated.spring(panY, {
+                toValue: 0,
+                tension: 40,
+                friction: 8,
+                useNativeDriver: true
+            }).start();
+        } else {
+            Animated.timing(panY, {
+                toValue: 600,
+                duration: 200,
+                useNativeDriver: true
+            }).start(() => {
+                setRenderModal(false);
+            });
+        }
+    }, [visible]);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (evt, gestureState) => {
+                return gestureState.dy > 10;
+            },
+            onPanResponderGrant: () => {
+                panY.setOffset(0);
+            },
+            onPanResponderMove: (evt, gestureState) => {
+                if (gestureState.dy > 0) {
+                    panY.setValue(gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                if (gestureState.dy > 120 && gestureState.vy > 0.5) {
+                    Animated.timing(panY, {
+                        toValue: 600,
+                        duration: 200,
+                        useNativeDriver: true
+                    }).start(onClose);
+                } else if (gestureState.dy > 150) {
+                    Animated.timing(panY, {
+                        toValue: 600,
+                        duration: 200,
+                        useNativeDriver: true
+                    }).start(onClose);
+                } else {
+                    Animated.spring(panY, {
+                        toValue: 0,
+                        tension: 40,
+                        friction: 8,
+                        useNativeDriver: true
+                    }).start();
+                }
+            }
+        })
+    ).current;
+
+    if (!renderModal) return null;
+
+    return (
+        <RNModal visible={renderModal} transparent animationType="none" onRequestClose={onClose}>
+            <Pressable style={{ flex: 1 }} onPress={onClose}>
+                <View style={[styles.modalOverlay, !visible && { backgroundColor: 'transparent' }]}>
+                    <Pressable style={{ width: '100%' }}>
+                        <Animated.View style={[styles.modalContent, { transform: [{ translateY: panY }] }]}>
+                            <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
+                                <View style={styles.dragHandle} />
+                            </View>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>{title}</Text>
+                                <TouchableOpacity onPress={onClose}>
+                                    <Text style={styles.closeText}>Fechar</Text>
+                                </TouchableOpacity>
+                            </View>
+                            {children}
+                        </Animated.View>
+                    </Pressable>
                 </View>
-                {children}
-            </View>
-        </View>
-    </RNModal>
-);
+            </Pressable>
+        </RNModal>
+    );
+};
 
 export const StatCard = ({ label, value, icon: Icon, color, subValue, onPress }) => (
     <TouchableOpacity onPress={onPress} style={styles.statCard} activeOpacity={0.9}>
@@ -373,7 +446,7 @@ const styles = StyleSheet.create({
         color: '#0F172A',
         height: 48,
     },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(9, 52, 102, 0.4)', justifyContent: 'flex-end' },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, minHeight: 300 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
     modalTitle: { fontSize: 20, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
@@ -395,4 +468,6 @@ const styles = StyleSheet.create({
     statLabel: { fontSize: 10, fontFamily: 'Outfit_900Black', color: '#94A3B8', textTransform: 'uppercase', marginBottom: 4 },
     statValue: { fontSize: 22, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
     statSub: { fontSize: 10, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', marginTop: 4 },
+    dragHandleContainer: { width: '100%', alignItems: 'center', paddingVertical: 12, marginTop: -12, marginBottom: 8 },
+    dragHandle: { width: 36, height: 5, borderRadius: 2.5, backgroundColor: '#E2E8F0' },
 });

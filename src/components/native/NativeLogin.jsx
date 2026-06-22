@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Button, Input } from './NativeUI';
 import { useAuth } from '../../contexts/AuthContext';
@@ -28,7 +29,7 @@ const NativeLogin = ({ onBack }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <TouchableWithoutFeedback onPress={Platform.OS === 'web' ? undefined : Keyboard.dismiss} accessible={false}>
                 <KeyboardAvoidingView 
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={styles.content}

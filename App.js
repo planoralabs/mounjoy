@@ -43,6 +43,8 @@ const NativeMain = () => {
                 medication: data.medicationId,
                 site: 'Não registrado'
             }],
+            measurements: [{ date: now, weight: parseFloat(data.startWeight) }],
+            sideEffectsLogs: [],
             dailyIntakeHistory: {},
             settings: { proteinGoal: 100, waterGoal: 2.5, fiberGoal: 25 }
         };

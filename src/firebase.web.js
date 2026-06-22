@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const getEnv = (key) => {
-    // Vite (Web)
-    if (import.meta && import.meta.env && import.meta.env[key]) {
-        return import.meta.env[key];
-    }
-    // Expo (Native)
-    if (process && process.env && process.env[`EXPO_PUBLIC_${key}`]) {
-        return process.env[`EXPO_PUBLIC_${key}`];
+    if (typeof process !== 'undefined' && process.env) {
+        if (process.env[key]) {
+            return process.env[key];
+        }
+        if (process.env[`EXPO_PUBLIC_${key}`]) {
+            return process.env[`EXPO_PUBLIC_${key}`];
+        }
     }
     return '';
 };

@@ -137,7 +137,7 @@ const NativeOnboarding = ({ onComplete }) => {
             <Text style={styles.stepTitle}>Qual seu protocolo?</Text>
             
             {/* Filters Row - Only visible when not focused on a single substance */}
-            {!selectedSubstance && (
+            {!selectedSubstance ? (
                 <View style={styles.filtersBlock}>
                     <Text style={styles.filterGroupLabel}>Via de Administração</Text>
                     <View style={styles.filterRow}>
@@ -174,16 +174,16 @@ const NativeOnboarding = ({ onComplete }) => {
                         ))}
                     </View>
                 </View>
-            )}
+            ) : null}
 
             {/* List/Grid of Substances */}
             <ScrollView style={styles.medList} showsVerticalScrollIndicator={false}>
-                {selectedSubstance && (
+                {!!selectedSubstance ? (
                     <TouchableOpacity onPress={() => { triggerLayoutAnimation(); setSelectedSubstance(null); }} style={styles.backToSubstancesBtn}>
                         <ArrowLeft size={16} color="#EA580C" />
                         <Text style={styles.backToSubstancesText}>Ver todas as substâncias</Text>
                     </TouchableOpacity>
-                )}
+                ) : null}
 
                 <View style={selectedSubstance ? styles.singleSubstanceWrapper : styles.substancesGrid}>
                     {Object.entries(medsBySubstance).map(([substance, meds]) => {
@@ -243,9 +243,9 @@ const NativeOnboarding = ({ onComplete }) => {
                                     ]}
                                 >
                                     <Text style={styles.substanceTitle}>{substance}</Text>
-                                    {selectedBrand && (
+                                    {!!selectedBrand ? (
                                         <Text style={styles.substanceSelectedBrandText}>{selectedBrand}</Text>
-                                    )}
+                                    ) : null}
                                 </TouchableOpacity>
                             );
                         }
@@ -258,7 +258,7 @@ const NativeOnboarding = ({ onComplete }) => {
         <ScrollView style={styles.stepScrollContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.stepTitle}>Detalhes da Dose</Text>
             
-            {data.medicationId && (
+            {!!data.medicationId ? (
                 <View style={styles.sectionContainer}>
                     <Text style={styles.sectionLabel}>Dosagem Atual</Text>
                     <View style={styles.doseGrid}>
@@ -273,7 +273,7 @@ const NativeOnboarding = ({ onComplete }) => {
                         ))}
                     </View>
                 </View>
-            )}
+            ) : null}
 
             <View style={styles.sectionContainer}>
                 <Text style={styles.sectionLabel}>Dia da Aplicação / Consumo</Text>
@@ -291,19 +291,19 @@ const NativeOnboarding = ({ onComplete }) => {
             </View>
 
             {/* Protocol Summary Preview Card */}
-            {data.currentDose && data.injectionDay && selectedMed && (
+            {!!data.currentDose && !!data.injectionDay && !!selectedMed ? (
                 <View style={styles.previewCard}>
                     <Text style={styles.previewText}>
                         Tudo pronto! Seu plano com <Text style={styles.previewHighlight}>{selectedMed.brand}</Text> está montado, na dose de <Text style={styles.previewHighlight}>{data.currentDose}</Text>, começando na próxima {data.injectionDay}. Vamos nessa!
                     </Text>
                     <Image source={mascotStretchImg} style={styles.previewMascot} resizeMode="contain" />
                 </View>
-            )}
+            ) : null}
         </ScrollView>
     ];
 
     return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <TouchableWithoutFeedback onPress={Platform.OS === 'web' ? undefined : Keyboard.dismiss} accessible={false}>
             <SafeAreaView style={styles.container}>
                 <View style={styles.headerNav}>
                     {step > 0 && (
@@ -321,7 +321,7 @@ const NativeOnboarding = ({ onComplete }) => {
                 </View>
 
                 <View style={styles.footer}>
-                    {step === 4 && data.medicationId && selectedMed && (
+                    {(step === 4 && !!data.medicationId && !!selectedMed) ? (
                         <View style={styles.selectionPreview}>
                             <Text style={styles.selectionPreviewLabel}>Selecionado</Text>
                             <View style={styles.selectionPreviewRow}>
@@ -330,7 +330,7 @@ const NativeOnboarding = ({ onComplete }) => {
                                 <Text style={styles.selectionPreviewSubstance}>{selectedMed.substance}</Text>
                             </View>
                         </View>
-                    )}
+                    ) : null}
                     <Button 
                         variant="primary" 
                         onClick={nextStep} 

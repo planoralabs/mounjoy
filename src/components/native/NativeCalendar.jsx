@@ -25,7 +25,7 @@ import {
     X, 
     Plus 
 } from 'lucide-react-native';
-import { Button } from './NativeUI';
+import { Button, Modal as NativeModal } from './NativeUI';
 
 const { width } = Dimensions.get('window');
 
@@ -241,51 +241,69 @@ const NativeCalendar = ({ user, setUser }) => {
                             ))}
                         </View>
 
-                        <View style={styles.calendarDaysGrid}>
-                            {[...Array(firstDay)].map((_, i) => (
-                                <View key={`empty-${i}`} style={styles.dayCellEmpty} />
-                            ))}
-                            {[...Array(daysInMonth)].map((_, i) => {
-                                const day = i + 1;
-                                const dayDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-                                const dayData = getDayData(dayDate);
-                                const hasLoggedWeight = !!dayData.weight;
-                                const isSelected = selectedDate && selectedDate.toDateString() === dayDate.toDateString();
-                                const isToday = day === new Date().getDate() && currentMonth.getMonth() === new Date().getMonth() && currentMonth.getFullYear() === new Date().getFullYear();
+                        {(() => {
+                            const totalSlots = [];
+                            for (let i = 0; i < firstDay; i++) {
+                                totalSlots.push({ type: 'empty', id: `empty-${i}` });
+                            }
+                            for (let i = 1; i <= daysInMonth; i++) {
+                                totalSlots.push({ type: 'day', day: i });
+                            }
+                            while (totalSlots.length % 7 !== 0) {
+                                totalSlots.push({ type: 'empty', id: `empty-end-${totalSlots.length}` });
+                            }
+                            const weeks = [];
+                            for (let i = 0; i < totalSlots.length; i += 7) {
+                                weeks.push(totalSlots.slice(i, i + 7));
+                            }
+                            return weeks.map((week, weekIdx) => (
+                                <View key={weekIdx} style={styles.calendarWeekRow}>
+                                    {week.map((slot) => {
+                                        if (slot.type === 'empty') {
+                                            return <View key={slot.id} style={styles.dayCellEmpty} />;
+                                        }
+                                        const day = slot.day;
+                                        const dayDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+                                        const dayData = getDayData(dayDate);
+                                        const hasLoggedWeight = !!dayData.weight;
+                                        const isSelected = selectedDate && selectedDate.toDateString() === dayDate.toDateString();
+                                        const isToday = day === new Date().getDate() && currentMonth.getMonth() === new Date().getMonth() && currentMonth.getFullYear() === new Date().getFullYear();
 
-                                return (
-                                    <TouchableOpacity
-                                        key={day}
-                                        onPress={() => {
-                                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                                            setSelectedDate(prev => prev && prev.getTime() === dayDate.getTime() ? null : dayDate);
-                                        }}
-                                        style={[
-                                            styles.dayCell,
-                                            isSelected 
-                                                ? styles.dayCellSelected 
-                                                : isToday 
-                                                    ? styles.dayCellToday 
-                                                    : hasLoggedWeight 
-                                                        ? styles.dayCellLoggedWeight 
-                                                        : styles.dayCellNormal
-                                        ]}
-                                    >
-                                        <Text style={[
-                                            styles.dayCellText,
-                                            isSelected ? styles.dayCellTextSelected : (isToday ? styles.dayCellTextToday : (hasLoggedWeight ? styles.dayCellTextLoggedWeight : styles.dayCellTextNormal))
-                                        ]}>
-                                            {day}
-                                        </Text>
-                                        <View style={styles.dayCellDotRow}>
-                                            {dayData.hasDose && <View style={styles.blueDot} />}
-                                            {dayData.hasSymptoms && <View style={styles.redDot} />}
-                                            {hasLoggedWeight && <View style={[styles.weightDot, isSelected && { backgroundColor: '#FFFFFF' }]} />}
-                                        </View>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
+                                        return (
+                                            <TouchableOpacity
+                                                key={day}
+                                                onPress={() => {
+                                                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                                                    setSelectedDate(prev => prev && prev.getTime() === dayDate.getTime() ? null : dayDate);
+                                                }}
+                                                style={[
+                                                    styles.dayCell,
+                                                    isSelected 
+                                                        ? styles.dayCellSelected 
+                                                        : isToday 
+                                                            ? styles.dayCellToday 
+                                                            : hasLoggedWeight 
+                                                                ? styles.dayCellLoggedWeight 
+                                                                : styles.dayCellNormal
+                                                ]}
+                                            >
+                                                <Text style={[
+                                                    styles.dayCellText,
+                                                    isSelected ? styles.dayCellTextSelected : (isToday ? styles.dayCellTextToday : (hasLoggedWeight ? styles.dayCellTextLoggedWeight : styles.dayCellTextNormal))
+                                                ]}>
+                                                    {day}
+                                                </Text>
+                                                <View style={styles.dayCellDotRow}>
+                                                    {dayData.hasDose && <View style={styles.blueDot} />}
+                                                    {dayData.hasSymptoms && <View style={styles.redDot} />}
+                                                    {hasLoggedWeight && <View style={[styles.weightDot, isSelected && { backgroundColor: '#FFFFFF' }]} />}
+                                                </View>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            ));
+                        })()}
                     </View>
 
                     {/* Expanded Day Details Section */}
@@ -455,118 +473,129 @@ const NativeCalendar = ({ user, setUser }) => {
             </ScrollView>
 
             {/* Modal: Adicionar Memória */}
-            <Modal visible={showAddMemoryModal} transparent animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>
-                                {showMonthPicker ? "Escolher Data" : "Nova Memória"}
-                            </Text>
-                            <TouchableOpacity onPress={() => {
-                                setShowAddMemoryModal(false);
-                                setShowMonthPicker(false);
-                            }}>
-                                <Text style={styles.modalCloseText}>Fechar</Text>
+            <NativeModal 
+                visible={showAddMemoryModal} 
+                onClose={() => {
+                    setShowAddMemoryModal(false);
+                    setShowMonthPicker(false);
+                }} 
+                title={showMonthPicker ? "Escolher Data" : "Nova Memória"}
+            >
+                {!showMonthPicker ? (
+                    <>
+                        {/* Horizontal Date Selector + Month Picker Trigger */}
+                        <View style={styles.modalDateSelectorContainer}>
+                            {/* Left Arrow */}
+                            <TouchableOpacity 
+                                onPress={() => scrollDates('left')}
+                                style={styles.modalArrowBtn}
+                            >
+                                <ChevronLeft size={16} color="#64748B" />
+                            </TouchableOpacity>
+
+                            <ScrollView 
+                                ref={scrollContainerRef}
+                                horizontal 
+                                showsHorizontalScrollIndicator={false} 
+                                contentContainerStyle={styles.modalDatesStrip}
+                                style={{ flex: 1 }}
+                                onScroll={(e) => setScrollOffset(e.nativeEvent.contentOffset.x)}
+                                scrollEventThrottle={16}
+                            >
+                                {generateDateRange().map((date, idx) => {
+                                    const isSelected = modalSelectedDate.toDateString() === date.toDateString();
+                                    return (
+                                        <TouchableOpacity
+                                            key={idx}
+                                            onPress={() => setModalSelectedDate(date)}
+                                            style={[
+                                                styles.modalDateCard,
+                                                isSelected && styles.modalDateCardSelected
+                                            ]}
+                                        >
+                                            <Text style={[styles.modalDateCardDayLabel, isSelected && { color: '#FFFFFF' }]}>
+                                                {new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(date).replace('.', '').toUpperCase()}
+                                            </Text>
+                                            <Text style={[styles.modalDateCardDayVal, isSelected && { color: '#FFFFFF' }]}>
+                                                {date.getDate()}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </ScrollView>
+
+                            {/* Right Arrow */}
+                            <TouchableOpacity 
+                                onPress={() => scrollDates('right')}
+                                style={styles.modalArrowBtn}
+                            >
+                                <ChevronRight size={16} color="#64748B" />
+                            </TouchableOpacity>
+
+                            {/* Month Picker Trigger (Calendar Icon) */}
+                            <TouchableOpacity 
+                                onPress={() => setShowMonthPicker(true)}
+                                style={styles.modalMonthPickerTrigger}
+                            >
+                                <CalendarIcon size={18} color="#3B82F6" />
                             </TouchableOpacity>
                         </View>
 
-                        {!showMonthPicker ? (
-                            <>
-                                {/* Horizontal Date Selector + Month Picker Trigger */}
-                                <View style={styles.modalDateSelectorContainer}>
-                                    {/* Left Arrow */}
-                                    <TouchableOpacity 
-                                        onPress={() => scrollDates('left')}
-                                        style={styles.modalArrowBtn}
-                                    >
-                                        <ChevronLeft size={16} color="#64748B" />
-                                    </TouchableOpacity>
+                        <View style={{ marginBottom: 20 }}>
+                            <Text style={styles.inputLabel}>O que você está pensando?</Text>
+                            <TextInput
+                                style={styles.modalTextArea}
+                                value={modalMemoryNote}
+                                onChangeText={setModalMemoryNote}
+                                placeholder="Escreva aqui sua memória..."
+                                multiline
+                                numberOfLines={4}
+                            />
+                        </View>
 
-                                    <ScrollView 
-                                        ref={scrollContainerRef}
-                                        horizontal 
-                                        showsHorizontalScrollIndicator={false} 
-                                        contentContainerStyle={styles.modalDatesStrip}
-                                        style={{ flex: 1 }}
-                                        onScroll={(e) => setScrollOffset(e.nativeEvent.contentOffset.x)}
-                                        scrollEventThrottle={16}
-                                    >
-                                        {generateDateRange().map((date, idx) => {
-                                            const isSelected = modalSelectedDate.toDateString() === date.toDateString();
-                                            return (
-                                                <TouchableOpacity
-                                                    key={idx}
-                                                    onPress={() => setModalSelectedDate(date)}
-                                                    style={[
-                                                        styles.modalDateCard,
-                                                        isSelected && styles.modalDateCardSelected
-                                                    ]}
-                                                >
-                                                    <Text style={[styles.modalDateCardDayLabel, isSelected && { color: '#FFFFFF' }]}>
-                                                        {new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(date).replace('.', '').toUpperCase()}
-                                                    </Text>
-                                                    <Text style={[styles.modalDateCardDayVal, isSelected && { color: '#FFFFFF' }]}>
-                                                        {date.getDate()}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            );
-                                        })}
-                                    </ScrollView>
-
-                                    {/* Right Arrow */}
-                                    <TouchableOpacity 
-                                        onPress={() => scrollDates('right')}
-                                        style={styles.modalArrowBtn}
-                                    >
-                                        <ChevronRight size={16} color="#64748B" />
-                                    </TouchableOpacity>
-
-                                    {/* Month Picker Trigger (Calendar Icon) */}
-                                    <TouchableOpacity 
-                                        onPress={() => setShowMonthPicker(true)}
-                                        style={styles.modalMonthPickerTrigger}
-                                    >
-                                        <CalendarIcon size={18} color="#3B82F6" />
-                                    </TouchableOpacity>
-                                </View>
-
-                                <View style={{ marginBottom: 20 }}>
-                                    <Text style={styles.inputLabel}>O que você está pensando?</Text>
-                                    <TextInput
-                                        style={styles.modalTextArea}
-                                        value={modalMemoryNote}
-                                        onChangeText={setModalMemoryNote}
-                                        placeholder="Escreva aqui sua memória..."
-                                        multiline
-                                        numberOfLines={4}
-                                    />
-                                </View>
-
-                                <Button onClick={handleSaveMemory} style={{ width: '100%', marginBottom: 12 }}>
-                                    Salvar Memória
-                                </Button>
-                            </>
-                        ) : (
-                            <View style={{ gap: 16 }}>
-                                <View style={styles.modalMonthPickerCard}>
-                                    <View style={styles.modalMonthPickerMonthHeader}>
-                                        <Text style={styles.modalMonthPickerMonthText}>
-                                            {modalSelectedDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
-                                        </Text>
-                                    </View>
-                                    
-                                    <View style={styles.modalMonthPickerWeekdays}>
-                                        {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(d => (
-                                            <Text key={d} style={styles.modalMonthPickerWeekdayText}>{d}</Text>
-                                        ))}
-                                    </View>
-                                    
-                                    <View style={styles.modalMonthPickerDaysGrid}>
-                                        {[...Array(new Date(modalSelectedDate.getFullYear(), modalSelectedDate.getMonth(), 1).getDay())].map((_, i) => (
-                                            <View key={`emp-${i}`} style={styles.modalMonthPickerDayEmpty} />
-                                        ))}
-                                        {[...Array(new Date(modalSelectedDate.getFullYear(), modalSelectedDate.getMonth() + 1, 0).getDate())].map((_, i) => {
-                                            const day = i + 1;
+                        <Button onClick={handleSaveMemory} style={{ width: '100%', marginBottom: 12 }}>
+                            Salvar Memória
+                        </Button>
+                    </>
+                ) : (
+                    <View style={{ gap: 16 }}>
+                        <View style={styles.modalMonthPickerCard}>
+                            <View style={styles.modalMonthPickerMonthHeader}>
+                                <Text style={styles.modalMonthPickerMonthText}>
+                                    {modalSelectedDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                                </Text>
+                            </View>
+                            
+                            <View style={styles.modalMonthPickerWeekdays}>
+                                {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(d => (
+                                    <Text key={d} style={styles.modalMonthPickerWeekdayText}>{d}</Text>
+                                ))}
+                            </View>
+                            
+                            {(() => {
+                                const modalFirstDay = new Date(modalSelectedDate.getFullYear(), modalSelectedDate.getMonth(), 1).getDay();
+                                const modalDaysInMonth = new Date(modalSelectedDate.getFullYear(), modalSelectedDate.getMonth() + 1, 0).getDate();
+                                const modalSlots = [];
+                                for (let i = 0; i < modalFirstDay; i++) {
+                                    modalSlots.push({ type: 'empty', id: `empty-${i}` });
+                                }
+                                for (let i = 1; i <= modalDaysInMonth; i++) {
+                                    modalSlots.push({ type: 'day', day: i });
+                                }
+                                while (modalSlots.length % 7 !== 0) {
+                                    modalSlots.push({ type: 'empty', id: `empty-end-${modalSlots.length}` });
+                                }
+                                const modalWeeks = [];
+                                for (let i = 0; i < modalSlots.length; i += 7) {
+                                    modalWeeks.push(modalSlots.slice(i, i + 7));
+                                }
+                                return modalWeeks.map((week, weekIdx) => (
+                                    <View key={weekIdx} style={styles.modalMonthPickerWeekRow}>
+                                        {week.map((slot) => {
+                                            if (slot.type === 'empty') {
+                                                return <View key={slot.id} style={styles.modalMonthPickerDayEmpty} />;
+                                            }
+                                            const day = slot.day;
                                             const date = new Date(modalSelectedDate.getFullYear(), modalSelectedDate.getMonth(), day);
                                             const isSelected = modalSelectedDate.toDateString() === date.toDateString();
                                             return (
@@ -588,16 +617,16 @@ const NativeCalendar = ({ user, setUser }) => {
                                             );
                                         })}
                                     </View>
-                                </View>
-                                
-                                <Button onClick={() => setShowMonthPicker(false)} style={{ width: '100%', marginBottom: 12 }}>
-                                    Confirmar Data
-                                </Button>
-                            </View>
-                        )}
+                                ));
+                            })()}
+                        </View>
+                        
+                        <Button onClick={() => setShowMonthPicker(false)} style={{ width: '100%', marginBottom: 12 }}>
+                            Confirmar Data
+                        </Button>
                     </View>
-                </View>
-            </Modal>
+                )}
+            </NativeModal>
 
             {/* Photo Fullscreen Zoom Modal */}
             <Modal visible={isFullscreenPhoto} transparent animationType="fade">
@@ -717,11 +746,11 @@ const styles = StyleSheet.create({
     monthNavRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     monthNavBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
     monthNameText: { fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#0F172A', textTransform: 'capitalize' },
-    calendarWeekdaysGrid: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-    weekdayLabel: { fontSize: 10, fontFamily: 'Outfit_900Black', color: '#CBD5E1', width: (width - 136) / 7, textAlign: 'center' },
-    calendarDaysGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    dayCell: { width: (width - 136) / 7, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 12, position: 'relative' },
-    dayCellEmpty: { width: (width - 136) / 7, height: 40 },
+    calendarWeekdaysGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    weekdayLabel: { fontSize: 10, fontFamily: 'Outfit_900Black', color: '#CBD5E1', width: '12.5%', textAlign: 'center' },
+    calendarWeekRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    dayCell: { width: '12.5%', height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 12, position: 'relative' },
+    dayCellEmpty: { width: '12.5%', height: 40 },
     dayCellSelected: { backgroundColor: '#1E293B' },
     dayCellToday: { backgroundColor: '#3B82F6' },
     dayCellLoggedWeight: { backgroundColor: '#EFF6FF' },
@@ -784,11 +813,11 @@ const styles = StyleSheet.create({
     modalMonthPickerCard: { backgroundColor: '#F8FAFC', borderRadius: 24, padding: 16, borderWidth: 1, borderColor: '#F1F5F9', marginBottom: 8 },
     modalMonthPickerMonthHeader: { marginBottom: 12, alignItems: 'center' },
     modalMonthPickerMonthText: { fontSize: 14, fontFamily: 'Outfit_900Black', color: '#1E293B', textTransform: 'uppercase', letterSpacing: 0.5 },
-    modalMonthPickerWeekdays: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 8 },
-    modalMonthPickerWeekdayText: { fontSize: 10, fontFamily: 'Outfit_900Black', color: '#CBD5E1', width: 32, textAlign: 'center' },
-    modalMonthPickerDaysGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-    modalMonthPickerDayEmpty: { width: (width - 104) / 7, height: 36 },
-    modalMonthPickerDayCell: { width: (width - 104) / 7, height: 36, justifyContent: 'center', alignItems: 'center', borderRadius: 10, marginBottom: 4 },
+    modalMonthPickerWeekdays: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    modalMonthPickerWeekdayText: { fontSize: 10, fontFamily: 'Outfit_900Black', color: '#CBD5E1', width: '12.5%', textAlign: 'center' },
+    modalMonthPickerWeekRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    modalMonthPickerDayEmpty: { width: '12.5%', height: 36 },
+    modalMonthPickerDayCell: { width: '12.5%', height: 36, justifyContent: 'center', alignItems: 'center', borderRadius: 10 },
     modalMonthPickerDayCellSelected: { backgroundColor: '#3B82F6' },
     modalMonthPickerDayText: { fontSize: 12, fontFamily: 'Outfit_700Bold', color: '#475569' },
 

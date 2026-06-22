@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -30,6 +30,11 @@ const NativeEvolution = ({ user }) => {
     const [view, setView] = useState('weight'); // 'weight' or 'glucose'
     const [selectedDates, setSelectedDates] = useState([]);
     const [showFullComparison, setShowFullComparison] = useState(false);
+    const [tooltip, setTooltip] = useState(null);
+
+    useEffect(() => {
+        setTooltip(null);
+    }, [view]);
 
     // Glucose Mock History
     const glucoseHistory = [98, 105, 92, 110, 89, 94, 91];
@@ -56,7 +61,7 @@ const NativeEvolution = ({ user }) => {
     }, [user.measurements, hasEnoughData]);
 
     const chartData = useMemo(() => {
-        const logs = baseWeightLogs.slice(-7);
+        const logs = view === 'weight' ? baseWeightLogs : baseWeightLogs.slice(-7); // Keep weight logs full, glucose sliced or full
         if (view === 'weight') {
             return {
                 labels: logs.map(l => new Date(l.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })),
@@ -77,6 +82,11 @@ const NativeEvolution = ({ user }) => {
             };
         }
     }, [baseWeightLogs, view]);
+
+    const chartWidth = useMemo(() => {
+        const pointCount = view === 'weight' ? baseWeightLogs.length : 7;
+        return Math.max(width - 32, pointCount * 65);
+    }, [baseWeightLogs, view, width]);
 
     const toggleDate = (date) => {
         if (selectedDates.includes(date)) {
@@ -144,27 +154,83 @@ const NativeEvolution = ({ user }) => {
 
                 {/* Chart Section */}
                 <View style={styles.chartCard}>
-                    <LineChart
-                        data={chartData}
-                        width={width - 48}
-                        height={220}
-                        chartConfig={{
-                            backgroundColor: '#ffffff',
-                            backgroundGradientFrom: '#ffffff',
-                            backgroundGradientTo: '#ffffff',
-                            decimalPlaces: 1,
-                            color: (opacity = 1) => view === 'weight' ? `rgba(234, 88, 12, ${opacity})` : `rgba(16, 185, 129, ${opacity})`,
-                            labelColor: (opacity = 1) => `rgba(148, 163, 184, ${opacity})`,
-                            style: { borderRadius: 32 },
-                            propsForDots: { r: '6', strokeWidth: '2', stroke: view === 'weight' ? '#EA580C' : '#10B981' },
-                            gridColor: 'rgba(241, 245, 249, 1)'
-                        }}
-                        bezier
-                        style={{ marginVertical: 8, borderRadius: 32 }}
-                        withInnerLines={false}
-                        withOuterLines={false}
-                        withShadow={false}
-                    />
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ position: 'relative', paddingLeft: 10, paddingRight: 20 }}>
+                        <LineChart
+                            data={chartData}
+                            width={chartWidth}
+                            height={220}
+                            chartConfig={{
+                                backgroundColor: '#ffffff',
+                                backgroundGradientFrom: '#ffffff',
+                                backgroundGradientTo: '#ffffff',
+                                decimalPlaces: 1,
+                                color: (opacity = 1) => view === 'weight' ? `rgba(234, 88, 12, ${opacity})` : `rgba(16, 185, 129, ${opacity})`,
+                                labelColor: (opacity = 1) => `rgba(148, 163, 184, ${opacity})`,
+                                propsForLabels: {
+                                    fontFamily: 'Outfit_700Bold',
+                                    fontSize: 10
+                                },
+                                style: { borderRadius: 32 },
+                                propsForDots: { r: '6', strokeWidth: '2', stroke: view === 'weight' ? '#EA580C' : '#10B981' },
+                                gridColor: 'rgba(241, 245, 249, 1)'
+                            }}
+                            bezier
+                            style={{ marginVertical: 8, borderRadius: 32 }}
+                            withInnerLines={false}
+                            withOuterLines={false}
+                            withShadow={true}
+                            onDataPointClick={({ value, index, x, y }) => {
+                                if (view === 'weight') {
+                                    const logs = baseWeightLogs;
+                                    const log = logs[index];
+                                    if (!log) return;
+                                    const logDate = new Date(log.date);
+                                    const formattedDate = logDate.toLocaleDateString('pt-BR', { month: 'short' }) + '.';
+                                    const pointImc = (log.weight / (heightInMeters * heightInMeters)).toFixed(1);
+                                    
+                                    const prevLogIndex = baseWeightLogs.findIndex(l => l.date === log.date) - 1;
+                                    let status = "Estável";
+                                    if (prevLogIndex >= 0) {
+                                        const prevWeight = baseWeightLogs[prevLogIndex].weight;
+                                        status = log.weight < prevWeight ? "Em evolução" : (log.weight === prevWeight ? "Estável" : "Em alerta");
+                                    }
+
+                                    setTooltip({
+                                        x,
+                                        y,
+                                        value,
+                                        date: formattedDate,
+                                        imc: pointImc,
+                                        status
+                                    });
+                                } else {
+                                    setTooltip({
+                                        x,
+                                        y,
+                                        value,
+                                        date: `Sem ${index + 1}`,
+                                        imc: null,
+                                        status: null
+                                    });
+                                }
+                            }}
+                        />
+                        {tooltip && (
+                            <View style={[styles.tooltipContainer, { left: Math.max(10, Math.min(chartWidth - 140, tooltip.x - 65)), top: Math.max(10, tooltip.y - 80) }]}>
+                                <TouchableOpacity style={styles.tooltipClose} onPress={() => setTooltip(null)}>
+                                    <X size={12} color="#94A3B8" />
+                                </TouchableOpacity>
+                                <Text style={styles.tooltipDate}>{tooltip.date}</Text>
+                                <Text style={styles.tooltipText}>
+                                    {view === 'weight' ? 'Peso: ' : 'Glicemia: '}
+                                    <Text style={styles.tooltipBold}>{tooltip.value}{view === 'weight' ? 'kg' : ' mg/dL'}</Text>
+                                </Text>
+                                {view === 'weight' && tooltip.imc && (
+                                    <Text style={styles.tooltipText}>IMC: <Text style={styles.tooltipBold}>{tooltip.imc}</Text></Text>
+                                )}
+                            </View>
+                        )}
+                    </ScrollView>
                 </View>
 
                 {/* Evolution Comparison Section */}
@@ -890,5 +956,47 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 14,
         fontFamily: 'Outfit_900Black',
+    },
+    tooltipContainer: {
+        position: 'absolute',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 12,
+        width: 130,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        zIndex: 10,
+    },
+    tooltipClose: {
+        position: 'absolute',
+        top: 6,
+        right: 6,
+        padding: 4,
+    },
+    tooltipDate: {
+        fontSize: 10,
+        fontFamily: 'Outfit_900Black',
+        color: '#64748B',
+        textTransform: 'capitalize',
+        marginBottom: 4,
+    },
+    tooltipText: {
+        fontSize: 10,
+        fontFamily: 'Outfit_600SemiBold',
+        color: '#475569',
+    },
+    tooltipBold: {
+        fontFamily: 'Outfit_700Bold',
+        color: '#0F172A',
+    },
+    tooltipStatus: {
+        fontSize: 9,
+        fontFamily: 'Outfit_700Bold',
+        marginTop: 4,
     }
 });

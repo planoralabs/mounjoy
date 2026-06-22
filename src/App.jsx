@@ -280,7 +280,7 @@ const AppContent = () => {
                 site: 'Não registrado'
             }],
             sideEffectsLogs: [],
-            measurements: [],
+            measurements: [{ date: now, weight: parseFloat(data.startWeight) }],
             thoughtLogs: [],
             dailyIntakeHistory: {},
             isMaintenance: false,
