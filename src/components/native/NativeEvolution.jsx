@@ -8,18 +8,14 @@ import {
     SafeAreaView, 
     Dimensions, 
     Platform, 
-    Image,
-    Modal
+    Image
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { 
     TrendingUp, 
-    Scale, 
     Activity, 
-    Camera, 
     ChevronRight, 
     X, 
-    Maximize2, 
     Calendar,
     ChevronLeft
 } from 'lucide-react-native';
@@ -28,8 +24,6 @@ const { width } = Dimensions.get('window');
 
 const NativeEvolution = ({ user }) => {
     const [view, setView] = useState('weight'); // 'weight' or 'glucose'
-    const [selectedDates, setSelectedDates] = useState([]);
-    const [showFullComparison, setShowFullComparison] = useState(false);
     const [tooltip, setTooltip] = useState(null);
 
     useEffect(() => {
@@ -88,48 +82,9 @@ const NativeEvolution = ({ user }) => {
         return Math.max(width - 32, pointCount * 65);
     }, [baseWeightLogs, view, width]);
 
-    const toggleDate = (date) => {
-        if (selectedDates.includes(date)) {
-            setSelectedDates(selectedDates.filter(d => d !== date));
-        } else if (selectedDates.length < 4) {
-            setSelectedDates([...selectedDates, date]);
-        }
-    };
-
-    const findPhotoForDate = (measurementDate) => {
-        const log = baseWeightLogs.find(l => l.date === measurementDate);
-        if (log && log.photoUrl) return { url: log.photoUrl };
-
-        if (!user.photos || user.photos.length === 0) return null;
-        const mDate = new Date(measurementDate);
-        let closest = null;
-        let minDiff = Infinity;
-        user.photos.forEach(photo => {
-            const pDate = new Date(photo.date);
-            const diff = Math.abs(pDate - mDate);
-            if (diff < minDiff && diff < (48 * 60 * 60 * 1000)) {
-                minDiff = diff;
-                closest = photo;
-            }
-        });
-        return closest;
-    };
-
     const heightInMeters = parseFloat(user.height) || 1.7;
     const currentWeight = parseFloat(user.currentWeight) || 80;
     const imc = (currentWeight / (heightInMeters * heightInMeters)).toFixed(1);
-
-    const sortedSelectedDates = useMemo(() => {
-        return [...selectedDates].sort((a, b) => new Date(a) - new Date(b));
-    }, [selectedDates]);
-
-    const totalDiff = useMemo(() => {
-        if (sortedSelectedDates.length < 2) return null;
-        const l1 = baseWeightLogs.find(l => l.date === sortedSelectedDates[0]);
-        const l2 = baseWeightLogs.find(l => l.date === sortedSelectedDates[sortedSelectedDates.length - 1]);
-        if (!l1 || !l2) return null;
-        return (l2.weight - l1.weight).toFixed(1);
-    }, [sortedSelectedDates, baseWeightLogs]);
 
     const nextDoseDate = useMemo(() => {
         const lastDose = user.doseHistory?.[0];
@@ -155,7 +110,7 @@ const NativeEvolution = ({ user }) => {
                 {/* Chart Section */}
                 <View style={[styles.chartCard, { flexDirection: 'row' }]}>
                     {/* Fixed Y-Axis Labels */}
-                    <View style={{ width: 54, overflow: 'hidden', height: 220 }}>
+                    <View style={{ width: 36, overflow: 'hidden', height: 220 }}>
                         <LineChart
                             data={chartData}
                             width={width - 32}
@@ -176,7 +131,7 @@ const NativeEvolution = ({ user }) => {
                                 propsForDots: { r: '0', strokeWidth: '0' }
                             }}
                             bezier
-                            style={{ marginVertical: 8, borderRadius: 32, marginLeft: -6 }}
+                            style={{ marginVertical: 8, borderRadius: 32, marginLeft: -20 }}
                             withInnerLines={false}
                             withOuterLines={false}
                             withShadow={false}
@@ -190,7 +145,7 @@ const NativeEvolution = ({ user }) => {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ position: 'relative', paddingLeft: 0, paddingRight: 20 }}>
                         <LineChart
                             data={chartData}
-                            width={chartWidth - 58}
+                            width={chartWidth - 40}
                             height={220}
                             chartConfig={{
                                 backgroundColor: '#ffffff',
@@ -208,7 +163,7 @@ const NativeEvolution = ({ user }) => {
                                 gridColor: 'rgba(241, 245, 249, 1)'
                             }}
                             bezier
-                            style={{ marginVertical: 8, borderRadius: 32, marginLeft: -32 }}
+                            style={{ marginVertical: 8, borderRadius: 32, marginLeft: -48 }}
                             withInnerLines={false}
                             withOuterLines={false}
                             withShadow={true}
@@ -220,7 +175,7 @@ const NativeEvolution = ({ user }) => {
                                     const log = logs[index];
                                     if (!log) return;
                                     const logDate = new Date(log.date);
-                                    const formattedDate = logDate.toLocaleDateString('pt-BR', { month: 'short' }) + '.';
+                                    const formattedDate = logDate.toLocaleDateString('pt-BR', { month: 'long' });
                                     const pointImc = (log.weight / (heightInMeters * heightInMeters)).toFixed(1);
                                     
                                     const prevLogIndex = baseWeightLogs.findIndex(l => l.date === log.date) - 1;
@@ -251,7 +206,7 @@ const NativeEvolution = ({ user }) => {
                             }}
                         />
                         {tooltip && (
-                            <View style={[styles.tooltipContainer, { left: Math.max(10, Math.min(chartWidth - 58 - 140, tooltip.x - 97)), top: Math.max(10, tooltip.y - 80) }]}>
+                            <View style={[styles.tooltipContainer, { left: Math.max(10, Math.min(chartWidth - 40 - 140, tooltip.x - 113)), top: Math.max(10, tooltip.y - 80) }]}>
                                 <TouchableOpacity style={styles.tooltipClose} onPress={() => setTooltip(null)}>
                                     <X size={12} color="#94A3B8" />
                                 </TouchableOpacity>
@@ -266,129 +221,6 @@ const NativeEvolution = ({ user }) => {
                             </View>
                         )}
                     </ScrollView>
-                </View>
-
-                {/* Evolution Comparison Section */}
-                <View style={styles.glassPanel}>
-                    <View style={styles.compareHeaderCol}>
-                        <View style={styles.compareTitleRow}>
-                            <Scale size={16} color="#EA580C" />
-                            <Text style={styles.compareTitleText}>Comparador Visual</Text>
-                        </View>
-                        <Text style={styles.compareSubTitleText}>Selecione até 4 registros para comparar</Text>
-                    </View>
-
-                    {/* Horizontal Date Picker */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.datePickerScroll}>
-                        {baseWeightLogs.slice().reverse().map((log, idx) => {
-                            const isSelected = selectedDates.includes(log.date);
-                            const d = new Date(log.date);
-                            const isMaxReached = !isSelected && selectedDates.length >= 4;
-                            return (
-                                <TouchableOpacity
-                                    key={idx}
-                                    onPress={() => toggleDate(log.date)}
-                                    disabled={isMaxReached}
-                                    style={[
-                                        styles.dateChip,
-                                        isSelected ? styles.dateChipActive : null,
-                                        isMaxReached ? { opacity: 0.4 } : null
-                                    ]}
-                                >
-                                    <Text style={[styles.dateChipDay, isSelected && { color: '#FFFFFF' }]}>
-                                        {d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                                    </Text>
-                                    <Text style={[styles.dateChipWeight, isSelected && { color: '#FFFFFF' }]}>
-                                        {log.weight}kg
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </ScrollView>
-
-                    {/* Comparison Cards Grid */}
-                    {selectedDates.length > 0 ? (
-                        <View style={styles.gridOuter}>
-                            <View style={styles.compareGrid}>
-                                {sortedSelectedDates.map((dateStr, idx) => {
-                                    const log = baseWeightLogs.find(l => l.date === dateStr);
-                                    if (!log) return null;
-                                    const photo = findPhotoForDate(dateStr);
-                                    
-                                    const prevLog = idx > 0 ? baseWeightLogs.find(l => l.date === sortedSelectedDates[idx - 1]) : null;
-                                    const diff = (prevLog && log) ? (log.weight - prevLog.weight).toFixed(1) : null;
-
-                                    return (
-                                        <View 
-                                            key={dateStr} 
-                                            style={[
-                                                styles.compareGridCard,
-                                                selectedDates.length === 1 ? { width: '100%' } : selectedDates.length === 3 ? { width: '31%' } : { width: '48%' }
-                                            ]}
-                                        >
-                                            <View style={styles.compareGridPhotoFrame}>
-                                                {photo ? (
-                                                    <Image source={{ uri: photo.url }} style={styles.compareGridPhoto} resizeMode="cover" />
-                                                ) : (
-                                                    <View style={styles.compareGridPhotoPlaceholder}>
-                                                        <Camera size={24} color="#94A3B8" />
-                                                    </View>
-                                                )}
-                                                <TouchableOpacity 
-                                                    style={styles.compareGridRemoveBtn}
-                                                    onPress={() => toggleDate(dateStr)}
-                                                >
-                                                    <X size={10} color="#EF4444" strokeWidth={3} />
-                                                </TouchableOpacity>
-                                                <View style={styles.compareGridDateOverlay}>
-                                                    <Text style={styles.compareGridDateOverlayText}>
-                                                        {new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                                                    </Text>
-                                                </View>
-                                            </View>
-
-                                            <View style={styles.compareGridMeta}>
-                                                <View style={styles.compareGridWeightRow}>
-                                                    <Text style={styles.compareGridWeightBig}>{log.weight}</Text>
-                                                    <Text style={styles.compareGridWeightUnit}>kg</Text>
-                                                </View>
-                                                {diff !== null && (
-                                                    <View style={[
-                                                        styles.compareGridDiffBadge,
-                                                        parseFloat(diff) <= 0 ? styles.compareGridDiffBadgeNeg : styles.compareGridDiffBadgePos
-                                                    ]}>
-                                                        <Text style={[
-                                                            styles.compareGridDiffText,
-                                                            parseFloat(diff) <= 0 ? { color: '#EA580C' } : { color: '#EF4444' }
-                                                        ]}>
-                                                            {parseFloat(diff) <= 0 ? '' : '+'}{diff}kg
-                                                        </Text>
-                                                    </View>
-                                                )}
-                                            </View>
-                                        </View>
-                                    );
-                                })}
-                            </View>
-
-                            {selectedDates.length >= 2 && (
-                                <TouchableOpacity 
-                                    style={styles.expandBtn}
-                                    onPress={() => setShowFullComparison(true)}
-                                >
-                                    <Maximize2 size={16} color="#EA580C" />
-                                    <Text style={styles.expandBtnText}>Expandir Comparativo</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    ) : (
-                        <View style={styles.emptyCompare}>
-                            <View style={styles.emptyCompareIcon}>
-                                <TrendingUp size={24} color="#EA580C" />
-                            </View>
-                            <Text style={styles.emptyCompareText}>Escolha registros acima{"\n"}para iniciar o comparativo</Text>
-                        </View>
-                    )}
                 </View>
 
                 {/* Summary Grid (Average Glycemia & Current BMI) */}
@@ -450,76 +282,6 @@ const NativeEvolution = ({ user }) => {
                     </View>
                 </View>
             </ScrollView>
-
-            {/* Fullscreen Comparador Modal */}
-            <Modal visible={showFullComparison} transparent animationType="slide">
-                <View style={styles.modalOverlay}>
-                    {/* Header */}
-                    <View style={styles.modalHeader}>
-                        <TouchableOpacity 
-                            onPress={() => setShowFullComparison(false)}
-                            style={styles.modalCloseBtn}
-                        >
-                            <X size={20} color="#FFFFFF" />
-                        </TouchableOpacity>
-                        
-                        <View style={{ alignItems: 'center' }}>
-                            <Text style={styles.modalTitle}>Evolução</Text>
-                            <Text style={styles.modalSubTitle}>Ajuste & Compartilhe</Text>
-                        </View>
-                        
-                        <View style={{ width: 40 }} />
-                    </View>
-
-                    {/* Photos Grid */}
-                    <View style={styles.modalGridContainer}>
-                        <View style={[
-                            styles.modalGrid,
-                            sortedSelectedDates.length === 3 ? { flexDirection: 'column' } : { flexDirection: 'row', flexWrap: 'wrap' }
-                        ]}>
-                            {sortedSelectedDates.map((dateStr, idx) => {
-                                const log = baseWeightLogs.find(l => l.date === dateStr);
-                                const photo = findPhotoForDate(dateStr);
-                                
-                                return (
-                                    <View 
-                                        key={idx} 
-                                        style={[
-                                            styles.modalPhotoBox,
-                                            sortedSelectedDates.length === 2 ? { width: '50%', height: '100%' } :
-                                            sortedSelectedDates.length === 3 ? { height: '33.3%', width: '100%' } :
-                                            { width: '50%', height: '50%' }
-                                        ]}
-                                    >
-                                        {photo ? (
-                                            <Image source={{ uri: photo.url }} style={styles.modalFullImage} resizeMode="cover" />
-                                        ) : (
-                                            <View style={styles.modalImagePlaceholder}>
-                                                <Camera size={32} color="#475569" />
-                                            </View>
-                                        )}
-                                        
-                                        {/* Bottom info overlay */}
-                                        <View style={styles.modalPhotoOverlay}>
-                                            <Text style={styles.modalPhotoWeight}>{log?.weight}kg</Text>
-                                            <Text style={styles.modalPhotoDate}>
-                                                {new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                );
-                            })}
-                        </View>
-
-                        {/* Centered overall loss badge */}
-                        {totalDiff !== null && (
-                            <View style={styles.modalTotalDiffBadge}>
-                                <Text style={styles.modalTotalDiffText}>{totalDiff > 0 ? '+' : ''}{totalDiff}kg</Text>
-                            </View>
-                        )}
-                    </View>
-                </View>
-            </Modal>
         </SafeAreaView>
     );
 };
@@ -551,215 +313,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
     },
 
-    glassPanel: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 40,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
-        marginBottom: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.02,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    compareHeaderCol: {
-        marginBottom: 16,
-    },
-    compareTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 4,
-    },
-    compareTitleText: {
-        fontSize: 13,
-        fontFamily: 'Outfit_900Black',
-        color: '#0F172A',
-        textTransform: 'uppercase',
-        letterSpacing: 2,
-    },
-    compareSubTitleText: {
-        fontSize: 10,
-        fontFamily: 'Outfit_700Bold',
-        color: '#94A3B8',
-        textTransform: 'uppercase',
-    },
 
-    datePickerScroll: {
-        gap: 8,
-        paddingBottom: 12,
-        marginBottom: 16,
-    },
-    dateChip: {
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
-        backgroundColor: '#FFFFFF',
-        alignItems: 'center',
-        gap: 2,
-    },
-    dateChipActive: {
-        backgroundColor: '#EA580C',
-        borderColor: '#EA580C',
-    },
-    dateChipDay: {
-        fontSize: 10,
-        fontFamily: 'Outfit_600SemiBold',
-        color: '#64748B',
-    },
-    dateChipWeight: {
-        fontSize: 12,
-        fontFamily: 'Outfit_900Black',
-        color: '#0F172A',
-    },
-
-    gridOuter: {
-        width: '100%',
-    },
-    compareGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-        justifyContent: 'space-between',
-        marginBottom: 16,
-    },
-    compareGridCard: {
-        marginBottom: 8,
-    },
-    compareGridPhotoFrame: {
-        aspectRatio: 3/4,
-        borderRadius: 24,
-        backgroundColor: '#F1F5F9',
-        overflow: 'hidden',
-        position: 'relative',
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
-    },
-    compareGridPhoto: {
-        width: '100%',
-        height: '100%',
-    },
-    compareGridPhotoPlaceholder: {
-        width: '100%',
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    compareGridRemoveBtn: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: '#FFFFFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 2,
-    },
-    compareGridDateOverlay: {
-        position: 'absolute',
-        bottom: 8,
-        left: 8,
-        right: 8,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        paddingVertical: 2,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    compareGridDateOverlayText: {
-        color: '#FFFFFF',
-        fontSize: 9,
-        fontFamily: 'Outfit_700Bold',
-    },
-    compareGridMeta: {
-        alignItems: 'center',
-        marginTop: 6,
-    },
-    compareGridWeightRow: {
-        flexDirection: 'row',
-        alignItems: 'baseline',
-    },
-    compareGridWeightBig: {
-        fontSize: 18,
-        fontFamily: 'Outfit_900Black',
-        color: '#0F172A',
-    },
-    compareGridWeightUnit: {
-        fontSize: 10,
-        fontFamily: 'Outfit_700Bold',
-        color: '#94A3B8',
-        marginLeft: 1,
-    },
-    compareGridDiffBadge: {
-        marginTop: 4,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 12,
-    },
-    compareGridDiffBadgeNeg: {
-        backgroundColor: '#FFF7ED',
-    },
-    compareGridDiffBadgePos: {
-        backgroundColor: '#FEF2F2',
-    },
-    compareGridDiffText: {
-        fontSize: 9,
-        fontFamily: 'Outfit_900Black',
-    },
-
-    expandBtn: {
-        width: '100%',
-        paddingVertical: 16,
-        borderRadius: 24,
-        backgroundColor: '#FFF7ED',
-        borderWidth: 1,
-        borderColor: '#FFEDD5',
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 8,
-    },
-    expandBtnText: {
-        fontSize: 12,
-        fontFamily: 'Outfit_900Black',
-        color: '#EA580C',
-        textTransform: 'uppercase',
-    },
-
-    emptyCompare: {
-        paddingVertical: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
-        borderStyle: 'dashed',
-        borderRadius: 32,
-        backgroundColor: '#FAF8F5',
-    },
-    emptyCompareIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: '#FFFFFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 12,
-        elevation: 1,
-    },
-    emptyCompareText: {
-        fontSize: 11,
-        fontFamily: 'Outfit_900Black',
-        color: '#94A3B8',
-        textTransform: 'uppercase',
-        letterSpacing: 1.5,
-        textAlign: 'center',
-        lineHeight: 16,
-    },
 
     summaryGrid: {
         flexDirection: 'row',
@@ -890,108 +444,7 @@ const styles = StyleSheet.create({
         color: '#EA580C',
     },
 
-    // Modal
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: '#090D16',
-        paddingTop: Platform.OS === 'ios' ? 44 : 20,
-    },
-    modalHeader: {
-        height: 64,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-    },
-    modalCloseBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontFamily: 'Outfit_900Black',
-        color: '#FFFFFF',
-        textTransform: 'uppercase',
-        letterSpacing: 2,
-    },
-    modalSubTitle: {
-        fontSize: 8,
-        fontFamily: 'Outfit_900Black',
-        color: '#EA580C',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-    },
-    modalGridContainer: {
-        flex: 1,
-        position: 'relative',
-    },
-    modalGrid: {
-        width: '100%',
-        height: '100%',
-    },
-    modalPhotoBox: {
-        position: 'relative',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.05)',
-        backgroundColor: '#0F172A',
-    },
-    modalFullImage: {
-        width: '100%',
-        height: '100%',
-    },
-    modalImagePlaceholder: {
-        width: '100%',
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalPhotoOverlay: {
-        position: 'absolute',
-        bottom: 20,
-        left: 20,
-        right: 20,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        paddingVertical: 10,
-        borderRadius: 16,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    modalPhotoWeight: {
-        color: '#FFFFFF',
-        fontSize: 24,
-        fontFamily: 'Outfit_900Black',
-    },
-    modalPhotoDate: {
-        color: 'rgba(255, 255, 255, 0.5)',
-        fontSize: 10,
-        fontFamily: 'Outfit_700Bold',
-        textTransform: 'uppercase',
-        marginTop: 2,
-    },
-    modalTotalDiffBadge: {
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: [{ translateX: -40 }, { translateY: -20 }],
-        backgroundColor: '#EA580C',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-    },
-    modalTotalDiffText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontFamily: 'Outfit_900Black',
-    },
+
     tooltipContainer: {
         position: 'absolute',
         backgroundColor: '#FFFFFF',

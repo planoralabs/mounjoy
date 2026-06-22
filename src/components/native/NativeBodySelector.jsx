@@ -131,7 +131,6 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
 
             {/* Guidance Info Modal */}
             <Modal visible={showInfo} onClose={() => setShowInfo(false)} title="Guia de Aplicação">
-                <ScrollView contentContainerStyle={styles.infoScroll} showsVerticalScrollIndicator={false}>
                     {/* Recommended Sites */}
                     <View style={styles.infoSection}>
                         <View style={styles.sectionHeader}>
@@ -192,7 +191,6 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                     <Button onClick={() => setShowInfo(false)} style={{ width: '100%', marginTop: 8 }}>
                         Entendi
                     </Button>
-                </ScrollView>
             </Modal>
         </View>
     );

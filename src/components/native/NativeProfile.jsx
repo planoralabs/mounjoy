@@ -48,7 +48,6 @@ const MenuItem = ({ icon: Icon, label, subLabel, onPress, color = '#64748B' }) =
 
 const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
     const [showProtocolModal, setShowProtocolModal] = useState(false);
-    const [showDoseModal, setShowDoseModal] = useState(false);
     const [showMeasureModal, setShowMeasureModal] = useState(false);
     const [showReminderModal, setShowReminderModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -130,25 +129,7 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
         setMeasures({ waist: '', hip: '' });
     };
 
-    const handleAddDoseRecord = () => {
-        const siteId = selectedSiteId || injectionSuggestion.id;
-        const site = getSiteById(siteId);
 
-        const newRecord = {
-            date: new Date().toISOString(),
-            dose: user.currentDose,
-            medication: user.medicationId,
-            siteId: siteId,
-            area: site?.area || 'Abdômen',
-            side: site?.side || 'E'
-        };
-        setUser({
-            ...user,
-            doseHistory: [newRecord, ...(user.doseHistory || [])]
-        });
-        setShowDoseModal(false);
-        setSelectedSiteId(null);
-    };
 
     const handleSaveReminders = () => {
         setUser({
@@ -217,23 +198,7 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                     </Text>
                 </View>
 
-                {/* Primary Action: Registrar Dose */}
-                <TouchableOpacity 
-                    style={styles.primaryActionCard} 
-                    onPress={() => setShowDoseModal(true)}
-                    activeOpacity={0.9}
-                >
-                    <View style={styles.primaryActionLeft}>
-                        <View style={styles.primaryActionIconBox}>
-                            <Check size={24} color="#EA580C" />
-                        </View>
-                        <View>
-                            <Text style={styles.primaryActionTitle}>Registrar Dose</Text>
-                            <Text style={styles.primaryActionSub}>Marcar aplicação de hoje</Text>
-                        </View>
-                    </View>
-                    <ChevronRight size={20} color="#EA580C" />
-                </TouchableOpacity>
+
 
                 {/* Health Goals Card */}
                 <View style={styles.goalsCard}>
@@ -440,28 +405,7 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                 </Button>
             </Modal>
 
-            {/* Modal: Registrar Dose (Nova Aplicação) */}
-            <Modal visible={showDoseModal} onClose={() => setShowDoseModal(false)} title="Nova Aplicação">
-                <View style={styles.doseSummaryCard}>
-                    <Text style={styles.doseSummaryLabel}>Dose Atual</Text>
-                    <Text style={styles.doseSummaryValue}>
-                        {user.currentDose} <Text style={{ fontSize: 13, color: '#94A3B8' }}>({currentMedicationDisplay})</Text>
-                    </Text>
-                </View>
 
-                <Text style={styles.modalSubLabelText}>Local da Aplicação</Text>
-                <View style={{ marginVertical: 12, width: '100%' }}>
-                    <NativeBodySelector 
-                        selectedSiteId={selectedSiteId || injectionSuggestion.id}
-                        onSelect={setSelectedSiteId}
-                        suggestedSiteId={injectionSuggestion.id}
-                    />
-                </View>
-
-                <Button onClick={handleAddDoseRecord} style={{ width: '100%', marginTop: 24 }}>
-                    Confirmar Aplicação
-                </Button>
-            </Modal>
 
             {/* Modal: Confirmação de Exclusão */}
             <Modal visible={showDeleteModal} onClose={() => !isDeleting && setShowDeleteModal(false)} title={deleteStep === 1 ? "🚨 Aviso Importante" : "⚠️ Última Chance"}>

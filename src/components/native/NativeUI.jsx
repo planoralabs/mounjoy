@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, View, TextInput, Platform, Dimensions, Modal as RNModal, PanResponder, Animated, Pressable } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, TextInput, Platform, Dimensions, Modal as RNModal, PanResponder, Animated, Pressable, ScrollView } from 'react-native';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export const Button = ({ children, onClick, variant = 'primary', style = {}, textStyle = {}, disabled, ...props }) => {
     const variants = {
@@ -274,24 +274,23 @@ export const Modal = ({ visible, onClose, title, children }) => {
 
     return (
         <RNModal visible={renderModal} transparent animationType="none" onRequestClose={onClose}>
-            <Pressable style={{ flex: 1 }} onPress={onClose}>
-                <View style={[styles.modalOverlay, !visible && { backgroundColor: 'transparent' }]}>
-                    <Pressable style={{ width: '100%' }}>
-                        <Animated.View style={[styles.modalContent, { transform: [{ translateY: panY }] }]}>
-                            <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
-                                <View style={styles.dragHandle} />
-                            </View>
-                            <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>{title}</Text>
-                                <TouchableOpacity onPress={onClose}>
-                                    <Text style={styles.closeText}>Fechar</Text>
-                                </TouchableOpacity>
-                            </View>
-                            {children}
-                        </Animated.View>
-                    </Pressable>
-                </View>
-            </Pressable>
+            <View style={[styles.modalOverlay, !visible && { backgroundColor: 'transparent' }]}>
+                <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+                <Animated.View style={[styles.modalContent, { transform: [{ translateY: panY }] }]}>
+                    <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
+                        <View style={styles.dragHandle} />
+                    </View>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>{title}</Text>
+                        <TouchableOpacity onPress={onClose}>
+                            <Text style={styles.closeText}>Fechar</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+                        {children}
+                    </ScrollView>
+                </Animated.View>
+            </View>
         </RNModal>
     );
 };
@@ -447,7 +446,7 @@ const styles = StyleSheet.create({
         height: 48,
     },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, minHeight: 300 },
+    modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, minHeight: 300, maxHeight: height * 0.85 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
     modalTitle: { fontSize: 20, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
     closeText: { color: '#64748B', fontFamily: 'Outfit_700Bold', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 },

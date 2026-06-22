@@ -40,6 +40,84 @@ import {
 const { width } = Dimensions.get('window');
 const cardWidth = Math.min(width - 80, 340);
 
+const ConfettiParticle = ({ delay }) => {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 50 + Math.random() * 80;
+    const tx = Math.cos(angle) * distance;
+    const ty = Math.sin(angle) * distance;
+    const rotate = (Math.random() * 360) + 'deg';
+    const size = Math.random() > 0.5 ? 5 : 7;
+    const opacity = Math.random() > 0.5 ? 1 : 0.6;
+
+    const anim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.sequence([
+            Animated.delay(delay),
+            Animated.timing(anim, {
+                toValue: 1,
+                duration: 1200,
+                useNativeDriver: true
+            })
+        ]).start();
+    }, []);
+
+    const translateX = anim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, tx]
+    });
+    const translateY = anim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, ty]
+    });
+    const scale = anim.interpolate({
+        inputRange: [0, 0.7, 1],
+        outputRange: [0, 1, 0.4]
+    });
+    const fade = anim.interpolate({
+        inputRange: [0, 0.7, 1],
+        outputRange: [1, 1, 0]
+    });
+
+    return (
+        <Animated.View
+            style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                width: size,
+                height: size,
+                borderRadius: size / 2,
+                backgroundColor: '#FFFFFF',
+                opacity: opacity,
+                marginLeft: -size / 2,
+                marginTop: -size / 2,
+                transform: [
+                    { translateX },
+                    { translateY },
+                    { scale },
+                    { rotate: rotate }
+                ]
+            }}
+        />
+    );
+};
+
+const ConfettiContainer = () => {
+    const particles = useMemo(() => Array.from({ length: 30 }).map((_, i) => ({
+        id: i,
+        delay: Math.random() * 150
+    })), []);
+
+    return (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            {particles.map(p => (
+                <ConfettiParticle key={p.id} delay={p.delay} />
+            ))}
+        </View>
+    );
+};
+
 const waterImg = require('../../../assets/water.png');
 const proteinImg = require('../../../assets/protein.png');
 const fiberImg = require('../../../assets/fiber.png');
@@ -109,6 +187,30 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
     const [isFullscreenPhoto, setIsFullscreenPhoto] = useState(false);
     const [showDoseModal, setShowDoseModal] = useState(false);
     const [selectedSiteId, setSelectedSiteId] = useState(null);
+
+    const [showProtocolModal, setShowProtocolModal] = useState(false);
+    const [selectedMed, setSelectedMed] = useState(user.medicationId || 'ozempic');
+    const [selectedDose, setSelectedDose] = useState(user.currentDose || '0.25 mg');
+    const [routeFilter, setRouteFilter] = useState('all');
+
+    const filteredMeds = useMemo(() => {
+        if (routeFilter === 'all') return MOCK_MEDICATIONS;
+        return MOCK_MEDICATIONS.filter(m => m.route === routeFilter);
+    }, [routeFilter]);
+
+    const currentMedInfo = useMemo(() => {
+        return MOCK_MEDICATIONS.find(m => m.id === selectedMed) || MOCK_MEDICATIONS[0];
+    }, [selectedMed]);
+
+    const handleUpdateProtocol = () => {
+        setUser({
+            ...user,
+            medicationId: selectedMed,
+            currentDose: selectedDose
+        });
+        setShowProtocolModal(false);
+        setShowDoseModal(true);
+    };
 
     const siteOptions = [
         { id: 'arm-right', name: 'Braço Direito' },
@@ -192,25 +294,22 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
     const [showHydratedMascot, setShowHydratedMascot] = useState(false);
     const [showProteinMascot, setShowProteinMascot] = useState(false);
     const [showFiberMascot, setShowFiberMascot] = useState(false);
+    const [showWaterConfetti, setShowWaterConfetti] = useState(false);
+    const [showProteinConfetti, setShowProteinConfetti] = useState(false);
+    const [showFiberConfetti, setShowFiberConfetti] = useState(false);
 
-    // Floating animation for carousel icons
-    const floatAnim = useRef(new Animated.Value(0)).current;
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(floatAnim, {
-                    toValue: 6,
-                    duration: 1800,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(floatAnim, {
-                    toValue: 0,
-                    duration: 1800,
-                    useNativeDriver: true,
-                })
-            ])
-        ).start();
-    }, [floatAnim]);
+    // Mascot Anim Hooks
+    const waterMascotAnim = useRef(new Animated.Value(0)).current;
+    const proteinMascotAnim = useRef(new Animated.Value(0)).current;
+    const fiberMascotAnim = useRef(new Animated.Value(0)).current;
+
+    const waterMascotScale = useRef(new Animated.Value(1)).current;
+    const proteinMascotScale = useRef(new Animated.Value(1)).current;
+    const fiberMascotScale = useRef(new Animated.Value(1)).current;
+
+    const waterHideTimeout = useRef(null);
+    const proteinHideTimeout = useRef(null);
+    const fiberHideTimeout = useRef(null);
 
     const medication = MOCK_MEDICATIONS.find(m => m.id === user.medicationId);
 
@@ -291,23 +390,138 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
 
         if (amount > 0) {
             setAnimatingAsset(type);
+            const goal = type === 'water' ? waterGoal : type === 'protein' ? proteinGoal : fiberGoal;
+            const isNowComplete = currentAmount < goal && newAmount >= goal;
+
+            if (isNowComplete) {
+                if (type === 'water') {
+                    setShowWaterConfetti(true);
+                    setTimeout(() => setShowWaterConfetti(false), 2000);
+                } else if (type === 'protein') {
+                    setShowProteinConfetti(true);
+                    setTimeout(() => setShowProteinConfetti(false), 2000);
+                } else if (type === 'fiber') {
+                    setShowFiberConfetti(true);
+                    setTimeout(() => setShowFiberConfetti(false), 2000);
+                }
+            }
+
             if (type === 'water') {
-                setShowHydratedMascot(true);
-                setTimeout(() => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                    setShowHydratedMascot(false);
+                if (waterHideTimeout.current) {
+                    clearTimeout(waterHideTimeout.current);
+                }
+
+                if (!showHydratedMascot) {
+                    setShowHydratedMascot(true);
+                    waterMascotAnim.setValue(0);
+                    waterMascotScale.setValue(1);
+                    Animated.timing(waterMascotAnim, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true
+                    }).start();
+                } else {
+                    waterMascotScale.setValue(1);
+                    Animated.sequence([
+                        Animated.timing(waterMascotScale, {
+                            toValue: 1.25,
+                            duration: 150,
+                            useNativeDriver: true
+                        }),
+                        Animated.timing(waterMascotScale, {
+                            toValue: 1.0,
+                            duration: 150,
+                            useNativeDriver: true
+                        })
+                    ]).start();
+                }
+
+                waterHideTimeout.current = setTimeout(() => {
+                    Animated.timing(waterMascotAnim, {
+                        toValue: 0,
+                        duration: 400,
+                        useNativeDriver: true
+                    }).start(() => {
+                        setShowHydratedMascot(false);
+                    });
                 }, 2000);
             } else if (type === 'protein') {
-                setShowProteinMascot(true);
-                setTimeout(() => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                    setShowProteinMascot(false);
+                if (proteinHideTimeout.current) {
+                    clearTimeout(proteinHideTimeout.current);
+                }
+
+                if (!showProteinMascot) {
+                    setShowProteinMascot(true);
+                    proteinMascotAnim.setValue(0);
+                    proteinMascotScale.setValue(1);
+                    Animated.timing(proteinMascotAnim, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true
+                    }).start();
+                } else {
+                    proteinMascotScale.setValue(1);
+                    Animated.sequence([
+                        Animated.timing(proteinMascotScale, {
+                            toValue: 1.25,
+                            duration: 150,
+                            useNativeDriver: true
+                        }),
+                        Animated.timing(proteinMascotScale, {
+                            toValue: 1.0,
+                            duration: 150,
+                            useNativeDriver: true
+                        })
+                    ]).start();
+                }
+
+                proteinHideTimeout.current = setTimeout(() => {
+                    Animated.timing(proteinMascotAnim, {
+                        toValue: 0,
+                        duration: 400,
+                        useNativeDriver: true
+                    }).start(() => {
+                        setShowProteinMascot(false);
+                    });
                 }, 2000);
             } else if (type === 'fiber') {
-                setShowFiberMascot(true);
-                setTimeout(() => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                    setShowFiberMascot(false);
+                if (fiberHideTimeout.current) {
+                    clearTimeout(fiberHideTimeout.current);
+                }
+
+                if (!showFiberMascot) {
+                    setShowFiberMascot(true);
+                    fiberMascotAnim.setValue(0);
+                    fiberMascotScale.setValue(1);
+                    Animated.timing(fiberMascotAnim, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true
+                    }).start();
+                } else {
+                    fiberMascotScale.setValue(1);
+                    Animated.sequence([
+                        Animated.timing(fiberMascotScale, {
+                            toValue: 1.25,
+                            duration: 150,
+                            useNativeDriver: true
+                        }),
+                        Animated.timing(fiberMascotScale, {
+                            toValue: 1.0,
+                            duration: 150,
+                            useNativeDriver: true
+                        })
+                    ]).start();
+                }
+
+                fiberHideTimeout.current = setTimeout(() => {
+                    Animated.timing(fiberMascotAnim, {
+                        toValue: 0,
+                        duration: 400,
+                        useNativeDriver: true
+                    }).start(() => {
+                        setShowFiberMascot(false);
+                    });
                 }, 2000);
             }
             setTimeout(() => setAnimatingAsset(null), 300);
@@ -592,7 +806,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                     <Text style={styles.weightGaugeValue}>{dailyData.protein}/{proteinGoal}g</Text>
                                 </View>
                                 <View style={styles.weightGaugeTrack}>
-                                    <View style={[styles.weightGaugeFill, { backgroundColor: '#F97316', width: `${proteinPercentage}%` }]} />
+                                    <View style={[styles.weightGaugeFill, { backgroundColor: '#EAB308', width: `${proteinPercentage}%` }]} />
                                 </View>
                             </View>
 
@@ -604,6 +818,17 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                 </View>
                                 <View style={styles.weightGaugeTrack}>
                                     <View style={[styles.weightGaugeFill, { backgroundColor: '#3B82F6', width: `${waterPercentage}%` }]} />
+                                </View>
+                            </View>
+
+                            {/* Fiber gauge */}
+                            <View style={styles.weightGauge}>
+                                <View style={styles.weightGaugeHeader}>
+                                    <Text style={styles.weightGaugeLabel}>Fibra</Text>
+                                    <Text style={styles.weightGaugeValue}>{dailyData.fiber}/{fiberGoal}g</Text>
+                                </View>
+                                <View style={styles.weightGaugeTrack}>
+                                    <View style={[styles.weightGaugeFill, { backgroundColor: '#10B981', width: `${fiberPercentage}%` }]} />
                                 </View>
                             </View>
                         </View>
@@ -621,7 +846,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                             <View style={styles.injectionInfoCol}>
                                 <View style={styles.injectionHeaderRow}>
                                     <Text style={styles.injectionLabel}>
-                                        {isApplied ? 'Finalizado' : 'Próxima Aplicação'}
+                                        {isApplied ? 'Finalizado' : 'Próxima Dose'}
                                     </Text>
                                     <View style={styles.weekBadge}>
                                         <Text style={styles.weekBadgeText}>Semana {weekNumber}</Text>
@@ -648,7 +873,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                             <SvgDroplet fillLevel={fillLevel} />
                                         </View>
                                         <Text style={styles.physicalBtnText}>
-                                            {isApplied ? 'Sucesso!' : 'Injetar'}
+                                            {isApplied ? 'Sucesso!' : 'Registrar Dose'}
                                         </Text>
                                     </View>
                                 </View>
@@ -738,11 +963,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                         styles.carouselCard,
                         isWaterComplete ? { backgroundColor: '#3B82F6', borderColor: '#3B82F6' } : { backgroundColor: '#FFFFFF' }
                     ]}>
-                        {showHydratedMascot && (
-                            <View style={styles.mascotPopupContainer} pointerEvents="none">
-                                <Image source={mascotHydratedImg} style={styles.mascotPopupImage} resizeMode="contain" />
-                            </View>
-                        )}
+                        {showWaterConfetti && <ConfettiContainer />}
                         
                         <View style={styles.cardHeader}>
                             <Text style={[styles.cardTitleText, isWaterComplete && { color: '#FFFFFF' }]}>ÁGUA</Text>
@@ -754,12 +975,36 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                 source={waterImg} 
                                 style={[
                                     styles.cardIcon, 
-                                    { transform: [{ translateY: floatAnim }] },
                                     animatingAsset === 'water' && { scaleX: 1.25, scaleY: 1.25 }
                                 ]} 
                                 resizeMode="contain" 
                             />
                         </View>
+
+                        {showHydratedMascot && (
+                            <Animated.View 
+                                style={[
+                                    styles.mascotCardOverlay,
+                                    {
+                                        opacity: waterMascotAnim,
+                                        transform: [
+                                            {
+                                                translateY: waterMascotAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: [224, 0]
+                                                })
+                                            },
+                                            {
+                                                scale: waterMascotScale
+                                            }
+                                        ]
+                                    }
+                                ]}
+                                pointerEvents="none"
+                            >
+                                <Image source={mascotHydratedImg} style={styles.mascotCardImage} resizeMode="contain" />
+                            </Animated.View>
+                        )}
 
                         <View style={styles.cardProgressRow}>
                             <Text style={[styles.cardProgressValue, isWaterComplete && { color: '#FFFFFF' }]}>{dailyData.water}</Text>
@@ -790,11 +1035,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                         styles.carouselCard,
                         isProteinComplete ? { backgroundColor: '#F97316', borderColor: '#F97316' } : { backgroundColor: '#FFFFFF' }
                     ]}>
-                        {showProteinMascot && (
-                            <View style={styles.mascotPopupContainer} pointerEvents="none">
-                                <Image source={mascotFeedImg} style={styles.mascotPopupImage} resizeMode="contain" />
-                            </View>
-                        )}
+                        {showProteinConfetti && <ConfettiContainer />}
                         
                         <View style={styles.cardHeader}>
                             <Text style={[styles.cardTitleText, isProteinComplete && { color: '#FFFFFF' }]}>PROTEÍNA</Text>
@@ -806,12 +1047,36 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                 source={proteinImg} 
                                 style={[
                                     styles.cardIcon, 
-                                    { transform: [{ translateY: floatAnim }] },
                                     animatingAsset === 'protein' && { scaleX: 1.25, scaleY: 1.25 }
                                 ]} 
                                 resizeMode="contain" 
                             />
                         </View>
+
+                        {showProteinMascot && (
+                            <Animated.View 
+                                style={[
+                                    styles.mascotCardOverlay,
+                                    {
+                                        opacity: proteinMascotAnim,
+                                        transform: [
+                                            {
+                                                translateY: proteinMascotAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: [224, 0]
+                                                })
+                                            },
+                                            {
+                                                scale: proteinMascotScale
+                                            }
+                                        ]
+                                    }
+                                ]}
+                                pointerEvents="none"
+                            >
+                                <Image source={mascotFeedImg} style={styles.mascotCardImage} resizeMode="contain" />
+                            </Animated.View>
+                        )}
 
                         <View style={styles.cardProgressRow}>
                             <Text style={[styles.cardProgressValue, isProteinComplete && { color: '#FFFFFF' }]}>{dailyData.protein}</Text>
@@ -842,11 +1107,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                         styles.carouselCard,
                         isFiberComplete ? { backgroundColor: '#10B981', borderColor: '#10B981' } : { backgroundColor: '#FFFFFF' }
                     ]}>
-                        {showFiberMascot && (
-                            <View style={styles.mascotPopupContainer} pointerEvents="none">
-                                <Image source={mascotFeedImg} style={styles.mascotPopupImage} resizeMode="contain" />
-                            </View>
-                        )}
+                        {showFiberConfetti && <ConfettiContainer />}
                         
                         <View style={styles.cardHeader}>
                             <Text style={[styles.cardTitleText, isFiberComplete && { color: '#FFFFFF' }]}>FIBRA</Text>
@@ -858,12 +1119,36 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                 source={fiberImg} 
                                 style={[
                                     styles.cardIcon, 
-                                    { transform: [{ translateY: floatAnim }] },
                                     animatingAsset === 'fiber' && { scaleX: 1.25, scaleY: 1.25 }
                                 ]} 
                                 resizeMode="contain" 
                             />
                         </View>
+
+                        {showFiberMascot && (
+                            <Animated.View 
+                                style={[
+                                    styles.mascotCardOverlay,
+                                    {
+                                        opacity: fiberMascotAnim,
+                                        transform: [
+                                            {
+                                                translateY: fiberMascotAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: [224, 0]
+                                                })
+                                            },
+                                            {
+                                                scale: fiberMascotScale
+                                            }
+                                        ]
+                                    }
+                                ]}
+                                pointerEvents="none"
+                            >
+                                <Image source={mascotFeedImg} style={styles.mascotCardImage} resizeMode="contain" />
+                            </Animated.View>
+                        )}
 
                         <View style={styles.cardProgressRow}>
                             <Text style={[styles.cardProgressValue, isFiberComplete && { color: '#FFFFFF' }]}>{dailyData.fiber}</Text>
@@ -964,7 +1249,6 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
 
             {/* Modal: Protocolo de Aplicação (Registrar Dose) */}
             <Modal visible={showDoseModal} onClose={() => setShowDoseModal(false)} title="Protocolo de Aplicação">
-                <ScrollView contentContainerStyle={{ paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
                     <View style={styles.modalWeightStatusCard}>
                         <View style={styles.modalWeightCol}>
                             <Text style={styles.modalWeightBadgeLabel}>Medicamento & Dose</Text>
@@ -972,6 +1256,22 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                 {medication?.name} <Text style={{ fontSize: 16, color: '#EA580C', fontFamily: 'Outfit_700Bold' }}>{user.currentDose}</Text>
                             </Text>
                         </View>
+                        <TouchableOpacity
+                            onPress={() => {
+                                setSelectedMed(user.medicationId || 'ozempic');
+                                setSelectedDose(user.currentDose || '0.25 mg');
+                                setShowDoseModal(false);
+                                setShowProtocolModal(true);
+                            }}
+                            style={{
+                                backgroundColor: '#EA580C',
+                                paddingHorizontal: 12,
+                                paddingVertical: 6,
+                                borderRadius: 12,
+                            }}
+                        >
+                            <Text style={{ fontSize: 11, fontFamily: 'Outfit_900Black', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.5 }}>Mudar</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Anticipation Warning (Reduced Interval) */}
@@ -1005,7 +1305,6 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                     <Button onClick={handleConfirmInjection} style={{ width: '100%', marginTop: 16 }}>
                         Confirmar Aplicação
                     </Button>
-                </ScrollView>
             </Modal>
 
             {/* Fullscreen Photo Zoom Modal */}
@@ -1079,6 +1378,57 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                     </View>
                 </TouchableOpacity>
             </RNModal>
+
+            {/* Modal: Configurar Protocolo */}
+            <Modal visible={showProtocolModal} onClose={() => { setShowProtocolModal(false); setShowDoseModal(true); }} title="Configurar Protocolo">
+                <View style={styles.routeSelectorRow}>
+                    <TouchableOpacity onPress={() => setRouteFilter('all')} style={[styles.routeBtn, routeFilter === 'all' && styles.routeBtnActive]}>
+                        <Text style={[styles.routeBtnText, routeFilter === 'all' && styles.routeBtnTextActive]}>Todos</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setRouteFilter('injectable')} style={[styles.routeBtn, routeFilter === 'injectable' && styles.routeBtnActive]}>
+                        <Text style={[styles.routeBtnText, routeFilter === 'injectable' && styles.routeBtnTextActive]}>Injetável</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setRouteFilter('oral')} style={[styles.routeBtn, routeFilter === 'oral' && styles.routeBtnActive]}>
+                        <Text style={[styles.routeBtnText, routeFilter === 'oral' && styles.routeBtnTextActive]}>Via Oral</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <Text style={styles.modalSubLabelText}>Medicamento</Text>
+                <View style={styles.medGrid}>
+                    {filteredMeds.map(med => (
+                        <TouchableOpacity 
+                            key={med.id} 
+                            onClick={() => { setSelectedMed(med.id); setSelectedDose(med.doses[0]); }}
+                            onPress={() => { setSelectedMed(med.id); setSelectedDose(med.doses[0]); }}
+                            style={[styles.medChip, selectedMed === med.id && styles.medChipActive]}
+                        >
+                            <Text style={[styles.medChipText, selectedMed === med.id && styles.medChipTextActive]}>
+                                {med.name}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <Text style={styles.modalSubLabelText}>Dosagem</Text>
+                <View style={styles.doseGrid}>
+                    {currentMedInfo?.doses.map(dose => (
+                        <TouchableOpacity 
+                            key={dose} 
+                            onClick={() => setSelectedDose(dose)}
+                            onPress={() => setSelectedDose(dose)}
+                            style={[styles.doseChip, selectedDose === dose && styles.doseChipActive]}
+                        >
+                            <Text style={[styles.doseChipText, selectedDose === dose && styles.doseChipTextActive]}>
+                                {dose}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <Button onClick={handleUpdateProtocol} style={{ width: '100%', marginTop: 16 }}>
+                    Salvar Alterações
+                </Button>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -1173,9 +1523,9 @@ const styles = StyleSheet.create({
     },
     photoFooterOverlay: {
         position: 'absolute',
-        bottom: 12,
-        left: 12,
-        right: 12,
+        bottom: 20,
+        left: 20,
+        right: 20,
         zIndex: 20,
         alignItems: 'center',
         gap: 8,
@@ -1235,7 +1585,7 @@ const styles = StyleSheet.create({
     weightBigValue: { fontSize: 44, fontFamily: 'Outfit_900Black', color: '#FFFFFF', lineHeight: 44 },
     weightMetricSuffix: { fontSize: 14, fontFamily: 'Outfit_600SemiBold', color: 'rgba(255,255,255,0.8)', marginLeft: 2, marginBottom: 6 },
     
-    weightGaugesContainer: { gap: 12, marginTop: 'auto', backgroundColor: 'rgba(255,255,255,0.1)', padding: 12, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', zIndex: 10 },
+    weightGaugesContainer: { gap: 12, marginTop: 'auto', backgroundColor: 'rgba(255,255,255,0.1)', padding: 12, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', zIndex: 10, marginLeft: -8, marginRight: -8 },
     weightGauge: { gap: 4 },
     weightGaugeHeader: { flexDirection: 'row', justifyContent: 'space-between' },
     weightGaugeLabel: { fontSize: 9, fontFamily: 'Outfit_900Black', color: '#FFFFFF', textTransform: 'uppercase' },
@@ -1260,7 +1610,7 @@ const styles = StyleSheet.create({
     physicalBtnBase: { width: 96, height: 96, borderRadius: 32, backgroundColor: '#EA580C', position: 'absolute', top: 4, left: 0 },
     physicalBtnFace: { width: 96, height: 96, borderRadius: 32, backgroundColor: '#F97316', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.3)', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 6, elevation: 3, position: 'absolute', top: 0, left: 0 },
     physicalBtnFacePressed: { top: 4, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, elevation: 1 },
-    physicalBtnText: { fontSize: 9, fontFamily: 'Outfit_900Black', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
+    physicalBtnText: { fontSize: 8, fontFamily: 'Outfit_900Black', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2, textAlign: 'center', paddingHorizontal: 4 },
 
     medDetailsBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(241, 245, 249, 0.5)', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#F1F5F9', zIndex: 10, relative: 'relative', marginBottom: 12 },
     medDetailsLabel: { fontSize: 9, fontFamily: 'Outfit_900Black', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
@@ -1287,6 +1637,7 @@ const styles = StyleSheet.create({
     carouselScrollView: {
         marginLeft: -24,
         marginRight: -24,
+        marginBottom: 28,
     },
     carouselContainer: {
         paddingLeft: 24,
@@ -1327,18 +1678,33 @@ const styles = StyleSheet.create({
         height: '80%',
     },
 
-    cardHeader: { flexDirection: 'column', gap: 2 },
+    cardHeader: { flexDirection: 'column', gap: 2, zIndex: 10 },
     cardTitleText: { fontSize: 14, fontFamily: 'Outfit_900Black', color: '#1E293B' },
     cardGoalText: { fontSize: 10, fontFamily: 'Outfit_700Bold', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 },
-    cardIconWrapper: { height: 112, justifyContent: 'center', alignItems: 'center' },
+    cardIconWrapper: { height: 112, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', position: 'relative', zIndex: 1 },
     cardIcon: { width: 96, height: 96 },
-    cardProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    mascotCardOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 224,
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        backgroundColor: 'transparent',
+        zIndex: 5,
+    },
+    mascotCardImage: {
+        width: 210,
+        height: 210,
+    },
+    cardProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, zIndex: 10 },
     cardProgressValue: { fontSize: 24, fontFamily: 'Outfit_900Black', color: '#1E293B' },
     cardProgressBarTrack: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
     cardProgressBarFill: { height: '100%', borderRadius: 4 },
     cardProgressPct: { fontSize: 10, fontFamily: 'Outfit_900Black' },
     
-    cardActionRow: { flexDirection: 'row', gap: 12 },
+    cardActionRow: { flexDirection: 'row', gap: 12, zIndex: 10 },
     cardActionBtn: { flex: 1, height: 48, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
     cardActionBtnText: { fontSize: 20, fontFamily: 'Outfit_700Bold' },
 
@@ -1494,5 +1860,92 @@ const styles = StyleSheet.create({
         fontFamily: 'Outfit_600SemiBold',
         color: '#EA580C',
         lineHeight: 15,
+    },
+    routeSelectorRow: {
+        flexDirection: 'row',
+        backgroundColor: '#F1F5F9',
+        borderRadius: 16,
+        padding: 4,
+        marginBottom: 16,
+    },
+    routeBtn: {
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    routeBtnActive: {
+        backgroundColor: '#FFFFFF',
+        elevation: 1,
+    },
+    routeBtnText: {
+        fontSize: 12,
+        fontFamily: 'Outfit_700Bold',
+        color: '#64748B',
+    },
+    routeBtnTextActive: {
+        color: '#EA580C',
+    },
+    modalSubLabelText: {
+        fontSize: 11,
+        fontFamily: 'Outfit_900Black',
+        color: '#94A3B8',
+        textTransform: 'uppercase',
+        marginTop: 16,
+        marginBottom: 10,
+    },
+    medGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    medChip: {
+        flex: 1,
+        minWidth: '45%',
+        paddingVertical: 12,
+        borderRadius: 16,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        alignItems: 'center',
+    },
+    medChipActive: {
+        backgroundColor: '#EA580C',
+        borderColor: '#EA580C',
+    },
+    medChipText: {
+        fontSize: 13,
+        fontFamily: 'Outfit_700Bold',
+        color: '#475569',
+    },
+    medChipTextActive: {
+        color: '#FFFFFF',
+    },
+    doseGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    doseChip: {
+        flex: 1,
+        minWidth: '28%',
+        paddingVertical: 12,
+        borderRadius: 16,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        alignItems: 'center',
+    },
+    doseChipActive: {
+        backgroundColor: '#EA580C',
+        borderColor: '#EA580C',
+    },
+    doseChipText: {
+        fontSize: 12,
+        fontFamily: 'Outfit_700Bold',
+        color: '#475569',
+    },
+    doseChipTextActive: {
+        color: '#FFFFFF',
     },
 });
