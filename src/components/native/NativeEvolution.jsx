@@ -153,9 +153,9 @@ const NativeEvolution = ({ user }) => {
                 </View>
 
                 {/* Chart Section */}
-                <View style={[styles.chartCard, { flexDirection: 'row', padding: 8 }]}>
+                <View style={[styles.chartCard, { flexDirection: 'row' }]}>
                     {/* Fixed Y-Axis Labels */}
-                    <View style={{ width: 40, overflow: 'hidden', height: 220 }}>
+                    <View style={{ width: 54, overflow: 'hidden', height: 220 }}>
                         <LineChart
                             data={chartData}
                             width={width - 32}
@@ -176,7 +176,7 @@ const NativeEvolution = ({ user }) => {
                                 propsForDots: { r: '0', strokeWidth: '0' }
                             }}
                             bezier
-                            style={{ marginVertical: 8, borderRadius: 32, marginLeft: -10 }}
+                            style={{ marginVertical: 8, borderRadius: 32, marginLeft: -6 }}
                             withInnerLines={false}
                             withOuterLines={false}
                             withShadow={false}
@@ -190,7 +190,7 @@ const NativeEvolution = ({ user }) => {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ position: 'relative', paddingLeft: 0, paddingRight: 20 }}>
                         <LineChart
                             data={chartData}
-                            width={chartWidth - 45}
+                            width={chartWidth - 58}
                             height={220}
                             chartConfig={{
                                 backgroundColor: '#ffffff',
@@ -208,7 +208,7 @@ const NativeEvolution = ({ user }) => {
                                 gridColor: 'rgba(241, 245, 249, 1)'
                             }}
                             bezier
-                            style={{ marginVertical: 8, borderRadius: 32 }}
+                            style={{ marginVertical: 8, borderRadius: 32, marginLeft: -32 }}
                             withInnerLines={false}
                             withOuterLines={false}
                             withShadow={true}
@@ -251,7 +251,7 @@ const NativeEvolution = ({ user }) => {
                             }}
                         />
                         {tooltip && (
-                            <View style={[styles.tooltipContainer, { left: Math.max(10, Math.min(chartWidth - 45 - 140, tooltip.x - 65)), top: Math.max(10, tooltip.y - 80) }]}>
+                            <View style={[styles.tooltipContainer, { left: Math.max(10, Math.min(chartWidth - 58 - 140, tooltip.x - 97)), top: Math.max(10, tooltip.y - 80) }]}>
                                 <TouchableOpacity style={styles.tooltipClose} onPress={() => setTooltip(null)}>
                                     <X size={12} color="#94A3B8" />
                                 </TouchableOpacity>
