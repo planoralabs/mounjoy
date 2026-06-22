@@ -1261,7 +1261,9 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                 setSelectedMed(user.medicationId || 'ozempic');
                                 setSelectedDose(user.currentDose || '0.25 mg');
                                 setShowDoseModal(false);
-                                setShowProtocolModal(true);
+                                setTimeout(() => {
+                                    setShowProtocolModal(true);
+                                }, 300);
                             }}
                             style={{
                                 backgroundColor: '#EA580C',
@@ -1380,7 +1382,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
             </RNModal>
 
             {/* Modal: Configurar Protocolo */}
-            <Modal visible={showProtocolModal} onClose={() => { setShowProtocolModal(false); setShowDoseModal(true); }} title="Configurar Protocolo">
+            <Modal visible={showProtocolModal} onClose={() => { setShowProtocolModal(false); setTimeout(() => { setShowDoseModal(true); }, 300); }} title="Configurar Protocolo">
                 <View style={styles.routeSelectorRow}>
                     <TouchableOpacity onPress={() => setRouteFilter('all')} style={[styles.routeBtn, routeFilter === 'all' && styles.routeBtnActive]}>
                         <Text style={[styles.routeBtnText, routeFilter === 'all' && styles.routeBtnTextActive]}>Todos</Text>
