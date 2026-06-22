@@ -153,11 +153,44 @@ const NativeEvolution = ({ user }) => {
                 </View>
 
                 {/* Chart Section */}
-                <View style={styles.chartCard}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ position: 'relative', paddingLeft: 10, paddingRight: 20 }}>
+                <View style={[styles.chartCard, { flexDirection: 'row', padding: 8 }]}>
+                    {/* Fixed Y-Axis Labels */}
+                    <View style={{ width: 40, overflow: 'hidden', height: 220 }}>
                         <LineChart
                             data={chartData}
-                            width={chartWidth}
+                            width={width - 32}
+                            height={220}
+                            chartConfig={{
+                                backgroundColor: '#ffffff',
+                                backgroundGradientFrom: '#ffffff',
+                                backgroundGradientTo: '#ffffff',
+                                decimalPlaces: 1,
+                                color: () => 'transparent',
+                                labelColor: (opacity = 1) => `rgba(148, 163, 184, ${opacity})`,
+                                propsForLabels: {
+                                    fontFamily: 'Outfit_700Bold',
+                                    fontSize: 10
+                                },
+                                style: { borderRadius: 32 },
+                                gridColor: 'transparent',
+                                propsForDots: { r: '0', strokeWidth: '0' }
+                            }}
+                            bezier
+                            style={{ marginVertical: 8, borderRadius: 32, marginLeft: -10 }}
+                            withInnerLines={false}
+                            withOuterLines={false}
+                            withShadow={false}
+                            withDots={false}
+                            withVerticalLabels={false}
+                            withHorizontalLabels={true}
+                        />
+                    </View>
+
+                    {/* Scrollable Chart Content */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ position: 'relative', paddingLeft: 0, paddingRight: 20 }}>
+                        <LineChart
+                            data={chartData}
+                            width={chartWidth - 45}
                             height={220}
                             chartConfig={{
                                 backgroundColor: '#ffffff',
@@ -179,6 +212,8 @@ const NativeEvolution = ({ user }) => {
                             withInnerLines={false}
                             withOuterLines={false}
                             withShadow={true}
+                            withHorizontalLabels={false}
+                            withVerticalLabels={true}
                             onDataPointClick={({ value, index, x, y }) => {
                                 if (view === 'weight') {
                                     const logs = baseWeightLogs;
@@ -216,7 +251,7 @@ const NativeEvolution = ({ user }) => {
                             }}
                         />
                         {tooltip && (
-                            <View style={[styles.tooltipContainer, { left: Math.max(10, Math.min(chartWidth - 140, tooltip.x - 65)), top: Math.max(10, tooltip.y - 80) }]}>
+                            <View style={[styles.tooltipContainer, { left: Math.max(10, Math.min(chartWidth - 45 - 140, tooltip.x - 65)), top: Math.max(10, tooltip.y - 80) }]}>
                                 <TouchableOpacity style={styles.tooltipClose} onPress={() => setTooltip(null)}>
                                     <X size={12} color="#94A3B8" />
                                 </TouchableOpacity>
