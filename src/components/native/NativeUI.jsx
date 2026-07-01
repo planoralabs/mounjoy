@@ -25,6 +25,17 @@ export const Button = ({ children, onClick, variant = 'primary', style = {}, tex
 
     const v = variants[variant] || variants.primary;
 
+    const disabledContainerStyle = disabled ? {
+        backgroundColor: '#E2E8F0',
+        shadowOpacity: 0,
+        elevation: 0,
+        borderColor: '#E2E8F0'
+    } : {};
+
+    const disabledTextStyle = disabled ? {
+        color: '#94A3B8'
+    } : {};
+
     return (
         <TouchableOpacity
             onPress={onClick}
@@ -32,7 +43,7 @@ export const Button = ({ children, onClick, variant = 'primary', style = {}, tex
             style={[
                 styles.btnBase,
                 v.container,
-                disabled && { opacity: 0.5 },
+                disabledContainerStyle,
                 style
             ]}
             activeOpacity={0.8}
@@ -40,7 +51,7 @@ export const Button = ({ children, onClick, variant = 'primary', style = {}, tex
         >
             {React.Children.map(children, child => 
                 typeof child === 'string' ? (
-                    <Text style={[styles.btnText, v.text, textStyle]}>{child}</Text>
+                    <Text style={[styles.btnText, v.text, disabledTextStyle, textStyle]}>{child}</Text>
                 ) : (
                     child
                 )

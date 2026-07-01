@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, Dimensions, Platform, LayoutAnimation, UIManager, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, Dimensions, Platform, LayoutAnimation, UIManager, TouchableWithoutFeedback, Keyboard, Animated } from 'react-native';
 import { Button, Input, Slider } from './NativeUI';
 import { MOCK_MEDICATIONS } from '../../constants/medications';
 import { ArrowLeft, Check } from 'lucide-react-native';
@@ -13,6 +13,32 @@ const { width } = Dimensions.get('window');
 const mascotImg = require('../../../assets/mascot.png');
 const mascotWeightImg = require('../../../assets/mascotweight.png');
 const mascotStretchImg = require('../../../assets/mascotstretch1.png');
+
+const AnimatedPreviewCard = ({ children, style }) => {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(24)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 600,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 600,
+                useNativeDriver: true,
+            })
+        ]).start();
+    }, []);
+
+    return (
+        <Animated.View style={[style, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            {children}
+        </Animated.View>
+    );
+};
 
 const NativeOnboarding = ({ onComplete }) => {
     const [step, setStep] = useState(0);
@@ -292,12 +318,12 @@ const NativeOnboarding = ({ onComplete }) => {
 
             {/* Protocol Summary Preview Card */}
             {!!data.currentDose && !!data.injectionDay && !!selectedMed ? (
-                <View style={styles.previewCard}>
+                <AnimatedPreviewCard style={styles.previewCard}>
                     <Text style={styles.previewText}>
                         Tudo pronto! Seu plano com <Text style={styles.previewHighlight}>{selectedMed.brand}</Text> está montado, na dose de <Text style={styles.previewHighlight}>{data.currentDose}</Text>, começando na próxima {data.injectionDay}. Vamos nessa!
                     </Text>
                     <Image source={mascotStretchImg} style={styles.previewMascot} resizeMode="contain" />
-                </View>
+                </AnimatedPreviewCard>
             ) : null}
         </ScrollView>
     ];
@@ -500,9 +526,9 @@ const styles = StyleSheet.create({
     },
     selectionPreviewBrand: {
         fontSize: 20,
+        fontFamily: 'Outfit_900Black',
         color: '#EA580C',
         fontStyle: 'italic',
-        fontWeight: '900',
     },
     selectionPreviewSeparator: {
         fontSize: 16,
