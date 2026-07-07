@@ -261,7 +261,7 @@ const NativeEvolution = ({ user }) => {
                                         width: 50,
                                         height: 200,
                                         backgroundColor: 'transparent',
-                                        zIndex: 5,
+                                        zIndex: 15,
                                     }}
                                     onPress={() => handlePointClick(index)}
                                 />
@@ -527,9 +527,9 @@ const styles = StyleSheet.create({
     tooltipContainer: {
         position: 'absolute',
         backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        padding: 12,
-        width: 130,
+        borderRadius: 18,
+        padding: 16,
+        width: 160,
         borderWidth: 1,
         borderColor: '#E2E8F0',
         elevation: 5,
@@ -537,33 +537,34 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 6,
-        zIndex: 10,
+        zIndex: 20,
     },
     tooltipClose: {
         position: 'absolute',
-        top: 6,
-        right: 6,
+        top: 8,
+        right: 8,
         padding: 4,
     },
     tooltipDate: {
-        fontSize: 10,
+        fontSize: 12,
         fontFamily: 'Outfit_900Black',
         color: '#64748B',
         textTransform: 'capitalize',
-        marginBottom: 4,
+        marginBottom: 6,
     },
     tooltipText: {
-        fontSize: 10,
+        fontSize: 12,
         fontFamily: 'Outfit_600SemiBold',
         color: '#475569',
+        lineHeight: 18,
     },
     tooltipBold: {
         fontFamily: 'Outfit_700Bold',
         color: '#0F172A',
     },
     tooltipStatus: {
-        fontSize: 9,
+        fontSize: 11,
         fontFamily: 'Outfit_700Bold',
-        marginTop: 4,
+        marginTop: 6,
     }
 });

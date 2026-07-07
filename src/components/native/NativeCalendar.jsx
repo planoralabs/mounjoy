@@ -1648,10 +1648,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 20,
-        elevation: 5,
+        elevation: 10,
         shadowColor: '#000',
         shadowOpacity: 0.3,
         shadowRadius: 10,
+        zIndex: 100,
     },
     modalTotalDiffText: {
         color: '#FFFFFF',
