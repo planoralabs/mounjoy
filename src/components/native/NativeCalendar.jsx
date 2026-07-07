@@ -116,7 +116,10 @@ const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onA
                         startDist.current = currentDist;
                         startScale.current = valRef.current.scale;
                     } else {
-                        const newScale = Math.max(0.3, Math.min(6, startScale.current * (currentDist / startDist.current)));
+                        // Apply sensitivity multiplier to make pinch-zoom responsive to small gestures
+                        const delta = (currentDist / startDist.current) - 1;
+                        const sensitivity = 1.8;
+                        const newScale = Math.max(0.3, Math.min(6, startScale.current * (1 + delta * sensitivity)));
                         scale.setValue(coverScale * newScale);
                         valRef.current.scale = newScale;
                     }
