@@ -97,6 +97,7 @@ const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onA
                     startDist.current = Math.sqrt(dx * dx + dy * dy);
                     startScale.current = valRef.current.scale;
                 } else {
+                    startDist.current = 0;
                     pan.setOffset({
                         x: valRef.current.x,
                         y: valRef.current.y
@@ -106,19 +107,27 @@ const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onA
             },
             onPanResponderMove: (evt, gestureState) => {
                 const { touches } = evt.nativeEvent;
-                if (touches.length === 2 && startDist.current > 0) {
+                if (touches.length === 2) {
                     const dx = touches[0].pageX - touches[1].pageX;
                     const dy = touches[0].pageY - touches[1].pageY;
                     const currentDist = Math.sqrt(dx * dx + dy * dy);
-                    const newScale = Math.max(0.5, Math.min(5, startScale.current * (currentDist / startDist.current)));
-                    scale.setValue(coverScale * newScale);
-                    valRef.current.scale = newScale;
+                    
+                    if (startDist.current === 0) {
+                        startDist.current = currentDist;
+                        startScale.current = valRef.current.scale;
+                    } else {
+                        const newScale = Math.max(0.3, Math.min(6, startScale.current * (currentDist / startDist.current)));
+                        scale.setValue(coverScale * newScale);
+                        valRef.current.scale = newScale;
+                    }
                 } else if (touches.length === 1) {
+                    startDist.current = 0;
                     pan.setValue({ x: gestureState.dx, y: gestureState.dy });
                 }
             },
             onPanResponderRelease: (evt, gestureState) => {
                 if (onActiveEnd) onActiveEnd();
+                startDist.current = 0;
                 pan.flattenOffset();
                 const newX = pan.x._value;
                 const newY = pan.y._value;
@@ -130,6 +139,7 @@ const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onA
             },
             onPanResponderTerminate: () => {
                 if (onActiveEnd) onActiveEnd();
+                startDist.current = 0;
             }
         })
     ).current;
