@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -103,6 +103,11 @@ const Charts = ({ user }) => {
         }
         return logs;
     }, [user.measurements, user.startWeight, user.currentWeight, hasEnoughData]);
+
+    useEffect(() => {
+        // Sync selectedDates with baseWeightLogs to remove stale or demo dates
+        setSelectedDates(prev => prev.filter(dateStr => baseWeightLogs.some(log => log.date === dateStr)));
+    }, [baseWeightLogs]);
 
     // Filter logs based on selection
     const filterLogs = (logs) => {

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -11,7 +11,9 @@ import {
     Image, 
     Modal, 
     TextInput,
-    LayoutAnimation
+    LayoutAnimation,
+    PanResponder,
+    Animated
 } from 'react-native';
 import { 
     Calendar as CalendarIcon, 
@@ -25,9 +27,138 @@ import {
     X, 
     Plus,
     Camera,
-    Maximize2 
+    Maximize2,
+    Share2,
+    ZoomIn,
+    ZoomOut,
+    RefreshCw,
+    Columns2,
+    Rows2
 } from 'lucide-react-native';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { Button, Modal as NativeModal } from './NativeUI';
+
+const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onActiveStart, onActiveEnd }) => {
+    const [containerSize, setContainerSize] = useState(null);
+    const [imageRatio, setImageRatio] = useState(1);
+
+    useEffect(() => {
+        if (uri) {
+            Image.getSize(uri, (w, h) => {
+                if (w && h) {
+                    setImageRatio(w / h);
+                }
+            }, (err) => console.log('Error getting image size:', err));
+        }
+    }, [uri]);
+
+    const coverScale = React.useMemo(() => {
+        if (!containerSize || !imageRatio) return 1;
+        const containerRatio = containerSize.width / containerSize.height;
+        if (containerRatio > imageRatio) {
+            return containerRatio / imageRatio;
+        } else {
+            return imageRatio / containerRatio;
+        }
+    }, [containerSize, imageRatio]);
+
+    const activeScale = adjustment?.scale || 1;
+    const visualScale = coverScale * activeScale;
+
+    const pan = useRef(new Animated.ValueXY({ x: adjustment?.x || 0, y: adjustment?.y || 0 })).current;
+    const scale = useRef(new Animated.Value(visualScale)).current;
+    
+    const valRef = useRef({ x: adjustment?.x || 0, y: adjustment?.y || 0, scale: activeScale });
+    
+    useEffect(() => {
+        valRef.current = {
+            x: adjustment?.x || 0,
+            y: adjustment?.y || 0,
+            scale: activeScale
+        };
+        pan.setValue({ x: adjustment?.x || 0, y: adjustment?.y || 0 });
+        scale.setValue(visualScale);
+    }, [adjustment, coverScale]);
+
+    const startDist = useRef(0);
+    const startScale = useRef(1);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderGrant: (evt, gestureState) => {
+                if (onActiveStart) onActiveStart();
+                const { touches } = evt.nativeEvent;
+                if (touches.length === 2) {
+                    const dx = touches[0].pageX - touches[1].pageX;
+                    const dy = touches[0].pageY - touches[1].pageY;
+                    startDist.current = Math.sqrt(dx * dx + dy * dy);
+                    startScale.current = valRef.current.scale;
+                } else {
+                    pan.setOffset({
+                        x: valRef.current.x,
+                        y: valRef.current.y
+                    });
+                    pan.setValue({ x: 0, y: 0 });
+                }
+            },
+            onPanResponderMove: (evt, gestureState) => {
+                const { touches } = evt.nativeEvent;
+                if (touches.length === 2 && startDist.current > 0) {
+                    const dx = touches[0].pageX - touches[1].pageX;
+                    const dy = touches[0].pageY - touches[1].pageY;
+                    const currentDist = Math.sqrt(dx * dx + dy * dy);
+                    const newScale = Math.max(0.5, Math.min(5, startScale.current * (currentDist / startDist.current)));
+                    scale.setValue(coverScale * newScale);
+                    valRef.current.scale = newScale;
+                } else if (touches.length === 1) {
+                    pan.setValue({ x: gestureState.dx, y: gestureState.dy });
+                }
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                if (onActiveEnd) onActiveEnd();
+                pan.flattenOffset();
+                const newX = pan.x._value;
+                const newY = pan.y._value;
+                onAdjustmentChange(dateStr, {
+                    x: newX,
+                    y: newY,
+                    scale: valRef.current.scale
+                });
+            },
+            onPanResponderTerminate: () => {
+                if (onActiveEnd) onActiveEnd();
+            }
+        })
+    ).current;
+
+    return (
+        <View 
+            style={{ flex: 1, overflow: 'hidden', position: 'relative', backgroundColor: '#090D16' }} 
+            onLayout={(e) => {
+                const { width, height } = e.nativeEvent.layout;
+                setContainerSize({ width, height });
+            }}
+            {...panResponder.panHandlers}
+        >
+            <Animated.Image 
+                source={{ uri }} 
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    transform: [
+                        { translateX: pan.x },
+                        { translateY: pan.y },
+                        { scale: scale }
+                    ]
+                }} 
+                resizeMode="contain"
+            />
+        </View>
+    );
+};
 
 const { width } = Dimensions.get('window');
 
@@ -49,6 +180,39 @@ const NativeCalendar = ({ user, setUser }) => {
     // Visual Comparator States
     const [selectedDates, setSelectedDates] = useState([]);
     const [showFullComparison, setShowFullComparison] = useState(false);
+    const [photoAdjustments, setPhotoAdjustments] = useState({});
+    const [isSharing, setIsSharing] = useState(false);
+    const [activePhoto, setActivePhoto] = useState(null);
+    const [twoPhotosLayout, setTwoPhotosLayout] = useState('side-by-side'); // 'side-by-side' or 'stacked'
+
+    const gridRef = useRef();
+
+    const handleAdjustmentChange = (dateStr, adj) => {
+        setPhotoAdjustments(prev => ({
+            ...prev,
+            [dateStr]: adj
+        }));
+    };
+
+    const handleShare = async () => {
+        if (isSharing) return;
+        setIsSharing(true);
+        try {
+            const uri = await captureRef(gridRef, {
+                format: 'png',
+                quality: 0.95,
+            });
+            await Sharing.shareAsync(uri, {
+                mimeType: 'image/png',
+                dialogTitle: 'Compartilhar Evolução',
+                UTI: 'public.png'
+            });
+        } catch (error) {
+            console.error('Error sharing image: ', error);
+        } finally {
+            setIsSharing(false);
+        }
+    };
 
     const hasEnoughData = user.measurements && user.measurements.length >= 3;
 
@@ -70,6 +234,11 @@ const NativeCalendar = ({ user, setUser }) => {
         }
         return logs;
     }, [user.measurements, hasEnoughData]);
+
+    useEffect(() => {
+        // Sync selectedDates with baseWeightLogs to remove stale or demo dates
+        setSelectedDates(prev => prev.filter(dateStr => baseWeightLogs.some(log => log.date === dateStr)));
+    }, [baseWeightLogs]);
 
     const toggleDate = (date) => {
         if (selectedDates.includes(date)) {
@@ -893,15 +1062,46 @@ const NativeCalendar = ({ user, setUser }) => {
                             <Text style={styles.modalSubTitle}>Ajuste & Compartilhe</Text>
                         </View>
                         
-                        <View style={{ width: 40 }} />
-                    </View>
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            {!isSharing && sortedSelectedDates.length === 2 && (
+                                <TouchableOpacity 
+                                    onPress={() => setTwoPhotosLayout(prev => prev === 'side-by-side' ? 'stacked' : 'side-by-side')}
+                                    style={styles.modalCloseBtn}
+                                >
+                                    {twoPhotosLayout === 'side-by-side' ? (
+                                        <Rows2 size={20} color="#FFFFFF" />
+                                    ) : (
+                                        <Columns2 size={20} color="#FFFFFF" />
+                                    )}
+                                </TouchableOpacity>
+                            )}
 
+                            <TouchableOpacity 
+                                onPress={handleShare}
+                                style={styles.modalCloseBtn}
+                                disabled={isSharing}
+                            >
+                                {isSharing ? (
+                                    <Activity size={20} color="#EA580C" />
+                                ) : (
+                                    <Share2 size={20} color="#FFFFFF" />
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+ 
                     {/* Photos Grid */}
                     <View style={styles.modalGridContainer}>
-                        <View style={[
-                            styles.modalGrid,
-                            sortedSelectedDates.length === 3 ? { flexDirection: 'column' } : { flexDirection: 'row', flexWrap: 'wrap' }
-                        ]}>
+                        <View 
+                            ref={gridRef} 
+                            collapsable={false}
+                            style={[
+                                styles.modalGrid,
+                                (sortedSelectedDates.length === 3 || (sortedSelectedDates.length === 2 && twoPhotosLayout === 'stacked')) 
+                                    ? { flexDirection: 'column' } 
+                                    : { flexDirection: 'row', flexWrap: 'wrap' }
+                            ]}
+                        >
                             {sortedSelectedDates.map((dateStr, idx) => {
                                 const log = baseWeightLogs.find(l => l.date === dateStr);
                                 const photo = findPhotoForDate(dateStr);
@@ -911,19 +1111,44 @@ const NativeCalendar = ({ user, setUser }) => {
                                         key={idx} 
                                         style={[
                                             styles.modalPhotoBox,
-                                            sortedSelectedDates.length === 2 ? { width: '50%', height: '100%' } :
-                                            sortedSelectedDates.length === 3 ? { height: '33.3%', width: '100%' } :
-                                            { width: '50%', height: '50%' }
+                                            sortedSelectedDates.length === 2 
+                                                ? (twoPhotosLayout === 'stacked' ? { width: '100%', height: '50%' } : { width: '50%', height: '100%' })
+                                                : sortedSelectedDates.length === 3 
+                                                    ? { height: '33.33%', width: '100%' } 
+                                                    : { width: '50%', height: '50%' }
                                         ]}
                                     >
                                         {photo ? (
-                                            <Image source={{ uri: photo.url }} style={styles.modalFullImage} resizeMode="cover" />
+                                            <AdjustableGridImage 
+                                                uri={photo.url} 
+                                                dateStr={dateStr}
+                                                adjustment={photoAdjustments[dateStr]}
+                                                onAdjustmentChange={handleAdjustmentChange}
+                                                onActiveStart={() => setActivePhoto(dateStr)}
+                                                onActiveEnd={() => setActivePhoto(null)}
+                                            />
                                         ) : (
                                             <View style={styles.modalImagePlaceholder}>
                                                 <Camera size={32} color="#475569" />
                                             </View>
                                         )}
                                         
+                                        {!isSharing && activePhoto === dateStr && (
+                                            <View 
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    right: 0,
+                                                    bottom: 0,
+                                                    borderWidth: 2.5,
+                                                    borderColor: 'rgba(234, 88, 12, 0.6)',
+                                                    zIndex: 50,
+                                                    pointerEvents: 'none'
+                                                }}
+                                            />
+                                        )}
+
                                         {/* Bottom info overlay */}
                                         <View style={styles.modalPhotoOverlay}>
                                             <Text style={styles.modalPhotoWeight}>{log?.weight}kg</Text>
@@ -934,14 +1159,17 @@ const NativeCalendar = ({ user, setUser }) => {
                                     </View>
                                 );
                             })}
-                        </View>
 
-                        {/* Centered overall loss badge */}
-                        {totalDiff !== null && (
-                            <View style={styles.modalTotalDiffBadge}>
-                                <Text style={styles.modalTotalDiffText}>{totalDiff > 0 ? '+' : ''}{totalDiff}kg</Text>
-                            </View>
-                        )}
+                            {/* Centered overall loss badge */}
+                            {totalDiff !== null && (
+                                <View style={[
+                                    styles.modalTotalDiffBadge,
+                                    sortedSelectedDates.length === 3 ? { top: '66.66%' } : { top: '50%' }
+                                ]}>
+                                    <Text style={styles.modalTotalDiffText}>{totalDiff > 0 ? '+' : ''}{totalDiff}kg</Text>
+                                </View>
+                            )}
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -1367,27 +1595,27 @@ const styles = StyleSheet.create({
     },
     modalPhotoOverlay: {
         position: 'absolute',
-        bottom: 20,
-        left: 20,
-        right: 20,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        paddingVertical: 10,
-        borderRadius: 16,
+        bottom: 12,
+        alignSelf: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        paddingVertical: 6,
+        paddingHorizontal: 16,
+        borderRadius: 12,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'rgba(255, 255, 255, 0.15)',
     },
     modalPhotoWeight: {
         color: '#FFFFFF',
-        fontSize: 24,
+        fontSize: 14,
         fontFamily: 'Outfit_900Black',
     },
     modalPhotoDate: {
         color: 'rgba(255, 255, 255, 0.5)',
-        fontSize: 10,
+        fontSize: 8,
         fontFamily: 'Outfit_700Bold',
         textTransform: 'uppercase',
-        marginTop: 2,
+        marginTop: 1,
     },
     modalTotalDiffBadge: {
         position: 'absolute',
@@ -1407,5 +1635,58 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 14,
         fontFamily: 'Outfit_900Black',
+    },
+    floatingControls: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        flexDirection: 'row',
+        gap: 6,
+        zIndex: 50,
+    },
+    miniBtn: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+    },
+    formatSelectorRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 12,
+        backgroundColor: '#0F172A',
+        gap: 12,
+    },
+    formatChip: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.05)',
+    },
+    formatChipActive: {
+        backgroundColor: '#EA580C',
+        borderColor: '#EA580C',
+    },
+    formatChipText: {
+        color: 'rgba(255, 255, 255, 0.6)',
+        fontSize: 11,
+        fontFamily: 'Outfit_700Bold',
+    },
+    formatChipTextActive: {
+        color: '#FFFFFF',
+        fontFamily: 'Outfit_900Black',
+    },
+    modalGridCapture: {
+        alignSelf: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#090D16',
+        overflow: 'hidden',
     }
 });

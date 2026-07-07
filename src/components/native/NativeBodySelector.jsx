@@ -12,7 +12,7 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
 
     const getFillColor = (id) => {
         if (isActive(id)) return "#EA580C"; // brand-600
-        if (isSuggested(id)) return "#10B981"; // emerald-500
+        if (isSuggested(id)) return "#2563EB"; // blue-600
         return "#FFFFFF";
     };
 
@@ -163,8 +163,8 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                     {/* Rotation Logic */}
                     <View style={styles.rotationCard}>
                         <View style={styles.sectionHeader}>
-                            <RefreshCw size={16} color="#10B981" />
-                            <Text style={[styles.sectionTitle, { color: '#065F46' }]}>Rotação Essencial</Text>
+                            <RefreshCw size={16} color="#2563EB" />
+                            <Text style={[styles.sectionTitle, { color: '#1E40AF' }]}>Rotação Essencial</Text>
                         </View>
                         <Text style={styles.rotationDesc}>
                             Alternar os pontos evita cicatrizes, irritações e lipodistrofia (nódulos de gordura), mantendo a medicação eficaz.
@@ -264,22 +264,22 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        backgroundColor: '#F0FDF4',
+        backgroundColor: '#EFF6FF',
         padding: 8,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#DCFCE7',
+        borderColor: '#DBEAFE',
     },
     dotSuggested: {
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: '#10B981',
+        backgroundColor: '#2563EB',
     },
     indicatorTextSuggested: {
         fontSize: 10,
         fontFamily: 'Outfit_900Black',
-        color: '#065F46',
+        color: '#1E40AF',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
@@ -350,17 +350,17 @@ const styles = StyleSheet.create({
         lineHeight: 15,
     },
     rotationCard: {
-        backgroundColor: '#F0FDF4',
+        backgroundColor: '#EFF6FF',
         padding: 16,
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: '#DCFCE7',
+        borderColor: '#DBEAFE',
         gap: 8,
     },
     rotationDesc: {
         fontSize: 11,
         fontFamily: 'Outfit_600SemiBold',
-        color: '#065F46',
+        color: '#1E40AF',
         lineHeight: 15,
     },
     rotationExampleBox: {
@@ -368,12 +368,12 @@ const styles = StyleSheet.create({
         padding: 8,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#A7F3D0',
+        borderColor: '#BFDBFE',
     },
     rotationExampleText: {
         fontSize: 9,
         fontFamily: 'Outfit_900Black',
-        color: '#065F46',
+        color: '#1E40AF',
         textTransform: 'uppercase',
     },
     careCard: {

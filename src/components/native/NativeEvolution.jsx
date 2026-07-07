@@ -8,7 +8,8 @@ import {
     SafeAreaView, 
     Dimensions, 
     Platform, 
-    Image
+    Image,
+    Pressable
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { 
@@ -81,6 +82,79 @@ const NativeEvolution = ({ user }) => {
         const pointCount = view === 'weight' ? baseWeightLogs.length : 7;
         return Math.max(width - 32, pointCount * 65);
     }, [baseWeightLogs, view, width]);
+
+    const getXForIndex = (index, totalPoints) => {
+        const w = chartWidth - 40;
+        const paddingLeft = 64;
+        const paddingRight = 58.5;
+        const scaleFactor = w / 298;
+        const pLeft = paddingLeft * scaleFactor;
+        const pRight = paddingRight * scaleFactor;
+        
+        if (totalPoints <= 1) return w / 2;
+        return pLeft + (index * (w - pLeft - pRight)) / (totalPoints - 1);
+    };
+
+    const getYForValue = (value, logs, chartView) => {
+        const values = chartView === 'weight' ? logs.map(l => l.weight) : logs.map(l => l.value);
+        const maxVal = Math.max(...values);
+        const minVal = Math.min(...values);
+        const range = maxVal - minVal;
+        if (range === 0) return 98.5;
+        
+        const graphTop = 16;
+        const graphBottom = 181;
+        const graphHeight = graphBottom - graphTop;
+        
+        return graphBottom - ((value - minVal) / range) * graphHeight;
+    };
+
+    const handlePointClick = (index) => {
+        if (view === 'weight') {
+            const logs = baseWeightLogs;
+            const log = logs[index];
+            if (!log) return;
+            const logDate = new Date(log.date);
+            const formattedDate = logDate.toLocaleDateString('pt-BR', { month: 'long' });
+            const pointImc = (log.weight / (heightInMeters * heightInMeters)).toFixed(1);
+            
+            const prevLogIndex = baseWeightLogs.findIndex(l => l.date === log.date) - 1;
+            let status = "Estável";
+            if (prevLogIndex >= 0) {
+                const prevWeight = baseWeightLogs[prevLogIndex].weight;
+                status = log.weight < prevWeight ? "Em evolução" : (log.weight === prevWeight ? "Estável" : "Em alerta");
+            }
+
+            const totalPoints = logs.length;
+            const x = getXForIndex(index, totalPoints);
+            const y = getYForValue(log.weight, logs, 'weight');
+
+            setTooltip({
+                x,
+                y,
+                value: log.weight,
+                date: formattedDate,
+                imc: pointImc,
+                status
+            });
+        } else {
+            const logs = glucoseHistory.map((val) => ({ date: new Date().toISOString(), value: val }));
+            const value = glucoseHistory[index];
+            
+            const totalPoints = glucoseHistory.length;
+            const x = getXForIndex(index, totalPoints);
+            const y = getYForValue(value, logs, 'glucose');
+
+            setTooltip({
+                x,
+                y,
+                value,
+                date: `Sem ${index + 1}`,
+                imc: null,
+                status: null
+            });
+        }
+    };
 
     const heightInMeters = parseFloat(user.height) || 1.7;
     const currentWeight = parseFloat(user.currentWeight) || 80;
@@ -169,56 +243,61 @@ const NativeEvolution = ({ user }) => {
                             withShadow={true}
                             withHorizontalLabels={false}
                             withVerticalLabels={true}
-                            onDataPointClick={({ value, index, x, y }) => {
-                                if (view === 'weight') {
-                                    const logs = baseWeightLogs;
-                                    const log = logs[index];
-                                    if (!log) return;
-                                    const logDate = new Date(log.date);
-                                    const formattedDate = logDate.toLocaleDateString('pt-BR', { month: 'long' });
-                                    const pointImc = (log.weight / (heightInMeters * heightInMeters)).toFixed(1);
-                                    
-                                    const prevLogIndex = baseWeightLogs.findIndex(l => l.date === log.date) - 1;
-                                    let status = "Estável";
-                                    if (prevLogIndex >= 0) {
-                                        const prevWeight = baseWeightLogs[prevLogIndex].weight;
-                                        status = log.weight < prevWeight ? "Em evolução" : (log.weight === prevWeight ? "Estável" : "Em alerta");
-                                    }
-
-                                    setTooltip({
-                                        x,
-                                        y,
-                                        value,
-                                        date: formattedDate,
-                                        imc: pointImc,
-                                        status
-                                    });
-                                } else {
-                                    setTooltip({
-                                        x,
-                                        y,
-                                        value,
-                                        date: `Sem ${index + 1}`,
-                                        imc: null,
-                                        status: null
-                                    });
-                                }
-                            }}
+                            onDataPointClick={({ index }) => handlePointClick(index)}
                         />
-                        {tooltip && (
-                            <View style={[styles.tooltipContainer, { left: Math.max(10, Math.min(chartWidth - 40 - 140, tooltip.x - 113)), top: Math.max(10, tooltip.y - 80) }]}>
-                                <TouchableOpacity style={styles.tooltipClose} onPress={() => setTooltip(null)}>
-                                    <X size={12} color="#94A3B8" />
-                                </TouchableOpacity>
-                                <Text style={styles.tooltipDate}>{tooltip.date}</Text>
-                                <Text style={styles.tooltipText}>
-                                    {view === 'weight' ? 'Peso: ' : 'Glicemia: '}
-                                    <Text style={styles.tooltipBold}>{tooltip.value}{view === 'weight' ? 'kg' : ' mg/dL'}</Text>
-                                </Text>
-                                {view === 'weight' && tooltip.imc && (
-                                    <Text style={styles.tooltipText}>IMC: <Text style={styles.tooltipBold}>{tooltip.imc}</Text></Text>
-                                )}
-                            </View>
+
+                        {/* Column touch target overlays */}
+                        {chartData.labels.map((_, index) => {
+                            const totalPoints = chartData.labels.length;
+                            const centerX = getXForIndex(index, totalPoints);
+                            const leftPos = centerX - 25 - 48; // offset by -48 to match chart's marginLeft
+                            return (
+                                <Pressable
+                                    key={index}
+                                    style={{
+                                        position: 'absolute',
+                                        left: leftPos,
+                                        top: 8,
+                                        width: 50,
+                                        height: 200,
+                                        backgroundColor: 'transparent',
+                                        zIndex: 5,
+                                    }}
+                                    onPress={() => handlePointClick(index)}
+                                />
+                            );
+                        })}
+
+                         {tooltip && (
+                            <>
+                                <Pressable 
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        zIndex: 10,
+                                    }}
+                                    onPress={() => setTooltip(null)}
+                                />
+                                <Pressable 
+                                    style={[styles.tooltipContainer, { left: Math.max(10, Math.min(chartWidth - 40 - 140, tooltip.x - 113)), top: Math.max(10, tooltip.y - 80), zIndex: 20 }]}
+                                    onPress={() => {}} // intercept tap inside tooltip to prevent close
+                                >
+                                    <TouchableOpacity style={styles.tooltipClose} onPress={() => setTooltip(null)}>
+                                        <X size={12} color="#94A3B8" />
+                                    </TouchableOpacity>
+                                    <Text style={styles.tooltipDate}>{tooltip.date}</Text>
+                                    <Text style={styles.tooltipText}>
+                                        {view === 'weight' ? 'Peso: ' : 'Glicemia: '}
+                                        <Text style={styles.tooltipBold}>{tooltip.value}{view === 'weight' ? 'kg' : ' mg/dL'}</Text>
+                                    </Text>
+                                    {view === 'weight' && tooltip.imc && (
+                                        <Text style={styles.tooltipText}>IMC: <Text style={styles.tooltipBold}>{tooltip.imc}</Text></Text>
+                                    )}
+                                </Pressable>
+                            </>
                         )}
                     </ScrollView>
                 </View>
@@ -281,7 +360,7 @@ const NativeEvolution = ({ user }) => {
                         )}
                     </View>
                 </View>
-            </ScrollView>
+                </ScrollView>
         </SafeAreaView>
     );
 };
