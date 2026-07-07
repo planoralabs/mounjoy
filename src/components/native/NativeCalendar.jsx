@@ -83,6 +83,7 @@ const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onA
 
     const startDist = useRef(0);
     const startScale = useRef(1);
+    const isPinching = useRef(false);
 
     const panResponder = useRef(
         PanResponder.create({
@@ -90,8 +91,10 @@ const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onA
             onMoveShouldSetPanResponder: () => true,
             onPanResponderGrant: (evt, gestureState) => {
                 if (onActiveStart) onActiveStart();
+                isPinching.current = false; // Reset on new gesture session
                 const { touches } = evt.nativeEvent;
                 if (touches.length === 2) {
+                    isPinching.current = true;
                     const dx = touches[0].pageX - touches[1].pageX;
                     const dy = touches[0].pageY - touches[1].pageY;
                     startDist.current = Math.sqrt(dx * dx + dy * dy);
@@ -108,6 +111,7 @@ const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onA
             onPanResponderMove: (evt, gestureState) => {
                 const { touches } = evt.nativeEvent;
                 if (touches.length === 2) {
+                    isPinching.current = true;
                     const dx = touches[0].pageX - touches[1].pageX;
                     const dy = touches[0].pageY - touches[1].pageY;
                     const currentDist = Math.sqrt(dx * dx + dy * dy);
@@ -124,8 +128,11 @@ const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onA
                         valRef.current.scale = newScale;
                     }
                 } else if (touches.length === 1) {
-                    startDist.current = 0;
-                    pan.setValue({ x: gestureState.dx, y: gestureState.dy });
+                    // Only move the photo if the user is NOT currently in a pinch gesture session
+                    if (!isPinching.current) {
+                        startDist.current = 0;
+                        pan.setValue({ x: gestureState.dx, y: gestureState.dy });
+                    }
                 }
             },
             onPanResponderRelease: (evt, gestureState) => {
@@ -139,10 +146,12 @@ const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onA
                     y: newY,
                     scale: valRef.current.scale
                 });
+                isPinching.current = false;
             },
             onPanResponderTerminate: () => {
                 if (onActiveEnd) onActiveEnd();
                 startDist.current = 0;
+                isPinching.current = false;
             }
         })
     ).current;
