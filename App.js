@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { Home, BarChart3, Settings, CalendarDays, PenLine } from 'lucide-react-native';
 import { useFonts, Outfit_400Regular, Outfit_600SemiBold, Outfit_700Bold, Outfit_900Black } from '@expo-google-fonts/outfit';
 
+import { userService } from './src/services/userService';
+
 import NativeLandingPage from './src/components/native/NativeLandingPage';
 import NativeOnboarding from './src/components/native/NativeOnboarding';
 import NativeLogin from './src/components/native/NativeLogin';
@@ -22,10 +24,11 @@ const NativeMain = () => {
     const user = userData || guestUser;
 
     const setUser = (newData) => {
+        const updatedData = typeof newData === 'function' ? newData(user) : newData;
         if (currentUser) {
-            // No app real: updateFirestore(currentUser.uid, newData)
+            userService.saveUserProfile(currentUser.uid, updatedData);
         } else {
-            setGuestUser(newData);
+            setGuestUser(updatedData);
         }
     };
 

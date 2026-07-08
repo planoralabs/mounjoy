@@ -1,12 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import {
-    onAuthStateChanged,
-    signInWithPopup,
-    signOut,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword
-} from 'firebase/auth';
-import { auth, googleProvider } from '../firebase';
+import { supabase } from '../supabaseClient';
 import { userService } from '../services/userService';
 
 const AuthContext = createContext();
@@ -21,43 +14,51 @@ export const AuthProvider = ({ children }) => {
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const signup = (email, password) => {
-        return createUserWithEmailAndPassword(auth, email, password);
+    const signup = async (email, password) => {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        return data;
     };
 
-    const login = (email, password) => {
-        return signInWithEmailAndPassword(auth, email, password);
+    const login = async (email, password) => {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        return data;
     };
 
-    const loginWithGoogle = () => {
-        return signInWithPopup(auth, googleProvider);
+    const loginWithGoogle = async () => {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+        });
+        if (error) throw error;
+        return data;
     };
 
     const logout = async () => {
-        // 🔐 Critical Fix: Kill connection to Firestore BEFORE signing out to prevent permission errors
         if (userUnsubscribeRef.current) {
             userUnsubscribeRef.current();
             userUnsubscribeRef.current = null;
         }
         setUserData(null);
-        return signOut(auth);
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
     };
 
     useEffect(() => {
-        let unsubscribeUser = null;
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            const user = session?.user || null;
+            const mappedUser = user ? { ...user, uid: user.id } : null;
 
-        const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-            // Clean up existing Firestore subscription before changing auth state
             if (userUnsubscribeRef.current) {
                 userUnsubscribeRef.current();
                 userUnsubscribeRef.current = null;
             }
 
-            setCurrentUser(user);
+            setCurrentUser(mappedUser);
 
-            if (user) {
-                // Subscribe to Firestore user document
-                userUnsubscribeRef.current = userService.subscribeToUser(user.uid, (data) => {
+            if (mappedUser) {
+                // Subscribe to Supabase user profiles table changes
+                userUnsubscribeRef.current = userService.subscribeToUser(mappedUser.uid, (data) => {
                     setUserData(data);
                     setLoading(false);
                 });
@@ -68,7 +69,7 @@ export const AuthProvider = ({ children }) => {
         });
 
         return () => {
-            unsubscribeAuth();
+            if (subscription) subscription.unsubscribe();
             if (userUnsubscribeRef.current) userUnsubscribeRef.current();
         };
     }, []);
