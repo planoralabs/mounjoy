@@ -23,6 +23,12 @@ Em setembro/2026 o antigo webapp (React + Vite + Tailwind) foi removido. O códi
 - `landing/`: **landing page de marketing** (a antiga FunLandingPage), em um projeto Vite separado. Use `npm run landing:dev` / `npm run landing:build`. Os botões levam para `VITE_APP_URL` (ver `landing/.env.example`).
 - `assets/`: imagens usadas pelo app. `assets/library/` guarda artes extras da capivara (abraço, surpresa etc.) que ainda não são usadas.
 
+**Convidado → conta:** quem faz o onboarding sem login tem os dados salvos só no aparelho (AsyncStorage, chave `mounjoy_guest_user`; no navegador vira localStorage). O Dashboard mostra o cartão "Salve seu progresso", que abre o cadastro. Quando a conta nova aparece sem perfil, `App.js` (NativeMain) sobe os dados do convidado para o Supabase e limpa o aparelho. Uma conta criada direto pelo login, sem dados de convidado, passa pelo onboarding.
+
+**Deploy (Vercel):** são dois projetos. O app usa `vercel.json` na raiz (`npm run build:web` → `dist/`, com as variáveis `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY`). A landing usa Root Directory `landing` e a variável `VITE_APP_URL` com o endereço do app.
+
+**Testes:** `npm test` roda os testes unitários. `npm run test:e2e` roda o Playwright contra o Expo Web. As specs de login e cadastro só rodam com `.env.test.local` (projeto Supabase de **teste**, com confirmação de e-mail desligada) e são puladas sem ele, para nunca criar contas em produção.
+
 ---
 
 ## 2. Detalhes das Telas Mobile
