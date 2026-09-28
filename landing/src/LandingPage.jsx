@@ -1,6 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Trophy, Users, Star, CheckCircle2 } from 'lucide-react';
-import { Button } from './ui/BaseComponents';
+
+// Copiado de src/components/ui/BaseComponents.jsx do antigo webapp.
+const Button = ({ children, onClick, variant = 'primary', className = '', ...props }) => {
+    const baseStyle = "py-3 px-6 rounded-2xl font-semibold transition-all duration-200 active:scale-95 flex items-center justify-center gap-2";
+    const variants = {
+        primary: "btn-primary shadow-lg",
+        secondary: "bg-white text-slate-700 border border-slate-200 shadow-sm hover:border-brand-200 hover:bg-brand-50",
+        ghost: "bg-transparent text-slate-500 hover:text-brand-600",
+        danger: "bg-red-50 text-red-500 border border-red-100 hover:bg-red-100"
+    };
+
+    return (
+        <button onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`} {...props}>
+            {children}
+        </button>
+    );
+};
+
 
 const mascotImg = '/mascot.png';
 const mascotZenImg = '/mascotzen.png';

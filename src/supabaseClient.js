@@ -1,11 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Expo/Metro-only variant (used for native iOS/Android and `expo start
-// --web`). Static process.env.EXPO_PUBLIC_* access, since babel-preset-expo
-// only replaces static reads, not computed/bracket access. Do not use
-// import.meta here — Metro/Hermes can't parse it (Script goal, not Module
-// goal). The Vite/web-DOM app uses src/supabaseClient.vite.js instead,
-// aliased in vite.config.js, because it needs import.meta.env.
+// Used by every platform (iOS, Android and `expo start --web`). Static
+// process.env.EXPO_PUBLIC_* access, since babel-preset-expo only replaces
+// static reads, not computed/bracket access. Do not use import.meta here —
+// Metro/Hermes can't parse it (Script goal, not Module goal).
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 

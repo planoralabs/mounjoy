@@ -14,6 +14,15 @@ Para portar a experiência interativa e premium do Mounjoy para dispositivos mó
 ### 1.1 Sincronização de Dados
 Ambos os ambientes compartilham a estrutura lógica das informações do usuário. O estado do usuário é gerenciado globalmente na raiz (`App.js`) e repassado para as sub-telas. As alterações são despachadas por meio do callback `setUser(newData)`, mantendo os dados sincronizados em tempo real.
 
+### 1.2 Estrutura atual do projeto (Expo como única versão do app)
+Em setembro/2026 o antigo webapp (React + Vite + Tailwind) foi removido. O código final dele está preservado na tag git `webapp-vite-final`. O app agora é **um só código Expo**, que roda em iOS, Android e no navegador:
+
+- `npm start`: Expo (celular via Expo Go)
+- `npm run web`: o mesmo app no navegador (http://localhost:8081)
+- `npm run build:web`: gera a versão web de produção em `dist/`
+- `landing/`: **landing page de marketing** (a antiga FunLandingPage), em um projeto Vite separado. Use `npm run landing:dev` / `npm run landing:build`. Os botões levam para `VITE_APP_URL` (ver `landing/.env.example`).
+- `assets/`: imagens usadas pelo app. `assets/library/` guarda artes extras da capivara (abraço, surpresa etc.) que ainda não são usadas.
+
 ---
 
 ## 2. Detalhes das Telas Mobile

@@ -4,14 +4,14 @@
     {
       "name": "mounjoy-web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 5173
+      "runtimeArgs": ["run", "web"],
+      "port": 8081
     },
     {
-      "name": "mounjoy-expo-web",
+      "name": "mounjoy-landing",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "expo-web"],
-      "port": 8081
+      "runtimeArgs": ["run", "landing:dev"],
+      "port": 5173
     }
   ]
 }
