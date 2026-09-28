@@ -24,7 +24,7 @@ const mascotZenImg = '/mascotzen.png';
 const mascotMirrorImg = '/mascotmirror.png';
 const mascotResultsImg = '/mascotresults.png';
 
-const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
+const FunLandingPage = () => {
     const [isLenteInView, setIsLenteInView] = useState(false);
     const lenteRef = useRef(null);
 
@@ -63,26 +63,10 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                     </nav>
                 </div>
                 <div className="flex items-center gap-6">
-                    <button
-                        onClick={onToggleTheme}
-                        className="text-orange-600 font-black text-[10px] uppercase tracking-widest hover:text-orange-700 transition-colors"
-                    >
-                        Estilo Bio-Tech
-                    </button>
-                    <button
-                        onClick={onLogin}
-                        data-testid="landing-login-button"
-                        className="text-slate-600 font-bold text-sm hover:text-orange-500 transition-colors hidden md:block uppercase tracking-widest text-[10px]"
-                    >
-                        Entrar
-                    </button>
-                    <button
-                        onClick={onStart}
-                        data-testid="landing-start-button"
-                        className="px-8 py-3 rounded-full bg-[#093466] text-white font-black text-xs shadow-xl hover:shadow-2xl transition-all active:scale-95 uppercase tracking-widest"
-                    >
-                        Começar
-                    </button>
+                    {/* Provisório: vira os selos da App Store / Google Play quando o app sair */}
+                    <span className="px-8 py-3 rounded-full bg-[#093466] text-white font-black text-xs shadow-xl uppercase tracking-widest cursor-default">
+                        Em breve
+                    </span>
                 </div>
             </header>
 
@@ -100,10 +84,9 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                         </p>
                         <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
                             <Button
-                                onClick={onStart}
-                                className="bg-orange-500 hover:bg-orange-600 text-white font-black py-6 px-10 rounded-[30px] text-xl shadow-xl shadow-orange-200 border-none w-full sm:w-auto"
+                                className="bg-orange-500 text-white font-black py-6 px-10 rounded-[30px] text-xl shadow-xl shadow-orange-200 border-none w-full sm:w-auto cursor-default active:scale-100"
                             >
-                                Começar grátis hoje!
+                                Em breve na App Store e Google Play
                             </Button>
                         </div>
                     </div>
@@ -278,12 +261,11 @@ const FunLandingPage = ({ onStart, onLogin, onToggleTheme }) => {
                     <div className="bg-[#093466] rounded-[30px] md:rounded-[40px] p-6 md:p-12 flex flex-col md:flex-row items-center justify-between text-white relative overflow-hidden group">
                         <div className="flex-1 space-y-4 md:space-y-6 relative z-10 text-center md:text-left md:pr-[25%]">
                             <h2 className="text-3xl md:text-5xl font-black leading-tight">Pronto para entrar nessa jornada?</h2>
-                            <p className="text-lg md:text-xl opacity-80 font-medium">Baixe o Mounjoy agora e comece a se sentir incrível.</p>
+                            <p className="text-lg md:text-xl opacity-80 font-medium">Em breve para iPhone e Android. Prepare-se para se sentir incrível!</p>
                             <Button
-                                onClick={onStart}
-                                className="bg-orange-400 hover:bg-orange-500 text-white font-black py-4 px-10 md:py-6 md:px-12 rounded-[24px] md:rounded-[30px] text-lg md:text-xl shadow-xl shadow-orange-950/20 w-full sm:w-auto mt-4 md:mt-6"
+                                className="bg-orange-400 cursor-default active:scale-100 text-white font-black py-4 px-10 md:py-6 md:px-12 rounded-[24px] md:rounded-[30px] text-lg md:text-xl shadow-xl shadow-orange-950/20 w-full sm:w-auto mt-4 md:mt-6"
                             >
-                                Quero meu Mounjoy!
+                                Em breve nas lojas!
                             </Button>
                         </div>
                         
