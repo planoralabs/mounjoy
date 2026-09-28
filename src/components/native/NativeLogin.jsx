@@ -1,26 +1,53 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Button, Input } from './NativeUI';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShieldCheck, ChevronLeft } from 'lucide-react-native';
 
-const NativeLogin = ({ onBack }) => {
+// initialMode: 'login' | 'signup'
+const NativeLogin = ({ onBack, initialMode = 'login' }) => {
+    const [isSignup, setIsSignup] = useState(initialMode === 'signup');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
+    // Shown inline: Alert.alert is a no-op on web.
+    const [message, setMessage] = useState(null);
+    const { login, signup } = useAuth();
 
-    const handleLogin = async () => {
+    const toggleMode = () => {
+        setIsSignup(!isSignup);
+        setMessage(null);
+    };
+
+    const handleSubmit = async () => {
         if (!email || !password) {
-            Alert.alert('Erro', 'Por favor, preencha todos os campos.');
+            setMessage({ type: 'error', text: 'Por favor, preencha todos os campos.' });
+            return;
+        }
+        if (isSignup && password.length < 6) {
+            setMessage({ type: 'error', text: 'A senha precisa ter pelo menos 6 caracteres.' });
             return;
         }
 
         setLoading(true);
+        setMessage(null);
         try {
-            await login(email, password);
+            if (isSignup) {
+                const { session } = await signup(email, password);
+                // Supabase projects with e-mail confirmation return no session
+                // until the link in the e-mail is clicked.
+                if (!session) {
+                    setMessage({ type: 'info', text: 'Conta criada! Confirme pelo link que enviamos ao seu e-mail e depois entre aqui.' });
+                    setIsSignup(false);
+                }
+            } else {
+                await login(email, password);
+            }
         } catch (error) {
-            Alert.alert('Erro no Login', 'Verifique suas credenciais.');
+            setMessage({
+                type: 'error',
+                text: isSignup ? 'Não foi possível criar a conta. Verifique o e-mail ou tente outro.' : 'Verifique suas credenciais.',
+            });
             console.error(error);
         } finally {
             setLoading(false);
@@ -43,8 +70,10 @@ const NativeLogin = ({ onBack }) => {
                     <View style={styles.iconBox}>
                         <ShieldCheck size={40} color="#EA580C" />
                     </View>
-                    <Text style={styles.title}>Bem-vindo de volta</Text>
-                    <Text style={styles.subtitle}>Acesse sua conta para continuar sua jornada.</Text>
+                    <Text style={styles.title}>{isSignup ? 'Crie sua conta' : 'Bem-vindo de volta'}</Text>
+                    <Text style={styles.subtitle}>
+                        {isSignup ? 'Grátis e seguro: seu progresso fica salvo na nuvem.' : 'Acesse sua conta para continuar sua jornada.'}
+                    </Text>
                 </View>
 
                 <View style={styles.form}>
@@ -55,6 +84,7 @@ const NativeLogin = ({ onBack }) => {
                         onChangeText={setEmail}
                         keyboardType="email-address"
                         autoCapitalize="none"
+                        testID="login-email-input"
                     />
                     <Input 
                         label="Senha" 
@@ -62,25 +92,35 @@ const NativeLogin = ({ onBack }) => {
                         value={password} 
                         onChangeText={setPassword}
                         secureTextEntry
+                        testID="login-password-input"
                     />
-                    
+
+                    {message ? (
+                        <Text style={[styles.message, message.type === 'error' && styles.messageError]}>{message.text}</Text>
+                    ) : null}
+
                     <Button 
-                        onClick={handleLogin} 
+                        onClick={handleSubmit} 
                         disabled={loading}
                         style={styles.loginBtn}
+                        testID="login-submit-button"
                     >
-                        {loading ? 'Entrando...' : 'Entrar na Conta'}
+                        {loading
+                            ? (isSignup ? 'Criando conta...' : 'Entrando...')
+                            : (isSignup ? 'Criar Conta' : 'Entrar na Conta')}
                     </Button>
 
-                    <TouchableOpacity style={styles.forgotBtn}>
-                        <Text style={styles.forgotText}>Esqueceu sua senha?</Text>
-                    </TouchableOpacity>
+                    {!isSignup ? (
+                        <TouchableOpacity style={styles.forgotBtn}>
+                            <Text style={styles.forgotText}>Esqueceu sua senha?</Text>
+                        </TouchableOpacity>
+                    ) : null}
                 </View>
 
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>Ainda não tem conta?</Text>
-                    <TouchableOpacity onPress={onBack}>
-                        <Text style={styles.signUpText}> Criar Perfil</Text>
+                    <Text style={styles.footerText}>{isSignup ? 'Já tem conta?' : 'Ainda não tem conta?'}</Text>
+                    <TouchableOpacity onPress={toggleMode} testID="login-toggle-mode">
+                        <Text style={styles.signUpText}>{isSignup ? ' Entrar' : ' Criar conta'}</Text>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -102,6 +142,8 @@ const styles = StyleSheet.create({
     subtitle: { fontSize: 16, fontFamily: 'Outfit_600SemiBold', color: '#64748B', textAlign: 'center', lineHeight: 22 },
     form: { width: '100%' },
     loginBtn: { marginTop: 12, paddingVertical: 18 },
+    message: { marginTop: 4, marginBottom: 4, textAlign: 'center', fontSize: 13, fontFamily: 'Outfit_600SemiBold', color: '#0F766E' },
+    messageError: { color: '#EF4444' },
     forgotBtn: { alignSelf: 'center', marginTop: 24 },
     forgotText: { color: '#94A3B8', fontSize: 14, fontFamily: 'Outfit_700Bold' },
     footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 40 },

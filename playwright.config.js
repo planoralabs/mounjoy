@@ -7,11 +7,6 @@ import { loadTestEnv } from './tests/e2e/loadTestEnv.mjs';
 // projeto de teste (não com produção) enquanto os specs rodam.
 loadTestEnv();
 
-// ATENÇÃO: os specs foram escritos para o antigo webapp Vite (removido; ver
-// tag git `webapp-vite-final`). Eles dependem de data-testid que ainda não
-// existem nos componentes nativos — é preciso adicionar `testID` neles antes
-// de rodar `npm run test:e2e` contra o Expo Web.
-
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 30_000,
@@ -25,9 +20,14 @@ export default defineConfig({
   },
   webServer: {
     command: 'npm run web',
-    url: 'http://localhost:8081',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    // Espera o Metro compilar o bundle web (a 1ª compilação passa de 30s);
+    // mesma URL que o index.html do Expo pede, então o page.goto já pega o
+    // bundle pronto do cache.
+    url: 'http://localhost:8081/index.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable',
+    // Com o projeto de teste carregado, nunca reaproveita um servidor já
+    // aberto: ele pode estar apontando para o Supabase de produção.
+    reuseExistingServer: !process.env.CI && !process.env.MOUNJOY_E2E_TEST_ENV,
+    timeout: 300_000,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },

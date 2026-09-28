@@ -13,6 +13,10 @@ export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
+    // false while the logged-in user's profile is still being fetched; lets
+    // callers tell "no profile yet" (userData null, profileReady true) apart
+    // from "still loading".
+    const [profileReady, setProfileReady] = useState(false);
 
     const signup = async (email, password) => {
         const { data, error } = await supabase.auth.signUp({ email, password });
@@ -57,9 +61,11 @@ export const AuthProvider = ({ children }) => {
             setCurrentUser(mappedUser);
 
             if (mappedUser) {
+                setProfileReady(false);
                 // Subscribe to Supabase user profiles table changes
                 userUnsubscribeRef.current = userService.subscribeToUser(mappedUser.uid, (data) => {
                     setUserData(data);
+                    setProfileReady(true);
                     setLoading(false);
                 });
             } else {
@@ -77,6 +83,7 @@ export const AuthProvider = ({ children }) => {
     const value = {
         currentUser,
         userData,
+        profileReady,
         login,
         signup,
         logout,

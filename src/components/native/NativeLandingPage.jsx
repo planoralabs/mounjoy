@@ -24,7 +24,7 @@ const NativeLandingPage = ({ onStart, onLogin }) => {
                         <Image source={logoImg} style={styles.logoImage} resizeMode="contain" />
                         <Text style={styles.brandName}>Mounjoy</Text>
                     </View>
-                    <TouchableOpacity onPress={onLogin} style={styles.loginBtn}>
+                    <TouchableOpacity onPress={onLogin} style={styles.loginBtn} testID="landing-login-button">
                         <Text style={styles.loginBtnText}>Entrar</Text>
                     </TouchableOpacity>
                 </View>
@@ -46,7 +46,7 @@ const NativeLandingPage = ({ onStart, onLogin }) => {
                         O aliado perfeito para sua jornada com Mounjaro, Ozempic ou qualquer outro protocolo de emagrecimento.
                     </Text>
 
-                    <Button onClick={onStart} style={styles.ctaBtn} textStyle={styles.ctaBtnText}>
+                    <Button onClick={onStart} style={styles.ctaBtn} textStyle={styles.ctaBtnText} testID="landing-start-button">
                         Começar grátis hoje! <ArrowRight size={20} color="#fff" />
                     </Button>
 

@@ -177,7 +177,7 @@ const SvgDroplet = ({ fillLevel }) => (
     </Svg>
 );
 
-const NativeDashboard = ({ user, setUser, setActiveTab }) => {
+const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
     const [simulatedDays, setSimulatedDays] = useState(0);
     const [showWeightModal, setShowWeightModal] = useState(false);
     const [newWeight, setNewWeight] = useState('');
@@ -635,6 +635,20 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                     </TouchableOpacity>
                 </View>
 
+                {/* Guest: data only lives on this device until an account is created */}
+                {onCreateAccount ? (
+                    <View style={styles.guestCard}>
+                        <Image source={mascotRememberImg} style={styles.guestMascot} resizeMode="contain" />
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.guestTitle}>Salve seu progresso</Text>
+                            <Text style={styles.guestText}>Seus dados estão só neste aparelho. Crie uma conta grátis para não perder nada!</Text>
+                            <TouchableOpacity onPress={onCreateAccount} style={styles.guestBtn} testID="guest-create-account-button">
+                                <Text style={styles.guestBtnText}>Criar conta e salvar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                ) : null}
+
                 {/* Banners */}
                 {cycleInfo.daysSinceDose >= 5 ? (
                     <View style={styles.foodNoiseBanner}>
@@ -863,7 +877,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                 onPressOut={() => setBtnPressed(false)}
                                 onPress={() => setShowDoseModal(true)}
                             >
-                                <View style={styles.physicalBtnContainer}>
+                                <View style={styles.physicalBtnContainer} testID="injection-open-button">
                                     <View style={styles.physicalBtnBase} />
                                     <View style={[
                                         styles.physicalBtnFace,
@@ -1037,6 +1051,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                 <Text style={[styles.cardActionBtnText, isWaterComplete ? { color: '#FFFFFF' } : { color: '#64748B' }]}>−</Text>
                             </TouchableOpacity>
                             <TouchableOpacity 
+                                testID="water-increment-button"
                                 onPress={() => updateIntake('water', 0.2)}
                                 style={[styles.cardActionBtn, isWaterComplete ? { backgroundColor: '#FFFFFF' } : { backgroundColor: '#3B82F6' }]}
                             >
@@ -1109,6 +1124,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                 <Text style={[styles.cardActionBtnText, isProteinComplete ? { color: '#FFFFFF' } : { color: '#64748B' }]}>−</Text>
                             </TouchableOpacity>
                             <TouchableOpacity 
+                                testID="protein-increment-button"
                                 onPress={() => updateIntake('protein', 5)}
                                 style={[styles.cardActionBtn, isProteinComplete ? { backgroundColor: '#FFFFFF' } : { backgroundColor: '#F97316' }]}
                             >
@@ -1181,6 +1197,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                                 <Text style={[styles.cardActionBtnText, isFiberComplete ? { color: '#FFFFFF' } : { color: '#64748B' }]}>−</Text>
                             </TouchableOpacity>
                             <TouchableOpacity 
+                                testID="fiber-increment-button"
                                 onPress={() => updateIntake('fiber', 5)}
                                 style={[styles.cardActionBtn, isFiberComplete ? { backgroundColor: '#FFFFFF' } : { backgroundColor: '#10B981' }]}
                             >
@@ -1319,7 +1336,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab }) => {
                         </Text>
                     </View>
 
-                    <Button onClick={handleConfirmInjection} style={{ width: '100%', marginTop: 16 }}>
+                    <Button onClick={handleConfirmInjection} style={{ width: '100%', marginTop: 16 }} testID="body-map-confirm-button">
                         Confirmar Aplicação
                     </Button>
             </Modal>
@@ -1456,6 +1473,12 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#FAF7F2' },
     scroll: { padding: 24, paddingBottom: 120 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, marginTop: Platform.OS === 'android' ? 20 : 0 },
+    guestCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', borderRadius: 32, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#FED7AA' },
+    guestMascot: { width: 72, height: 72 },
+    guestTitle: { fontSize: 15, fontFamily: 'Outfit_900Black', color: '#431407' },
+    guestText: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#64748B', marginTop: 2, lineHeight: 16 },
+    guestBtn: { alignSelf: 'flex-start', backgroundColor: '#EA580C', borderRadius: 16, paddingVertical: 8, paddingHorizontal: 14, marginTop: 10 },
+    guestBtnText: { fontSize: 12, fontFamily: 'Outfit_700Bold', color: '#FFFFFF' },
     greeting: { fontSize: 24, fontFamily: 'Outfit_900Black', color: '#EA580C' },
     subtitle: { fontSize: 13, fontFamily: 'Outfit_600SemiBold', color: '#EA580C', opacity: 0.8 },
     avatar: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 },

@@ -33,4 +33,8 @@ export function loadTestEnv() {
 
         if (!(key in process.env)) process.env[key] = value;
     }
+    // Marca que o app vai falar com o projeto de TESTE: as specs que escrevem
+    // no Supabase (login/cadastro) só rodam com esta flag — sem ela, pulam, em
+    // vez de criar contas no projeto de produção do .env.local.
+    process.env.MOUNJOY_E2E_TEST_ENV = '1';
 }

@@ -128,7 +128,8 @@ const NativeOnboarding = ({ onComplete }) => {
                 label="Como podemos te chamar?" 
                 placeholder="Seu nome" 
                 value={data.name} 
-                onChangeText={(v) => handleChange('name', v)} 
+                onChangeText={(v) => handleChange('name', v)}
+                testID="onboarding-name-input"
             />
         </View>,
 
@@ -145,6 +146,7 @@ const NativeOnboarding = ({ onComplete }) => {
                         key={opt.id}
                         onPress={() => { triggerLayoutAnimation(); handleChange('unitSystem', opt.id); }}
                         style={[styles.unitCard, data.unitSystem === opt.id && styles.unitCardActive]}
+                        testID={`onboarding-unit-${opt.id}`}
                     >
                         <Text style={[styles.unitCardLabel, data.unitSystem === opt.id && styles.unitCardLabelActive]}>{opt.label}</Text>
                         <Text style={[styles.unitCardHint, data.unitSystem === opt.id && styles.unitCardHintActive]}>{opt.hint}</Text>
@@ -263,6 +265,7 @@ const NativeOnboarding = ({ onComplete }) => {
                                             return (
                                                 <TouchableOpacity
                                                     key={med.id}
+                                                    testID={`onboarding-medication-${med.id}`}
                                                     onPress={() => {
                                                         triggerLayoutAnimation();
                                                         handleChange('medicationId', med.id);
@@ -291,6 +294,7 @@ const NativeOnboarding = ({ onComplete }) => {
                             return (
                                 <TouchableOpacity 
                                     key={substance}
+                                    testID={`onboarding-substance-${substance}`}
                                     activeOpacity={0.9}
                                     onPress={() => {
                                         triggerLayoutAnimation();
@@ -323,7 +327,8 @@ const NativeOnboarding = ({ onComplete }) => {
                     <View style={styles.doseGrid}>
                         {MOCK_MEDICATIONS.find(m => m.id === data.medicationId).doses.map(dose => (
                             <TouchableOpacity 
-                                key={dose} 
+                                key={dose}
+                                testID={`onboarding-dose-${dose}`}
                                 onPress={() => handleChange('currentDose', dose)}
                                 style={[styles.doseChip, data.currentDose === dose && styles.doseChipActive]}
                             >
@@ -340,6 +345,7 @@ const NativeOnboarding = ({ onComplete }) => {
                     {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map(day => (
                         <TouchableOpacity
                             key={day}
+                            testID={`onboarding-day-${day}`}
                             onPress={() => handleChange('injectionDay', day)}
                             style={[styles.dayChip, data.injectionDay === day && styles.dayChipActive]}
                         >
@@ -363,7 +369,7 @@ const NativeOnboarding = ({ onComplete }) => {
 
     return (
         <TouchableWithoutFeedback onPress={Platform.OS === 'web' ? undefined : Keyboard.dismiss} accessible={false}>
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={styles.container} testID="onboarding-screen">
                 <View style={styles.headerNav}>
                     {step > 0 && (
                         <TouchableOpacity onPress={prevStep} style={styles.backBtn}>
@@ -395,6 +401,7 @@ const NativeOnboarding = ({ onComplete }) => {
                         onClick={nextStep} 
                         disabled={isNextDisabled()}
                         style={styles.actionBtn}
+                        testID="onboarding-next-button"
                     >
                         {step === 0 ? 'Começar configuração' : step === steps.length - 1 ? 'Finalizar' : 'Próximo'}
                     </Button>

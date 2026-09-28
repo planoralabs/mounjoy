@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { SEEDED_USER } from './fixtures.js';
 
+// Sem .env.test.local o app usaria o Supabase de PRODUÇÃO — pula.
+test.skip(!process.env.MOUNJOY_E2E_TEST_ENV, 'exige .env.test.local (projeto Supabase de teste)');
+
 // Exige que `npm run test:e2e:seed` já tenha rodado contra o projeto
 // Supabase de TESTE (ver tests/e2e/seed.mjs) — este teste não cria a conta.
 test('login com conta já existente mostra os dados salvos no dashboard', async ({ page }) => {

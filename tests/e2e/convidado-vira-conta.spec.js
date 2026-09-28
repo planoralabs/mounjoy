@@ -2,18 +2,19 @@ import { test, expect } from '@playwright/test';
 import { completeGuestOnboarding } from './helpers.js';
 import { newSignupEmail, SIGNUP_PASSWORD } from './fixtures.js';
 
+// Sem .env.test.local o app usaria o Supabase de PRODUÇÃO — pula.
+test.skip(!process.env.MOUNJOY_E2E_TEST_ENV, 'exige .env.test.local (projeto Supabase de teste)');
+
 /**
- * Caminho real de cadastro no app hoje: o wizard de onboarding sempre roda
- * como convidado primeiro (dado só em localStorage); a conta é criada depois,
- * pelo banner "Criar Conta e Salvar" dentro do Dashboard, que dispara a ponte
- * de migração em src/App.jsx (MainApp, "Migration Bridge: LocalStorage ->
- * Supabase"). Criar conta direto pela tela de Login/Cadastro sem passar pelo
- * onboarding como convidado primeiro NÃO tem esse teste — ver observação
- * sobre isso na conversa (tela de Login pode ficar presa sem `userData` para
- * um usuário novo sem dado de convidado migrável).
+ * Caminho real de cadastro no app: o wizard de onboarding roda como
+ * convidado primeiro (dado só no aparelho, AsyncStorage → localStorage no
+ * navegador); a conta é criada depois, pelo cartão "Criar conta e salvar" no
+ * Dashboard. A ponte de migração em App.js (NativeMain) sobe os dados do
+ * convidado para o Supabase assim que a conta nova aparece sem perfil.
  *
- * Exige o projeto Supabase de TESTE configurado (cria uma conta nova a cada
- * execução, e-mail gerado com timestamp — não precisa de seed).
+ * Exige o projeto Supabase de TESTE configurado em .env.test.local, com
+ * confirmação de e-mail DESLIGADA (cria uma conta nova a cada execução,
+ * e-mail gerado com timestamp — não precisa de seed).
  */
 test('convidado completa onboarding e migra os dados ao criar conta', async ({ page }) => {
     const name = 'Migração E2E';
@@ -22,15 +23,14 @@ test('convidado completa onboarding e migra os dados ao criar conta', async ({ p
     await expect(page.getByTestId('guest-create-account-button')).toBeVisible();
     await page.getByTestId('guest-create-account-button').click();
 
-    // O modal de login abre em modo "Entrar" por padrão; alterna para cadastro.
-    await page.getByTestId('login-toggle-mode').click();
+    // O cartão abre a tela de login já em modo cadastro.
 
     const email = newSignupEmail();
     await page.getByTestId('login-email-input').fill(email);
     await page.getByTestId('login-password-input').fill(SIGNUP_PASSWORD);
     await page.getByTestId('login-submit-button').click();
 
-    // A migração roda assim que currentUser aparece (useEffect em MainApp);
+    // A migração roda assim que currentUser aparece (useEffect em NativeMain);
     // o nome deve continuar visível vindo agora do Supabase, não do localStorage.
     await expect(page.getByText(`Oi, ${name}!`, { exact: false })).toBeVisible({ timeout: 15_000 });
 
