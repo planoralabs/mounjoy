@@ -1,201 +1,11 @@
-// Landing page strings. Same rule as the app (src/i18n in the Expo project):
-// follow the visitor's browser language, fall back to English. `?lng=pt`
-// (or any supported code) forces a language, e.g. for links in campaigns.
+// Same rule as the app (src/i18n in the Expo project): follow the visitor's
+// browser language, fall back to English. A language in the URL wins:
+//   /en, /pt        — pages built with their own title/description, so link
+//                     previews (WhatsApp, Instagram…) show that language
+//   ?lng=pt         — works on any path
+// Strings live in ./translations.js.
 
-const translations = {
-    en: {
-        meta: {
-            title: 'Mounjoy - Your GLP-1 Journey',
-            description: 'The ultimate companion for people on Mounjaro, Ozempic and other weight-loss protocols.',
-        },
-        nav: { features: 'Features', pricing: 'Pricing' },
-        comingSoon: 'Coming soon',
-        hero: {
-            before: 'Your',
-            after: 'journey has never felt this light! 🎈',
-            subtitle: 'The perfect companion for your journey with Mounjaro, Ozempic or any other weight-loss protocol.',
-            subtitle2: 'Organize your doses, track your progress and have everything you need for a successful treatment.',
-            cta: 'Coming soon to the App Store and Google Play',
-            bubble: "I've got your back!",
-        },
-        features: {
-            controlTitle: 'Total Control',
-            controlText: 'Never miss an injection day. We keep you on top of your pens and doses.',
-            progressTitle: 'See Your Progress',
-            progressText: 'Compare your "before and after" and share your progress!',
-            healthyTitle: 'Stay Healthy',
-            healthyText: 'Hydration and protein tips to help you feel good every day.',
-        },
-        compat: { eyebrow: 'Fully compatible', title: 'Works with every protocol' },
-        testimonial: '"With Mounjoy I feel fully in control of my journey. The app turned tracking my treatment into something light and even enjoyable to do every day."',
-        footerCta: {
-            title: 'Ready to start this journey?',
-            text: 'Coming soon for iPhone and Android. Get ready to feel amazing!',
-            button: 'Coming soon to the stores!',
-        },
-        footer: '© 2026 Mounjoy. Made with ❤️ and lots of fun.',
-    },
-    pt: {
-        meta: {
-            title: 'Mounjoy - Sua Jornada GLP-1',
-            description: 'O suporte definitivo para usuários de Mounjaro, Ozempic e protocolos de emagrecimento.',
-        },
-        nav: { features: 'Funcionalidades', pricing: 'Preços' },
-        comingSoon: 'Em breve',
-        hero: {
-            before: 'Sua jornada',
-            after: 'nunca foi tão leve! 🎈',
-            subtitle: 'O aliado perfeito para sua jornada com Mounjaro, Ozempic ou qualquer outro protocolo de emagrecimento.',
-            subtitle2: 'Organize suas doses, acompanhe seu progresso e tenha tudo o que precisa para o sucesso do seu tratamento.',
-            cta: 'Em breve na App Store e Google Play',
-            bubble: 'Eu te acompanho!',
-        },
-        features: {
-            controlTitle: 'Controle Total',
-            controlText: 'Nunca perca o dia da picada. Avisamos tudo sobre suas canetas e doses.',
-            progressTitle: 'Veja sua Evolução',
-            progressText: 'Compare seu "antes e depois" e compartilhe seu progresso!',
-            healthyTitle: 'Mantenha-se Saudável',
-            healthyText: 'Dicas de hidratação e proteínas para você se sentir bem todos os dias.',
-        },
-        compat: { eyebrow: 'Compatibilidade total', title: 'Funciona com todos os protocolos' },
-        testimonial: '"Com o Mounjoy sinto que tenho o controle total da minha jornada. O app transformou o acompanhamento do meu tratamento em algo leve e até prazeroso de fazer todos os dias."',
-        footerCta: {
-            title: 'Pronto para entrar nessa jornada?',
-            text: 'Em breve para iPhone e Android. Prepare-se para se sentir incrível!',
-            button: 'Em breve nas lojas!',
-        },
-        footer: '© 2026 Mounjoy. Feito com ❤️ e muita diversão.',
-    },
-    es: {
-        meta: {
-            title: 'Mounjoy - Tu camino GLP-1',
-            description: 'El apoyo definitivo para quienes usan Mounjaro, Ozempic y otros protocolos para bajar de peso.',
-        },
-        nav: { features: 'Funciones', pricing: 'Precios' },
-        comingSoon: 'Muy pronto',
-        hero: {
-            before: '¡Tu camino',
-            after: 'nunca fue tan ligero! 🎈',
-            subtitle: 'El aliado perfecto para tu tratamiento con Mounjaro, Ozempic o cualquier otro protocolo para bajar de peso.',
-            subtitle2: 'Organiza tus dosis, sigue tu progreso y ten todo lo que necesitas para el éxito de tu tratamiento.',
-            cta: 'Muy pronto en App Store y Google Play',
-            bubble: '¡Yo te acompaño!',
-        },
-        features: {
-            controlTitle: 'Control total',
-            controlText: 'No vuelvas a olvidar el día de tu inyección. Te avisamos de todo sobre tus plumas y dosis.',
-            progressTitle: 'Mira tu evolución',
-            progressText: '¡Compara tu "antes y después" y comparte tu progreso!',
-            healthyTitle: 'Mantente saludable',
-            healthyText: 'Consejos de hidratación y proteínas para que te sientas bien todos los días.',
-        },
-        compat: { eyebrow: 'Compatibilidad total', title: 'Funciona con todos los protocolos' },
-        testimonial: '"Con Mounjoy siento que tengo el control total de mi camino. La app convirtió el seguimiento de mi tratamiento en algo ligero e incluso agradable de hacer cada día."',
-        footerCta: {
-            title: '¿Listo para empezar este camino?',
-            text: 'Muy pronto para iPhone y Android. ¡Prepárate para sentirte increíble!',
-            button: '¡Muy pronto en las tiendas!',
-        },
-        footer: '© 2026 Mounjoy. Hecho con ❤️ y mucha diversión.',
-    },
-    fr: {
-        meta: {
-            title: 'Mounjoy - Votre parcours GLP-1',
-            description: "Le compagnon idéal des personnes sous Mounjaro, Ozempic et autres protocoles de perte de poids.",
-        },
-        nav: { features: 'Fonctionnalités', pricing: 'Tarifs' },
-        comingSoon: 'Bientôt',
-        hero: {
-            before: 'Votre parcours',
-            after: "n'a jamais été aussi léger ! 🎈",
-            subtitle: 'Le compagnon idéal de votre traitement par Mounjaro, Ozempic ou tout autre protocole de perte de poids.',
-            subtitle2: 'Organisez vos doses, suivez vos progrès et ayez tout ce qu’il faut pour réussir votre traitement.',
-            cta: 'Bientôt sur l’App Store et Google Play',
-            bubble: 'Je vous accompagne !',
-        },
-        features: {
-            controlTitle: 'Contrôle total',
-            controlText: 'Ne manquez plus jamais le jour de votre injection. On vous rappelle tout sur vos stylos et vos doses.',
-            progressTitle: 'Suivez votre évolution',
-            progressText: 'Comparez votre « avant/après » et partagez vos progrès !',
-            healthyTitle: 'Restez en forme',
-            healthyText: "Des conseils d'hydratation et de protéines pour vous sentir bien chaque jour.",
-        },
-        compat: { eyebrow: 'Compatibilité totale', title: 'Fonctionne avec tous les protocoles' },
-        testimonial: '« Avec Mounjoy, j’ai l’impression de maîtriser totalement mon parcours. L’app a rendu le suivi de mon traitement léger et même agréable au quotidien. »',
-        footerCta: {
-            title: 'Prêt à vous lancer ?',
-            text: 'Bientôt sur iPhone et Android. Préparez-vous à vous sentir au top !',
-            button: 'Bientôt dans les stores !',
-        },
-        footer: '© 2026 Mounjoy. Fait avec ❤️ et beaucoup de fun.',
-    },
-    de: {
-        meta: {
-            title: 'Mounjoy - Deine GLP-1-Reise',
-            description: 'Der perfekte Begleiter für alle, die Mounjaro, Ozempic oder andere Abnehmprogramme nutzen.',
-        },
-        nav: { features: 'Funktionen', pricing: 'Preise' },
-        comingSoon: 'Demnächst',
-        hero: {
-            before: 'Deine',
-            after: '-Reise war noch nie so leicht! 🎈',
-            subtitle: 'Der perfekte Begleiter für deine Behandlung mit Mounjaro, Ozempic oder jedem anderen Abnehmprogramm.',
-            subtitle2: 'Organisiere deine Dosen, verfolge deinen Fortschritt und hab alles, was du für eine erfolgreiche Behandlung brauchst.',
-            cta: 'Demnächst im App Store und bei Google Play',
-            bubble: 'Ich begleite dich!',
-        },
-        features: {
-            controlTitle: 'Volle Kontrolle',
-            controlText: 'Verpasse nie wieder deinen Spritzentag. Wir behalten deine Pens und Dosen für dich im Blick.',
-            progressTitle: 'Sieh deinen Fortschritt',
-            progressText: 'Vergleiche dein „Vorher und Nachher“ und teile deinen Fortschritt!',
-            healthyTitle: 'Bleib gesund',
-            healthyText: 'Tipps zu Trinkmenge und Protein, damit du dich jeden Tag gut fühlst.',
-        },
-        compat: { eyebrow: 'Voll kompatibel', title: 'Funktioniert mit allen Protokollen' },
-        testimonial: '„Mit Mounjoy habe ich meine Reise voll im Griff. Die App hat das Tracking meiner Behandlung leicht und sogar angenehm gemacht – jeden Tag.“',
-        footerCta: {
-            title: 'Bereit für deine Reise?',
-            text: 'Demnächst für iPhone und Android. Mach dich bereit, dich großartig zu fühlen!',
-            button: 'Demnächst in den Stores!',
-        },
-        footer: '© 2026 Mounjoy. Mit ❤️ und viel Spaß gemacht.',
-    },
-    it: {
-        meta: {
-            title: 'Mounjoy - Il tuo percorso GLP-1',
-            description: 'Il supporto definitivo per chi usa Mounjaro, Ozempic e altri protocolli per perdere peso.',
-        },
-        nav: { features: 'Funzionalità', pricing: 'Prezzi' },
-        comingSoon: 'Presto',
-        hero: {
-            before: 'Il tuo percorso',
-            after: 'non è mai stato così leggero! 🎈',
-            subtitle: "L'alleato perfetto per il tuo percorso con Mounjaro, Ozempic o qualsiasi altro protocollo per perdere peso.",
-            subtitle2: 'Organizza le tue dosi, segui i tuoi progressi e hai tutto ciò che ti serve per il successo della terapia.',
-            cta: 'Presto su App Store e Google Play',
-            bubble: 'Ti accompagno io!',
-        },
-        features: {
-            controlTitle: 'Controllo totale',
-            controlText: "Non dimenticare mai più il giorno dell'iniezione. Ti avvisiamo su penne e dosi.",
-            progressTitle: 'Guarda i tuoi progressi',
-            progressText: 'Confronta il tuo "prima e dopo" e condividi i tuoi progressi!',
-            healthyTitle: 'Resta in salute',
-            healthyText: 'Consigli su idratazione e proteine per stare bene ogni giorno.',
-        },
-        compat: { eyebrow: 'Compatibilità totale', title: 'Funziona con tutti i protocolli' },
-        testimonial: '"Con Mounjoy sento di avere il pieno controllo del mio percorso. L\'app ha reso il monitoraggio della mia terapia leggero e persino piacevole, ogni giorno."',
-        footerCta: {
-            title: 'Pronto a iniziare questo percorso?',
-            text: 'Presto per iPhone e Android. Preparati a sentirti alla grande!',
-            button: 'Presto negli store!',
-        },
-        footer: '© 2026 Mounjoy. Fatto con ❤️ e tanto divertimento.',
-    },
-};
+import { translations } from './translations.js';
 
 const FALLBACK = 'en';
 
@@ -205,8 +15,10 @@ const pick = (tag) => {
 };
 
 export const detectLanguage = () => {
-    const forced = pick(new URLSearchParams(window.location.search).get('lng'));
-    if (forced) return forced;
+    const fromQuery = pick(new URLSearchParams(window.location.search).get('lng'));
+    if (fromQuery) return fromQuery;
+    const fromPath = pick(window.location.pathname.split('/')[1]);
+    if (fromPath) return fromPath;
     const preferred = navigator.languages?.length ? navigator.languages : [navigator.language];
     for (const tag of preferred) {
         const lang = pick(tag);
@@ -217,4 +29,3 @@ export const detectLanguage = () => {
 
 export const language = detectLanguage();
 export const t = translations[language];
-export const allTranslations = translations;
