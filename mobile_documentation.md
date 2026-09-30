@@ -250,7 +250,7 @@ se a precisão do Gemini não for suficiente).
 
 **Modelo escolhido**: `gemini-flash-lite-latest` — variante mais barata da
 família que ainda aceita imagem, adequada pra uma extração estruturada
-simples como essa (testado e confirmado funcionando em 2026-08-25).
+simples como essa (testado e confirmado funcionando em 2026-08-25). Escolha ainda não validada por comparação com outros modelos — ver o plano de benchmark em 7.13.
 Catálogo de modelos evolui rápido; para ver os disponíveis na sua própria
 chave: `GET https://generativelanguage.googleapis.com/v1beta/models?key=SUA_CHAVE`.
 
@@ -541,3 +541,98 @@ faturamento).
 - [ ] Adicionar seletor de sistema de unidades no onboarding nativo.
 - [ ] Declarar `NSCameraUsageDescription`/permissões de câmera no
   `app.json` (ainda ausente, ver seção 5 "Pendências para build de loja").
+
+### 7.13 Evolução planejada: escolha do modelo por benchmark (OpenRouter)
+
+**Status: planejado, não iniciado (registrado em 2026-09-30).** Nada disto
+existe no código ainda. Quando for retomado, o Claude orienta cada etapa
+(criação de conta/chaves, escolha dos modelos, dataset) e implementa o CLI.
+
+**Por quê.** Hoje a Edge Function usa um único modelo
+(`gemini-flash-lite-latest`, ver 7.3) escolhido sem medição. A ideia é
+comparar vários modelos de visão com as mesmas fotos e a mesma instrução,
+e escolher pelo equilíbrio entre acerto, custo e tempo — com números, não
+impressão.
+
+**Conceitos.**
+- **OpenRouter** (openrouter.ai): uma conta e uma chave de API dão acesso a
+  modelos de vários provedores (Google, Anthropic, OpenAI, Meta, Qwen…)
+  pela mesma API; trocar de modelo é trocar o nome. Créditos pré-pagos.
+- **Guardrails** (configuração do OpenRouter): lista de **modelos
+  permitidos** por chave + **teto de gasto** por chave. Nunca criar chave
+  sem os dois.
+- **Benchmark**: rodar todos os modelos contra o mesmo conjunto de fotos
+  com resposta conhecida e medir o erro de cada um.
+- **CLI**: script de terminal no próprio repo que executa o benchmark de
+  forma repetível (rodar de novo quando sair modelo novo ou mudar o prompt).
+
+**Etapas.**
+
+1. **Conta e chaves (usuário, com orientação do Claude)**
+   - Criar conta no OpenRouter e colocar **US$ 10** de crédito.
+   - Em Guardrails, selecionar ~5–8 modelos de visão candidatos (lista
+     definida na hora, pelo catálogo e preços do momento; incluir o Gemini
+     atual como referência).
+   - Gerar **uma chave por uso**, cada uma com **teto de US$ 5** — ex.:
+     `mounjoy-benchmark` (só local) e, se o app migrar, outra separada para
+     a Edge Function.
+   - Ativar a restrição de provedores que **não retêm/treinam com os dados**
+     (fotos de refeição de app de saúde — LGPD/GDPR).
+   - A chave vai em `.env.local` como `OPENROUTER_API_KEY` (sem prefixo
+     `EXPO_PUBLIC_`, nunca no bundle, nunca colada no chat).
+
+2. **Dataset de teste (usuário)**
+   - 20–50 fotos reais de pratos em `bench/meals/` (fora do app; não
+     commitar fotos pessoais — avaliar `.gitignore`).
+   - Para cada foto, a "resposta certa" em `bench/meals/<nome>.json`:
+     alimentos presentes e **gramas pesadas na balança**; calorias/macros
+     de referência pela tabela nutricional (TACO/USDA).
+   - Variar: prato simples, prato misto, porção grande/pequena, bebida,
+     embalagem, foto com pouca luz. Incluir casos com e sem o peso total
+     informado (dica de peso, ver 7.11).
+
+3. **CLI de benchmark (Claude implementa)**
+   - Script em `scripts/bench-meal-models.mjs`, comando proposto:
+     `npm run bench:meals -- --models <lista> [--runs 3] [--hint-weight]`.
+   - Usa **exatamente o mesmo prompt e o mesmo formato de resposta** da
+     Edge Function (extrair o prompt para um módulo compartilhado, para os
+     dois não divergirem).
+   - Para cada modelo × foto, registra:
+     - acerto de itens (precisão/recall dos alimentos identificados);
+     - erro médio de gramas por item e do total do prato;
+     - erro de calorias e proteína do prato;
+     - taxa de JSON válido no formato esperado;
+     - tempo de resposta (mediana e pior caso);
+     - custo por foto (o OpenRouter devolve o custo de cada chamada).
+   - `--runs` repete cada foto para medir consistência (o mesmo modelo
+     pode responder diferente a cada vez).
+   - Saída: tabela no terminal + `bench/results/<data>.csv` e um resumo em
+     Markdown para comparar execuções ao longo do tempo.
+   - Para de rodar se o gasto acumulado passar de um limite local
+     (`--max-cost`, padrão US$ 2), além do teto da chave.
+
+4. **Decisão**
+   - Critério sugerido: descartar quem tiver JSON inválido > 2% ou tempo
+     mediano > 8 s; entre os restantes, menor erro de calorias/proteína,
+     desempatando por custo por foto.
+   - Registrar a escolha e a tabela nesta seção (data + versão do prompt).
+
+5. **Adoção no app**
+   - Duas opções, decididas com o resultado: (a) manter chamada direta ao
+     provedor vencedor na Edge Function, ou (b) passar a Edge Function a
+     chamar o OpenRouter (troca de modelo sem novo deploy de código, só de
+     configuração; permite fallback para um segundo modelo se o primeiro
+     falhar).
+   - Em ambos: nova secret na Edge Function, manter os limites de uso de
+     7.9, atualizar 7.3/7.4.1 e rodar o benchmark de novo antes de trocar.
+
+**Checklist.**
+- [ ] Conta OpenRouter + US$ 10 de crédito
+- [ ] Guardrails: modelos permitidos + teto de US$ 5 por chave
+- [ ] Provedores sem retenção de dados
+- [ ] `OPENROUTER_API_KEY` em `.env.local`
+- [ ] Dataset com 20–50 fotos e gabarito pesado
+- [ ] Prompt da Edge Function extraído para módulo compartilhado
+- [ ] CLI `npm run bench:meals`
+- [ ] Primeira rodada + decisão registrada aqui
+- [ ] Migração da Edge Function (se o vencedor não for o modelo atual)
