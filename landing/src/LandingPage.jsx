@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Trophy, Users, Star, CheckCircle2 } from 'lucide-react';
+import { t } from './i18n';
 
 // Copiado de src/components/ui/BaseComponents.jsx do antigo webapp.
 const Button = ({ children, onClick, variant = 'primary', className = '', ...props }) => {
@@ -58,14 +59,14 @@ const FunLandingPage = () => {
                 <div className="flex items-center gap-6">
                     <img src="/logomount.png" alt="Mounjoy Logo" className="h-10 w-auto object-contain" />
                     <nav className="hidden md:flex items-center gap-8">
-                        <button className="text-slate-600 font-bold text-sm hover:text-orange-500 transition-colors uppercase tracking-widest text-[10px]">Funcionalidades</button>
-                        <button className="text-slate-600 font-bold text-sm hover:text-orange-500 transition-colors uppercase tracking-widest text-[10px]">Preços</button>
+                        <button className="text-slate-600 font-bold text-sm hover:text-orange-500 transition-colors uppercase tracking-widest text-[10px]">{t.nav.features}</button>
+                        <button className="text-slate-600 font-bold text-sm hover:text-orange-500 transition-colors uppercase tracking-widest text-[10px]">{t.nav.pricing}</button>
                     </nav>
                 </div>
                 <div className="flex items-center gap-6">
                     {/* Provisório: vira os selos da App Store / Google Play quando o app sair */}
                     <span className="px-8 py-3 rounded-full bg-[#093466] text-white font-black text-xs shadow-xl uppercase tracking-widest cursor-default">
-                        Em breve
+                        {t.comingSoon}
                     </span>
                 </div>
             </header>
@@ -75,18 +76,19 @@ const FunLandingPage = () => {
                 <div className="max-w-7xl mx-auto px-6 h-full flex flex-col md:flex-row items-center">
                     <div className="flex-1 space-y-8 text-center md:text-left z-20 pt-32 pb-10 md:pb-40">
                         <h1 className="text-5xl font-black text-[#093466] leading-[1.1] md:text-7xl">
-                            Sua jornada <br />
-                            <span className="text-orange-500">GLP-1</span> nunca foi <br />
-                            tão leve! 🎈
+                            {t.hero.before} <br />
+                            <span className="text-orange-500">GLP-1</span>
+                            {/* German glues the suffix on ("GLP-1-Reise"); everyone else needs a space. */}
+                            {t.hero.after.startsWith('-') ? '' : ' '}{t.hero.after}
                         </h1>
                         <p className="text-xl text-slate-600 font-medium max-w-lg mx-auto md:mx-0">
-                            O aliado perfeito para sua jornada com Mounjaro, Ozempic ou qualquer outro protocolo de emagrecimento. <br className="hidden md:block" /> Organize suas doses, acompanhe seu progresso e tenha tudo o que precisa para o sucesso do seu tratamento.
+                            {t.hero.subtitle} <br className="hidden md:block" /> {t.hero.subtitle2}
                         </p>
                         <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
                             <Button
                                 className="bg-orange-500 text-white font-black py-6 px-10 rounded-[30px] text-xl shadow-xl shadow-orange-200 border-none w-full sm:w-auto cursor-default active:scale-100"
                             >
-                                Em breve na App Store e Google Play
+                                {t.hero.cta}
                             </Button>
                         </div>
                     </div>
@@ -111,7 +113,7 @@ const FunLandingPage = () => {
                             style={{ animationDelay: '1.2s' }}
                         >
                             <div className="bg-white px-5 py-3 md:px-6 md:py-4 rounded-[20px] md:rounded-[25px] shadow-2xl border-2 border-orange-50 flex items-center justify-center relative">
-                                <span className="text-orange-600 font-black text-lg md:text-xl whitespace-nowrap">Eu te acompanho!</span>
+                                <span className="text-orange-600 font-black text-lg md:text-xl whitespace-nowrap">{t.hero.bubble}</span>
                                 <div className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 md:left-[55%] w-4 h-4 md:w-5 md:h-5 bg-white border-b-2 border-l-2 border-orange-50 rotate-45"></div>
                             </div>
                         </div>
@@ -144,8 +146,8 @@ const FunLandingPage = () => {
                             <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 relative z-10">
                                 {/* Box 1: Controle Total */}
                                 <div className="bg-white p-8 md:p-10 rounded-[40px] shadow-2xl flex flex-col items-center text-center group hover:-translate-y-2 transition-transform h-fit">
-                                    <h3 className="text-2xl font-black text-slate-800 mb-4">Controle Total</h3>
-                                    <p className="text-slate-500 font-medium mb-8">Nunca perca o dia da picada. Avisamos tudo sobre suas canetas e doses.</p>
+                                    <h3 className="text-2xl font-black text-slate-800 mb-4">{t.features.controlTitle}</h3>
+                                    <p className="text-slate-500 font-medium mb-8">{t.features.controlText}</p>
                                     <div className="w-full bg-slate-50/50 rounded-[30px] shadow-inner min-h-[240px] md:min-h-[300px] relative flex items-center justify-center overflow-hidden">
                                         <img src={mascotImg} alt="Mounjoy Mascot" className="w-44 h-44 md:w-52 md:h-52 object-contain group-hover:scale-110 transition-transform duration-500" />
                                     </div>
@@ -174,8 +176,8 @@ const FunLandingPage = () => {
                                             <img src={mascotResultsImg} alt="Mascot Results" className="w-full h-full object-contain rounded-[18px]" />
                                         </div>
                                     </div>
-                                    <h3 className="text-2xl font-black text-slate-800 mb-4">Veja sua Evolução</h3>
-                                    <p className="text-slate-500 font-medium">Compare seu "antes e depois" e compartilhe seu progresso!</p>
+                                    <h3 className="text-2xl font-black text-slate-800 mb-4">{t.features.progressTitle}</h3>
+                                    <p className="text-slate-500 font-medium">{t.features.progressText}</p>
                                 </div>
 
                                 {/* Box 3: Mantenha-se Saudável */}
@@ -183,8 +185,8 @@ const FunLandingPage = () => {
                                     <div className="w-full bg-slate-50/50 rounded-[30px] shadow-inner min-h-[240px] md:min-h-[300px] mb-8 relative flex items-center justify-center overflow-hidden">
                                         <img src={mascotZenImg} alt="Mascot Zen" className="w-44 h-44 md:w-52 md:h-52 object-contain group-hover:scale-110 transition-transform duration-500" />
                                     </div>
-                                    <h3 className="text-2xl font-black text-slate-800 mb-4">Mantenha-se Saudável</h3>
-                                    <p className="text-slate-500 font-medium">Dicas de hidratação e proteínas para você se sentir bem todos os dias.</p>
+                                    <h3 className="text-2xl font-black text-slate-800 mb-4">{t.features.healthyTitle}</h3>
+                                    <p className="text-slate-500 font-medium">{t.features.healthyText}</p>
                                 </div>
                             </div>
                         </div>
@@ -198,9 +200,9 @@ const FunLandingPage = () => {
                     
                     <div className="w-full bg-orange-500 rounded-b-[30px] md:rounded-b-[40px] pt-32 md:pt-48 pb-20 relative z-10 overflow-hidden shadow-2xl">
                         <div className="max-w-7xl mx-auto mb-12 text-center">
-                            <p className="text-white/70 font-bold uppercase tracking-[0.2em] text-[10px] mb-4">Compatibilidade total</p>
+                            <p className="text-white/70 font-bold uppercase tracking-[0.2em] text-[10px] mb-4">{t.compat.eyebrow}</p>
                             <h3 className="text-3xl md:text-5xl font-black text-white tracking-tight">
-                                Funciona com todos os protocolos
+                                {t.compat.title}
                             </h3>
                         </div>
 
@@ -247,7 +249,7 @@ const FunLandingPage = () => {
                     </div>
                     <div className="relative bg-orange-400 p-8 rounded-[40px] rounded-tl-none md:rounded-tl-none md:rounded-tr-[40px] shadow-2xl text-white">
                         <p className="text-xl font-bold leading-relaxed italic">
-                            "com o Mounjoy sinto que tenho o controle total da minha jornada. O app transformou o acompanhamento de meu tratamento em algo leve e até prazeroso de fazer todos os dias."
+                            {t.testimonial}
                         </p>
                         <div className="hidden md:block absolute top-0 -left-4 w-4 h-4 bg-orange-400" style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}></div>
                         <div className="md:hidden absolute -top-4 left-1/2 -translate-x-1/2 w-4 h-4 bg-orange-400" style={{ clipPath: 'polygon(50% 0, 0 100%, 100% 100%)' }}></div>
@@ -260,12 +262,12 @@ const FunLandingPage = () => {
                     {/* Blue Box with Footer Image Inside */}
                     <div className="bg-[#093466] rounded-[30px] md:rounded-[40px] p-6 md:p-12 flex flex-col md:flex-row items-center justify-between text-white relative overflow-hidden group">
                         <div className="flex-1 space-y-4 md:space-y-6 relative z-10 text-center md:text-left md:pr-[25%]">
-                            <h2 className="text-3xl md:text-5xl font-black leading-tight">Pronto para entrar nessa jornada?</h2>
-                            <p className="text-lg md:text-xl opacity-80 font-medium">Em breve para iPhone e Android. Prepare-se para se sentir incrível!</p>
+                            <h2 className="text-3xl md:text-5xl font-black leading-tight">{t.footerCta.title}</h2>
+                            <p className="text-lg md:text-xl opacity-80 font-medium">{t.footerCta.text}</p>
                             <Button
                                 className="bg-orange-400 cursor-default active:scale-100 text-white font-black py-4 px-10 md:py-6 md:px-12 rounded-[24px] md:rounded-[30px] text-lg md:text-xl shadow-xl shadow-orange-950/20 w-full sm:w-auto mt-4 md:mt-6"
                             >
-                                Em breve nas lojas!
+                                {t.footerCta.button}
                             </Button>
                         </div>
                         
@@ -289,7 +291,7 @@ const FunLandingPage = () => {
                     <img src="/logomount.png" alt="Mounjoy Logo" className="h-10 opacity-30 grayscale" />
                 </div>
                 <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
-                    © 2026 Mounjoy. Feito com ❤️ e muita diversão.
+                    {t.footer}
                 </p>
             </footer>
 
