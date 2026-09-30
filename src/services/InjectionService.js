@@ -1,16 +1,21 @@
 /**
  * InjectionService
  * Gerencia a lógica de rotação de locais de aplicação e sugestões inteligentes.
+ *
+ * `area` e `side` são chaves estáveis (não texto de tela); os nomes exibidos
+ * vêm das traduções `sites.<id>` / `sitesShort.<id>` — ver siteLabel().
  */
 
 export const SITES = [
-    { id: 'abdomen-left', area: 'Abdômen', side: 'Esquerdo', label: 'Abdômen (E)', icon: '📍' },
-    { id: 'abdomen-right', area: 'Abdômen', side: 'Direito', label: 'Abdômen (D)', icon: '📍' },
-    { id: 'thigh-left', area: 'Coxa', side: 'Esquerdo', label: 'Coxa (E)', icon: '🦵' },
-    { id: 'thigh-right', area: 'Coxa', side: 'Direito', label: 'Coxa (D)', icon: '🦵' },
-    { id: 'arm-left', area: 'Braço', side: 'Esquerdo', label: 'Braço (E)', icon: '💪' },
-    { id: 'arm-right', area: 'Braço', side: 'Direito', label: 'Braço (D)', icon: '💪' },
+    { id: 'abdomen-left', area: 'abdomen', side: 'left', icon: '📍' },
+    { id: 'abdomen-right', area: 'abdomen', side: 'right', icon: '📍' },
+    { id: 'thigh-left', area: 'thigh', side: 'left', icon: '🦵' },
+    { id: 'thigh-right', area: 'thigh', side: 'right', icon: '🦵' },
+    { id: 'arm-left', area: 'arm', side: 'left', icon: '💪' },
+    { id: 'arm-right', area: 'arm', side: 'right', icon: '💪' },
 ];
+
+const SITE_IDS = new Set(SITES.map((s) => s.id));
 
 /**
  * Sugere o próximo local de aplicação baseado no histórico.
@@ -29,10 +34,10 @@ export const suggestNextInjection = (history = []) => {
 
     if (available.length > 0) {
         // Priorizar Abdômen, depois alternar
-        const abdomenOptions = available.filter(s => s.area === 'Abdômen');
+        const abdomenOptions = available.filter(s => s.area === 'abdomen');
         if (abdomenOptions.length > 0) return abdomenOptions[0];
 
-        const thighOptions = available.filter(s => s.area === 'Coxa');
+        const thighOptions = available.filter(s => s.area === 'thigh');
         if (thighOptions.length > 0) return thighOptions[0];
 
         return available[0];
@@ -44,3 +49,17 @@ export const suggestNextInjection = (history = []) => {
 };
 
 export const getSiteById = (id) => SITES.find(s => s.id === id) || SITES[0];
+
+/**
+ * Nome exibível do local de uma dose registrada. Aceita registros novos
+ * (siteId / site com o id, area 'oral') e antigos, gravados com texto em
+ * português ("Abdômen", "Não registrado"), que são mostrados como estão.
+ */
+export const siteLabel = (t, dose) => {
+    const id = dose?.siteId || dose?.site;
+    if (SITE_IDS.has(id)) return t(`sites.${id}`);
+    if (dose?.area === 'oral' || id === 'oral') return t('sites.oral');
+    const legacy = dose?.area || dose?.site;
+    if (legacy && legacy !== 'not_recorded' && legacy !== 'Não registrado') return legacy;
+    return t('common.notRecorded');
+};

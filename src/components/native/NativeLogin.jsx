@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, T
 import { Button, Input } from './NativeUI';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShieldCheck, ChevronLeft } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 // initialMode: 'login' | 'signup'
 const NativeLogin = ({ onBack, initialMode = 'login' }) => {
+    const { t } = useTranslation();
     const [isSignup, setIsSignup] = useState(initialMode === 'signup');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -21,11 +23,11 @@ const NativeLogin = ({ onBack, initialMode = 'login' }) => {
 
     const handleSubmit = async () => {
         if (!email || !password) {
-            setMessage({ type: 'error', text: 'Por favor, preencha todos os campos.' });
+            setMessage({ type: 'error', text: t('login.fillAll') });
             return;
         }
         if (isSignup && password.length < 6) {
-            setMessage({ type: 'error', text: 'A senha precisa ter pelo menos 6 caracteres.' });
+            setMessage({ type: 'error', text: t('login.passwordTooShort') });
             return;
         }
 
@@ -37,7 +39,7 @@ const NativeLogin = ({ onBack, initialMode = 'login' }) => {
                 // Supabase projects with e-mail confirmation return no session
                 // until the link in the e-mail is clicked.
                 if (!session) {
-                    setMessage({ type: 'info', text: 'Conta criada! Confirme pelo link que enviamos ao seu e-mail e depois entre aqui.' });
+                    setMessage({ type: 'info', text: t('login.confirmEmail') });
                     setIsSignup(false);
                 }
             } else {
@@ -46,7 +48,7 @@ const NativeLogin = ({ onBack, initialMode = 'login' }) => {
         } catch (error) {
             setMessage({
                 type: 'error',
-                text: isSignup ? 'Não foi possível criar a conta. Verifique o e-mail ou tente outro.' : 'Verifique suas credenciais.',
+                text: isSignup ? t('login.signupFailed') : t('login.loginFailed'),
             });
             console.error(error);
         } finally {
@@ -63,23 +65,23 @@ const NativeLogin = ({ onBack, initialMode = 'login' }) => {
                 >
                 <TouchableOpacity onPress={onBack} style={styles.backBtn}>
                     <ChevronLeft size={24} color="#EA580C" />
-                    <Text style={styles.backText}>Voltar</Text>
+                    <Text style={styles.backText}>{t('common.back')}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.header}>
                     <View style={styles.iconBox}>
                         <ShieldCheck size={40} color="#EA580C" />
                     </View>
-                    <Text style={styles.title}>{isSignup ? 'Crie sua conta' : 'Bem-vindo de volta'}</Text>
+                    <Text style={styles.title}>{isSignup ? t('login.signupTitle') : t('login.loginTitle')}</Text>
                     <Text style={styles.subtitle}>
-                        {isSignup ? 'Grátis e seguro: seu progresso fica salvo na nuvem.' : 'Acesse sua conta para continuar sua jornada.'}
+                        {isSignup ? t('login.signupSubtitle') : t('login.loginSubtitle')}
                     </Text>
                 </View>
 
                 <View style={styles.form}>
                     <Input 
-                        label="E-mail" 
-                        placeholder="seu@email.com" 
+                        label={t('login.email')} 
+                        placeholder={t('login.emailPlaceholder')} 
                         value={email} 
                         onChangeText={setEmail}
                         keyboardType="email-address"
@@ -87,7 +89,7 @@ const NativeLogin = ({ onBack, initialMode = 'login' }) => {
                         testID="login-email-input"
                     />
                     <Input 
-                        label="Senha" 
+                        label={t('login.password')} 
                         placeholder="••••••••" 
                         value={password} 
                         onChangeText={setPassword}
@@ -106,21 +108,21 @@ const NativeLogin = ({ onBack, initialMode = 'login' }) => {
                         testID="login-submit-button"
                     >
                         {loading
-                            ? (isSignup ? 'Criando conta...' : 'Entrando...')
-                            : (isSignup ? 'Criar Conta' : 'Entrar na Conta')}
+                            ? (isSignup ? t('login.creatingAccount') : t('login.loggingIn'))
+                            : (isSignup ? t('login.createAccount') : t('login.logIn'))}
                     </Button>
 
                     {!isSignup ? (
                         <TouchableOpacity style={styles.forgotBtn}>
-                            <Text style={styles.forgotText}>Esqueceu sua senha?</Text>
+                            <Text style={styles.forgotText}>{t('login.forgotPassword')}</Text>
                         </TouchableOpacity>
                     ) : null}
                 </View>
 
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>{isSignup ? 'Já tem conta?' : 'Ainda não tem conta?'}</Text>
+                    <Text style={styles.footerText}>{isSignup ? t('login.haveAccount') : t('login.noAccount')}</Text>
                     <TouchableOpacity onPress={toggleMode} testID="login-toggle-mode">
-                        <Text style={styles.signUpText}>{isSignup ? ' Entrar' : ' Criar conta'}</Text>
+                        <Text style={styles.signUpText}>{' '}{isSignup ? t('login.switchToLogin') : t('login.switchToSignup')}</Text>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>

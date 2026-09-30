@@ -1,0 +1,7 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Mounjoy",
+    "NSCameraUsageDescription": "Mounjoy nutzt die Kamera, um deine Mahlzeiten zu fotografieren und die Lebensmittel zu erkennen.",
+    "NSPhotoLibraryUsageDescription": "Mounjoy nutzt deine Fotos, um Fortschrittsbilder hinzuzufügen und Fotos von Mahlzeiten zu analysieren."
+  }
+}

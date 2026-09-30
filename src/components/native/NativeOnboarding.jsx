@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Ima
 import { Button, Input, Slider } from './NativeUI';
 import { MOCK_MEDICATIONS } from '../../constants/medications';
 import { ArrowLeft, Check } from 'lucide-react-native';
+import { useTranslation, Trans } from 'react-i18next';
+import { getDeviceUnitSystem, weekdayName, orderedWeekdays } from '../../i18n';
+import { kgToLb, lbToKg, cmToIn, inToCm, createUnits } from '../../utils/units';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -42,30 +45,30 @@ const AnimatedPreviewCard = ({ children, style }) => {
 
 // Canonical storage stays metric (kg, m) regardless of the user's chosen
 // display unit, so the rest of the app (dashboards, charts, backend) never
-// needs to know which unit the user picked at onboarding.
-const KG_PER_LB = 0.453592;
-const M_PER_IN = 0.0254;
-const kgToLb = (kg) => kg / KG_PER_LB;
-const lbToKg = (lb) => lb * KG_PER_LB;
-const mToIn = (m) => m / M_PER_IN;
-const inToM = (inches) => inches * M_PER_IN;
+// needs to know which unit the user picked at onboarding. Imperial input is
+// stored with extra decimals so it converts back to the same lb / in.
+const mToIn = (m) => cmToIn(m * 100);
+const inToM = (inches) => inToCm(inches) / 100;
 
 const NativeOnboarding = ({ onComplete }) => {
+    const { t } = useTranslation();
     const [step, setStep] = useState(0);
-    const [data, setData] = useState({
+    const [data, setData] = useState(() => ({
         name: '',
-        unitSystem: 'metric', // 'metric' | 'imperial' — see mobile_documentation.md 7.6
+        // 'metric' | 'imperial' — pre-selected from the device's measurement
+        // system (see mobile_documentation.md 7.6); the user can still switch.
+        unitSystem: getDeviceUnitSystem(),
         height: '1.70',
         startWeight: '80.0',
         goalWeight: '70.0',
         medicationId: '',
         currentDose: '',
-        injectionDay: ''
-    });
+        injectionDay: null // 0 = Sunday … 6 = Saturday
+    }));
     const isImperial = data.unitSystem === 'imperial';
+    const units = createUnits(data.unitSystem);
 
     const [filterAdmin, setFilterAdmin] = useState('all');
-    const [filterFocus, setFilterFocus] = useState('all');
     const [selectedSubstance, setSelectedSubstance] = useState(null);
 
     const triggerLayoutAnimation = () => {
@@ -89,7 +92,7 @@ const NativeOnboarding = ({ onComplete }) => {
     const isNextDisabled = () => {
         if (step === 1) return !data.name;
         if (step === 5) return !data.medicationId;
-        if (step === 6) return !data.currentDose || !data.injectionDay;
+        if (step === 6) return !data.currentDose || data.injectionDay == null;
         return false;
     };
 
@@ -101,8 +104,7 @@ const NativeOnboarding = ({ onComplete }) => {
             (filterAdmin === 'weekly' && med.route === 'injectable' && med.frequency === 'weekly') ||
             (filterAdmin === 'daily_inj' && med.route === 'injectable' && med.frequency === 'daily') ||
             (filterAdmin === 'daily_oral' && med.route === 'oral');
-        const matchesFocus = filterFocus === 'all' || med.focus === filterFocus;
-        return matchesAdmin && matchesFocus;
+        return matchesAdmin;
     });
 
     // Group meds by substance
@@ -117,16 +119,16 @@ const NativeOnboarding = ({ onComplete }) => {
         // Step 0: Welcome
         <View style={styles.stepContainer}>
             <Image source={mascotImg} style={styles.welcomeMascot} resizeMode="contain" />
-            <Text style={styles.title}>Olá, vamos começar?</Text>
-            <Text style={styles.subtitle}>Vou te ajudar a ficar incrível e acompanhar cada passo da sua evolução!</Text>
+            <Text style={styles.title}>{t('onboarding.welcomeTitle')}</Text>
+            <Text style={styles.subtitle}>{t('onboarding.welcomeSubtitle')}</Text>
         </View>,
 
         // Step 1: Name
         <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Sobre você</Text>
-            <Input 
-                label="Como podemos te chamar?" 
-                placeholder="Seu nome" 
+            <Text style={styles.stepTitle}>{t('onboarding.aboutYou')}</Text>
+            <Input
+                label={t('onboarding.nameLabel')}
+                placeholder={t('onboarding.namePlaceholder')}
                 value={data.name} 
                 onChangeText={(v) => handleChange('name', v)}
                 testID="onboarding-name-input"
@@ -135,12 +137,12 @@ const NativeOnboarding = ({ onComplete }) => {
 
         // Step 2: Units
         <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Sistema de Medidas</Text>
-            <Text style={styles.subtitle}>Como você prefere ver seu peso e altura?</Text>
+            <Text style={styles.stepTitle}>{t('units.title')}</Text>
+            <Text style={styles.subtitle}>{t('onboarding.unitsSubtitle')}</Text>
             <View style={styles.unitGrid}>
                 {[
-                    { id: 'metric', label: 'Métrico', hint: 'kg · cm' },
-                    { id: 'imperial', label: 'Imperial', hint: 'lb · in' },
+                    { id: 'metric', label: t('units.metric'), hint: t('units.metricHint') },
+                    { id: 'imperial', label: t('units.imperial'), hint: t('units.imperialHint') },
                 ].map((opt) => (
                     <TouchableOpacity
                         key={opt.id}
@@ -153,60 +155,62 @@ const NativeOnboarding = ({ onComplete }) => {
                     </TouchableOpacity>
                 ))}
             </View>
+            <Text style={styles.unitsDeviceHint}>{t('onboarding.unitsDeviceHint')}</Text>
         </View>,
 
         // Step 3: Physical Data
         <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Seus Dados</Text>
+            <Text style={styles.stepTitle}>{t('onboarding.dataTitle')}</Text>
             <Slider
-                label="Peso Atual"
+                label={t('onboarding.currentWeight')}
                 value={isImperial ? kgToLb(parseFloat(data.startWeight)).toFixed(1) : data.startWeight}
-                onChange={(v) => handleChange('startWeight', (isImperial ? lbToKg(parseFloat(v)) : parseFloat(v)).toFixed(1))}
+                onChange={(v) => handleChange('startWeight', isImperial ? lbToKg(parseFloat(v)).toFixed(2) : parseFloat(v).toFixed(1))}
                 min={isImperial ? 88 : 40}
                 max={isImperial ? 550 : 250}
                 step={isImperial ? 0.5 : 0.1}
-                suffix={isImperial ? 'lb' : 'kg'}
+                suffix={units.weightUnit}
             />
             <Slider
-                label="Altura"
-                value={isImperial ? mToIn(parseFloat(data.height)).toFixed(1) : data.height}
-                onChange={(v) => handleChange('height', (isImperial ? inToM(parseFloat(v)) : parseFloat(v)).toFixed(2))}
+                label={t('onboarding.height')}
+                value={isImperial ? mToIn(parseFloat(data.height)).toFixed(0) : data.height}
+                onChange={(v) => handleChange('height', isImperial ? inToM(parseFloat(v)).toFixed(3) : parseFloat(v).toFixed(2))}
                 min={isImperial ? 39 : 1.0}
                 max={isImperial ? 91 : 2.3}
-                step={isImperial ? 0.5 : 0.01}
+                step={isImperial ? 1 : 0.01}
                 suffix={isImperial ? 'in' : 'm'}
+                displayValue={isImperial ? units.formatHeight(parseFloat(data.height)) : undefined}
             />
         </View>,
 
         // Step 4: Goal
         <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Sua Meta</Text>
+            <Text style={styles.stepTitle}>{t('onboarding.goalTitle')}</Text>
             <Slider
-                label="Meta de Peso"
+                label={t('onboarding.goalWeight')}
                 value={isImperial ? kgToLb(parseFloat(data.goalWeight)).toFixed(1) : data.goalWeight}
-                onChange={(v) => handleChange('goalWeight', (isImperial ? lbToKg(parseFloat(v)) : parseFloat(v)).toFixed(1))}
+                onChange={(v) => handleChange('goalWeight', isImperial ? lbToKg(parseFloat(v)).toFixed(2) : parseFloat(v).toFixed(1))}
                 min={isImperial ? 88 : 40}
                 max={isImperial ? 440 : 200}
                 step={isImperial ? 0.5 : 0.1}
-                suffix={isImperial ? 'lb' : 'kg'}
+                suffix={units.weightUnit}
             />
             <Image source={mascotWeightImg} style={styles.weightMascot} resizeMode="contain" />
         </View>,
 
         // Step 4: Medication Selection (Substances & Brands)
         <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Qual seu protocolo?</Text>
-            
+            <Text style={styles.stepTitle}>{t('onboarding.protocolTitle')}</Text>
+
             {/* Filters Row - Only visible when not focused on a single substance */}
             {!selectedSubstance ? (
                 <View style={styles.filtersBlock}>
-                    <Text style={styles.filterGroupLabel}>Via de Administração</Text>
+                    <Text style={styles.filterGroupLabel}>{t('onboarding.routeLabel')}</Text>
                     <View style={styles.filterRow}>
                         {[
-                            { id: 'all', label: 'Todos' },
-                            { id: 'weekly', label: 'Semanal' },
-                            { id: 'daily_inj', label: 'Inj. Diário' },
-                            { id: 'daily_oral', label: 'Comprimido' }
+                            { id: 'all', label: t('onboarding.filterAll') },
+                            { id: 'weekly', label: t('onboarding.filterWeekly') },
+                            { id: 'daily_inj', label: t('onboarding.filterDailyInj') },
+                            { id: 'daily_oral', label: t('onboarding.filterPill') }
                         ].map(f => (
                             <TouchableOpacity 
                                 key={f.id} 
@@ -214,23 +218,6 @@ const NativeOnboarding = ({ onComplete }) => {
                                 style={[styles.filterChip, filterAdmin === f.id && styles.filterChipActive]}
                             >
                                 <Text style={[styles.filterText, filterAdmin === f.id && styles.filterTextActive]}>{f.label}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    <Text style={styles.filterGroupLabel}>Objetivo Principal</Text>
-                    <View style={styles.filterRow}>
-                        {[
-                            { id: 'all', label: 'Todos' },
-                            { id: 'weight', label: 'Peso' },
-                            { id: 'diabetes', label: 'Glicose' }
-                        ].map(f => (
-                            <TouchableOpacity 
-                                key={f.id} 
-                                onPress={() => { triggerLayoutAnimation(); setFilterFocus(f.id); }}
-                                style={[styles.filterChip, filterFocus === f.id && styles.filterChipActive]}
-                            >
-                                <Text style={[styles.filterText, filterFocus === f.id && styles.filterTextActive]}>{f.label}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -242,7 +229,7 @@ const NativeOnboarding = ({ onComplete }) => {
                 {!!selectedSubstance ? (
                     <TouchableOpacity onPress={() => { triggerLayoutAnimation(); setSelectedSubstance(null); }} style={styles.backToSubstancesBtn}>
                         <ArrowLeft size={16} color="#EA580C" />
-                        <Text style={styles.backToSubstancesText}>Ver todas as substâncias</Text>
+                        <Text style={styles.backToSubstancesText}>{t('onboarding.seeAllSubstances')}</Text>
                     </TouchableOpacity>
                 ) : null}
 
@@ -257,7 +244,7 @@ const NativeOnboarding = ({ onComplete }) => {
                         if (isFocused) {
                             return (
                                 <View key={substance} style={styles.substanceCardFocused}>
-                                    <Text style={styles.substanceTitleFocused}>{substance}</Text>
+                                    <Text style={styles.substanceTitleFocused}>{t(`substances.${substance}`)}</Text>
                                     <View style={styles.brandsList}>
                                         {meds.map((med) => {
                                             const isSelected = data.medicationId === med.id;
@@ -305,7 +292,7 @@ const NativeOnboarding = ({ onComplete }) => {
                                         hasSelection ? styles.substanceCardSelected : null
                                     ]}
                                 >
-                                    <Text style={styles.substanceTitle}>{substance}</Text>
+                                    <Text style={styles.substanceTitle}>{t(`substances.${substance}`)}</Text>
                                     {!!selectedBrand ? (
                                         <Text style={styles.substanceSelectedBrandText}>{selectedBrand}</Text>
                                     ) : null}
@@ -319,11 +306,11 @@ const NativeOnboarding = ({ onComplete }) => {
 
         // Step 5: Dosage & Injection Day
         <ScrollView style={styles.stepScrollContainer} showsVerticalScrollIndicator={false}>
-            <Text style={styles.stepTitle}>Detalhes da Dose</Text>
-            
+            <Text style={styles.stepTitle}>{t('onboarding.doseTitle')}</Text>
+
             {!!data.medicationId ? (
                 <View style={styles.sectionContainer}>
-                    <Text style={styles.sectionLabel}>Dosagem Atual</Text>
+                    <Text style={styles.sectionLabel}>{t('onboarding.currentDose')}</Text>
                     <View style={styles.doseGrid}>
                         {MOCK_MEDICATIONS.find(m => m.id === data.medicationId).doses.map(dose => (
                             <TouchableOpacity 
@@ -340,26 +327,30 @@ const NativeOnboarding = ({ onComplete }) => {
             ) : null}
 
             <View style={styles.sectionContainer}>
-                <Text style={styles.sectionLabel}>Dia da Aplicação / Consumo</Text>
+                <Text style={styles.sectionLabel}>{t('onboarding.doseDay')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.daysScroll}>
-                    {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map(day => (
+                    {orderedWeekdays().map(day => (
                         <TouchableOpacity
                             key={day}
                             testID={`onboarding-day-${day}`}
                             onPress={() => handleChange('injectionDay', day)}
                             style={[styles.dayChip, data.injectionDay === day && styles.dayChipActive]}
                         >
-                            <Text style={[styles.dayText, data.injectionDay === day && styles.dayTextActive]}>{day.slice(0, 3)}</Text>
+                            <Text style={[styles.dayText, data.injectionDay === day && styles.dayTextActive]}>{weekdayName(day, 'short')}</Text>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
             </View>
 
             {/* Protocol Summary Preview Card */}
-            {!!data.currentDose && !!data.injectionDay && !!selectedMed ? (
+            {!!data.currentDose && data.injectionDay != null && !!selectedMed ? (
                 <AnimatedPreviewCard style={styles.previewCard}>
                     <Text style={styles.previewText}>
-                        Tudo pronto! Seu plano com <Text style={styles.previewHighlight}>{selectedMed.brand}</Text> está montado, na dose de <Text style={styles.previewHighlight}>{data.currentDose}</Text>, começando na próxima {data.injectionDay}. Vamos nessa!
+                        <Trans
+                            i18nKey="onboarding.summary"
+                            values={{ brand: selectedMed.brand, dose: data.currentDose, day: weekdayName(data.injectionDay) }}
+                            components={{ b: <Text style={styles.previewHighlight} /> }}
+                        />
                     </Text>
                     <Image source={mascotStretchImg} style={styles.previewMascot} resizeMode="contain" />
                 </AnimatedPreviewCard>
@@ -388,11 +379,11 @@ const NativeOnboarding = ({ onComplete }) => {
                 <View style={styles.footer}>
                     {(step === 5 && !!data.medicationId && !!selectedMed) ? (
                         <View style={styles.selectionPreview}>
-                            <Text style={styles.selectionPreviewLabel}>Selecionado</Text>
+                            <Text style={styles.selectionPreviewLabel}>{t('onboarding.selected')}</Text>
                             <View style={styles.selectionPreviewRow}>
                                 <Text style={styles.selectionPreviewBrand}>{selectedMed.brand}</Text>
                                 <Text style={styles.selectionPreviewSeparator}>|</Text>
-                                <Text style={styles.selectionPreviewSubstance}>{selectedMed.substance}</Text>
+                                <Text style={styles.selectionPreviewSubstance}>{t(`substances.${selectedMed.substance}`)}</Text>
                             </View>
                         </View>
                     ) : null}
@@ -403,7 +394,7 @@ const NativeOnboarding = ({ onComplete }) => {
                         style={styles.actionBtn}
                         testID="onboarding-next-button"
                     >
-                        {step === 0 ? 'Começar configuração' : step === steps.length - 1 ? 'Finalizar' : 'Próximo'}
+                        {step === 0 ? t('onboarding.start') : step === steps.length - 1 ? t('onboarding.finish') : t('common.next')}
                     </Button>
                 </View>
             </SafeAreaView>
@@ -449,6 +440,7 @@ const styles = StyleSheet.create({
     unitCardLabelActive: { color: '#EA580C' },
     unitCardHint: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 },
     unitCardHintActive: { color: '#EA580C' },
+    unitsDeviceHint: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', textAlign: 'center', marginTop: 16 },
 
     // Step 3: Goal
     weightMascot: { width: 180, height: 180, alignSelf: 'center', marginTop: 24 },

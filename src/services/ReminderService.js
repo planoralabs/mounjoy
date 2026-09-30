@@ -41,12 +41,12 @@ export const ReminderService = {
     },
 
     /**
-     * Formats the time until next dose for display.
+     * Formats the time until next dose for display (`t` is the i18next t).
      */
-    formatTimeRemaining: (daysRemaining, status) => {
-        if (status === 'overdue') return 'Vencida';
-        if (status === 'due_today') return 'Hoje!';
-        if (daysRemaining === 1) return 'Amanhã';
-        return `${daysRemaining} dias`;
+    formatTimeRemaining: (daysRemaining, status, t) => {
+        if (status === 'overdue') return t('dashboard.overdue');
+        if (status === 'due_today') return t('dashboard.today');
+        if (daysRemaining === 1) return t('dashboard.tomorrow');
+        return t('dashboard.inDays', { count: daysRemaining });
     }
 };

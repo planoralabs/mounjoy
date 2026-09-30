@@ -26,6 +26,17 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// App UI languages (src/i18n/resolve.js SUPPORTED_LANGUAGES) → the name the
+// prompt uses. Unknown / missing codes fall back to English.
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: "English",
+  pt: "Brazilian Portuguese",
+  es: "Spanish",
+  fr: "French",
+  de: "German",
+  it: "Italian",
+};
+
 const PROMPT = `You are a nutrition-estimation assistant. Identify every distinct food item visible in this photo of a meal.
 
 For each item, estimate its weight in grams based on typical portion sizes and visual cues (plate size, comparison to utensils, etc), and estimate its typical macronutrients PER 100 GRAMS (not for the estimated portion — per 100g, like a nutrition label) based on your general nutrition knowledge for that kind of food.
@@ -33,7 +44,7 @@ For each item, estimate its weight in grams based on typical portion sizes and v
 Respond with ONLY a JSON array (no markdown, no prose), in this exact shape:
 [{ "name": string, "category": string, "estimatedGrams": number, "confidence": number, "caloriesPer100g": number, "proteinPer100g": number, "carbsPer100g": number, "fatPer100g": number }]
 
-- "name": short, common food name, in the same language as visible on any packaging in the photo, otherwise English.
+- "name": short, common food name, written in {{LANGUAGE}}.
 - "category": one of "protein", "carb", "vegetable", "fruit", "dairy", "fat", "beverage", "other".
 - "estimatedGrams": your best estimate of the portion size shown, a positive number.
 - "confidence": 0 to 1, how confident you are in the identification (not the weight or the macros).
@@ -86,14 +97,19 @@ Deno.serve(async (req) => {
             error: usage?.reason === "too_frequent"
               ? "Aguarde alguns segundos antes de escanear outro prato."
               : `Limite diário de ${usage?.limit ?? DAILY_SCAN_LIMIT} análises atingido. Tente novamente amanhã.`,
+            // The app translates `reason` (+ `limit`) itself; `error` stays
+            // as a Portuguese fallback for older app builds.
             reason: usage?.reason,
+            limit: usage?.limit ?? DAILY_SCAN_LIMIT,
           },
           429,
         );
       }
     }
 
-    const { imageBase64, mimeType, totalWeightHintGrams } = await req.json();
+    const { imageBase64, mimeType, totalWeightHintGrams, language } = await req.json();
+    const languageName = LANGUAGE_NAMES[language] || LANGUAGE_NAMES.en;
+    const prompt = PROMPT.replace("{{LANGUAGE}}", languageName);
     if (!imageBase64 || typeof imageBase64 !== "string") {
       return jsonResponse({ error: "imageBase64 is required" }, 400);
     }
@@ -122,8 +138,8 @@ Deno.serve(async (req) => {
             parts: [
               {
                 text: weightHint
-                  ? `${PROMPT}\n\nThe user says the whole plate weighs approximately ${weightHint}g total — use this as ground truth to calibrate your per-item gram estimates so they roughly sum to this total.`
-                  : PROMPT,
+                  ? `${prompt}\n\nThe user says the whole plate weighs approximately ${weightHint}g total — use this as ground truth to calibrate your per-item gram estimates so they roughly sum to this total.`
+                  : prompt,
               },
               { inline_data: { mime_type: mimeType || "image/jpeg", data: imageBase64 } },
             ],

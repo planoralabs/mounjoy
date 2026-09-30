@@ -5,15 +5,12 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Camera, Images, ArrowLeft, X, Plus, Minus, Trash2, AlertCircle } from 'lucide-react-native';
 import { Button, Input } from './NativeUI';
 import { userService } from '../../services/userService';
+import { useTranslation } from 'react-i18next';
+import i18n, { unitsFor, formatNumber } from '../../i18n';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-
-const CATEGORY_LABELS = {
-    protein: 'Proteína', carb: 'Carboidrato', vegetable: 'Vegetal',
-    fruit: 'Fruta', dairy: 'Laticínio', fat: 'Gordura', beverage: 'Bebida', other: 'Outro',
-};
 
 const triggerLayoutAnimation = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -65,6 +62,10 @@ const nutritionForGrams = (item, grams) => {
 };
 
 const NativeMealScan = ({ user, setUser, onClose }) => {
+    const { t } = useTranslation();
+    // Portions are always handled in grams internally; imperial users see and
+    // type ounces.
+    const units = unitsFor(user);
     const [photoUri, setPhotoUri] = useState(null);
     const [status, setStatus] = useState('idle'); // idle | analyzing | review | saving
     const [items, setItems] = useState([]);
@@ -73,6 +74,7 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
     const [manualGrams, setManualGrams] = useState('');
     const [showManualForm, setShowManualForm] = useState(false);
     const [totalWeightHint, setTotalWeightHint] = useState('');
+    const [portionDrafts, setPortionDrafts] = useState({});
 
     const pickAndAnalyze = async (source) => {
         setError(null);
@@ -81,7 +83,7 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
             : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
         if (!permission.granted) {
-            setError('Precisamos de permissão para acessar ' + (source === 'camera' ? 'a câmera' : 'suas fotos') + '.');
+            setError(source === 'camera' ? t('mealScan.permissionCamera') : t('mealScan.permissionPhotos'));
             return;
         }
 
@@ -111,8 +113,8 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
             const t1 = Date.now();
             console.log(`[meal-scan] resize: ${t1 - t0}ms, base64 length: ${resized.base64?.length}`);
 
-            const weightHint = Math.min(5000, Math.max(0, parseFloat(totalWeightHint) || 0)) || null;
-            const detected = await userService.analyzeMealPhoto(resized.base64, 'image/jpeg', weightHint);
+            const weightHint = Math.min(5000, Math.max(0, Math.round(units.foodToGrams(parseFloat(totalWeightHint))) || 0)) || null;
+            const detected = await userService.analyzeMealPhoto(resized.base64, 'image/jpeg', weightHint, i18n.language);
             console.log(`[meal-scan] analyze request: ${Date.now() - t1}ms, items: ${detected.length}`);
             const withMacros = await Promise.all(
                 detected.map(async (d, i) => ({
@@ -124,24 +126,30 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
             setStatus('review');
         } catch (e) {
             console.error('Meal analysis failed:', e);
-            setError(e.message || 'Não conseguimos analisar a foto agora. Tente de novo ou adicione os itens manualmente.');
+            setError(e.reason === 'too_frequent'
+                ? t('mealScan.errors.tooFrequent')
+                : e.reason === 'daily_limit_reached'
+                    ? t('mealScan.errors.dailyLimit', { limit: e.limit || 20 })
+                    : t('mealScan.analyzeFailed'));
             setItems([]);
             setStatus('review');
         }
     };
 
-    const updateGrams = (id, grams) => {
+    // `value` is in the user's food unit (g or oz).
+    const updateGrams = (id, value) => {
         setItems((prev) => prev.map((item) => {
             if (item.id !== id) return item;
-            const newGrams = Math.min(5000, Math.max(0, parseFloat(grams) || 0));
+            const newGrams = Math.min(5000, Math.max(0, Math.round(units.foodToGrams(parseFloat(value)) * 10) / 10 || 0));
             return { ...item, confirmedGrams: newGrams, nutrition: nutritionForGrams(item, newGrams) };
         }));
     };
 
     const stepGrams = (id, delta) => {
+        setPortionDrafts(({ [id]: _, ...rest }) => rest);
         setItems((prev) => prev.map((item) => {
             if (item.id !== id) return item;
-            const newGrams = Math.min(5000, Math.max(0, item.confirmedGrams + delta));
+            const newGrams = Math.min(5000, Math.max(0, Math.round((item.confirmedGrams + delta) * 10) / 10));
             return { ...item, confirmedGrams: newGrams, nutrition: nutritionForGrams(item, newGrams) };
         }));
     };
@@ -153,7 +161,7 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
 
     const addManualItem = async () => {
         const trimmedName = manualName.trim().slice(0, 100);
-        const grams = Math.min(5000, Math.max(0, parseFloat(manualGrams) || 0));
+        const grams = Math.min(5000, Math.max(0, Math.round(units.foodToGrams(parseFloat(manualGrams))) || 0));
         if (!trimmedName || grams <= 0) return;
         triggerLayoutAnimation();
         const withMacros = await withNutrition({
@@ -215,7 +223,7 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
             onClose();
         } catch (e) {
             console.error('Failed to save meal log:', e);
-            setError('Não conseguimos salvar seu prato. Tente de novo.');
+            setError(t('mealScan.saveFailed'));
             setStatus('review');
         }
     };
@@ -226,7 +234,7 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
                 <TouchableOpacity onPress={onClose} style={styles.headerBtn}>
                     <ArrowLeft size={20} color="#EA580C" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Analisar Refeição</Text>
+                <Text style={styles.headerTitle}>{t('mealScan.title')}</Text>
                 <View style={styles.headerBtn} />
             </View>
 
@@ -236,32 +244,32 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
                     <View style={styles.placeholderIcon}>
                         <Camera size={40} color="#EA580C" />
                     </View>
-                    <Text style={styles.idleTitle}>Tire uma foto do seu prato</Text>
-                    <Text style={styles.idleSubtitle}>Identificamos os alimentos e estimamos as porções automaticamente.</Text>
+                    <Text style={styles.idleTitle}>{t('mealScan.idleTitle')}</Text>
+                    <Text style={styles.idleSubtitle}>{t('mealScan.idleSubtitle')}</Text>
 
                     <View style={styles.weightHintField}>
-                        <Text style={styles.weightHintLabel}>Peso aproximado do prato (opcional)</Text>
+                        <Text style={styles.weightHintLabel}>{t('mealScan.weightHintLabel')}</Text>
                         <View style={styles.weightHintRow}>
                             <TextInput
                                 value={totalWeightHint}
                                 onChangeText={setTotalWeightHint}
                                 keyboardType="numeric"
-                                placeholder="Ex: 350"
+                                placeholder={t('common.example', { value: units.imperial ? 12 : 350 })}
                                 placeholderTextColor="#CBD5E1"
                                 style={styles.weightHintInput}
                             />
-                            <Text style={styles.weightHintSuffix}>g</Text>
+                            <Text style={styles.weightHintSuffix}>{units.foodUnit}</Text>
                         </View>
-                        <Text style={styles.weightHintHint}>Informar o peso da refeição entrega resultados mais confiáveis.</Text>
+                        <Text style={styles.weightHintHint}>{t('mealScan.weightHintHint')}</Text>
                     </View>
 
                     {!!error && <Text style={styles.errorText}><AlertCircle size={14} color="#EF4444" /> {error}</Text>}
                     <View style={styles.actionRow}>
                         <Button variant="primary" onClick={() => pickAndAnalyze('camera')} style={styles.actionBtn}>
-                            <View style={styles.btnContent}><Camera size={18} color="#FFF" /><Text style={styles.btnContentText}>Câmera</Text></View>
+                            <View style={styles.btnContent}><Camera size={18} color="#FFF" /><Text style={styles.btnContentText}>{t('mealScan.camera')}</Text></View>
                         </Button>
                         <Button variant="secondary" onClick={() => pickAndAnalyze('gallery')} style={styles.actionBtn}>
-                            <View style={styles.btnContent}><Images size={18} color="#334155" /><Text style={[styles.btnContentText, { color: '#334155' }]}>Galeria</Text></View>
+                            <View style={styles.btnContent}><Images size={18} color="#334155" /><Text style={[styles.btnContentText, { color: '#334155' }]}>{t('mealScan.gallery')}</Text></View>
                         </Button>
                     </View>
                 </View>
@@ -272,7 +280,7 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
                 <View style={styles.centerContent}>
                     {!!photoUri && <Image source={{ uri: photoUri }} style={styles.analyzingPhoto} />}
                     <ActivityIndicator color="#EA580C" size="large" style={{ marginTop: 24 }} />
-                    <Text style={styles.idleSubtitle}>Analisando sua foto...</Text>
+                    <Text style={styles.idleSubtitle}>{t('mealScan.analyzing')}</Text>
                 </View>
             )}
 
@@ -283,7 +291,7 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
                     {!!error && <Text style={styles.errorText}><AlertCircle size={14} color="#EF4444" /> {error}</Text>}
 
                     {items.length === 0 && (
-                        <Text style={styles.emptyText}>Nenhum item identificado. Adicione manualmente abaixo.</Text>
+                        <Text style={styles.emptyText}>{t('mealScan.noItems')}</Text>
                     )}
 
                     {items.map((item) => (
@@ -291,7 +299,7 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
                             <View style={styles.itemCardHeader}>
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.itemName}>{item.name}</Text>
-                                    <Text style={styles.itemCategory}>{CATEGORY_LABELS[item.category] || item.category}</Text>
+                                    <Text style={styles.itemCategory}>{t(`mealScan.categories.${item.category}`, { defaultValue: item.category })}</Text>
                                 </View>
                                 <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.removeBtn}>
                                     <Trash2 size={16} color="#EF4444" />
@@ -299,28 +307,33 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
                             </View>
                             <View style={styles.itemCardBody}>
                                 <View style={styles.gramsStepper}>
-                                    <TouchableOpacity onPress={() => stepGrams(item.id, -5)} style={styles.stepperBtn}>
+                                    <TouchableOpacity onPress={() => stepGrams(item.id, -units.foodStepGrams)} style={styles.stepperBtn}>
                                         <Minus size={14} color="#EA580C" />
                                     </TouchableOpacity>
                                     <View style={styles.gramsField}>
                                         <TextInput
-                                            value={String(item.confirmedGrams)}
-                                            onChangeText={(v) => updateGrams(item.id, v)}
+                                            value={portionDrafts[item.id] ?? String(units.food(item.confirmedGrams))}
+                                            onChangeText={(v) => {
+                                                // Keep the raw text while typing so "3." survives the oz → g → oz round trip.
+                                                setPortionDrafts((prev) => ({ ...prev, [item.id]: v }));
+                                                updateGrams(item.id, v);
+                                            }}
+                                            onBlur={() => setPortionDrafts(({ [item.id]: _, ...rest }) => rest)}
                                             keyboardType="numeric"
                                             placeholder="0"
                                             placeholderTextColor="#CBD5E1"
                                             style={styles.gramsInput}
                                         />
-                                        <Text style={styles.gramsSuffix}>g</Text>
+                                        <Text style={styles.gramsSuffix}>{units.foodUnit}</Text>
                                     </View>
-                                    <TouchableOpacity onPress={() => stepGrams(item.id, 5)} style={styles.stepperBtn}>
+                                    <TouchableOpacity onPress={() => stepGrams(item.id, units.foodStepGrams)} style={styles.stepperBtn}>
                                         <Plus size={14} color="#EA580C" />
                                     </TouchableOpacity>
                                 </View>
                                 {item.nutrition ? (
                                     <Text style={styles.itemCalories}>{item.nutrition.calories} kcal</Text>
                                 ) : (
-                                    <Text style={styles.itemNoData} numberOfLines={1}>sem dados nutricionais</Text>
+                                    <Text style={styles.itemNoData} numberOfLines={1}>{t('mealScan.noNutrition')}</Text>
                                 )}
                             </View>
                         </View>
@@ -328,33 +341,33 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
 
                     {showManualForm ? (
                         <View style={styles.manualForm}>
-                            <Input label="Nome do item" value={manualName} onChangeText={setManualName} placeholder="Ex: Arroz branco" />
-                            <Input label="Quantidade (g)" value={manualGrams} onChangeText={setManualGrams} placeholder="100" keyboardType="numeric" />
+                            <Input label={t('mealScan.itemName')} value={manualName} onChangeText={setManualName} placeholder={t('mealScan.itemNamePlaceholder')} />
+                            <Input label={t('mealScan.quantity', { unit: units.foodUnit })} value={manualGrams} onChangeText={setManualGrams} placeholder={units.imperial ? '3.5' : '100'} keyboardType="numeric" />
                             <View style={styles.actionRow}>
-                                <Button variant="ghost" onClick={() => setShowManualForm(false)} style={styles.actionBtn}>Cancelar</Button>
-                                <Button variant="primary" onClick={addManualItem} style={styles.actionBtn}>Adicionar</Button>
+                                <Button variant="ghost" onClick={() => setShowManualForm(false)} style={styles.actionBtn}>{t('common.cancel')}</Button>
+                                <Button variant="primary" onClick={addManualItem} style={styles.actionBtn}>{t('mealScan.add')}</Button>
                             </View>
                         </View>
                     ) : (
                         <TouchableOpacity onPress={() => setShowManualForm(true)} style={styles.addManualBtn}>
                             <Plus size={16} color="#EA580C" />
-                            <Text style={styles.addManualText}>Adicionar item manualmente</Text>
+                            <Text style={styles.addManualText}>{t('mealScan.addManual')}</Text>
                         </TouchableOpacity>
                     )}
 
                     {hasUnmatchedItems && (
                         <Text style={styles.hintText}>
-                            Alguns itens ainda não têm dados nutricionais na nossa base — eles não entram no total, mas ficam salvos no seu registro.
+                            {t('mealScan.unmatchedHint')}
                         </Text>
                     )}
 
                     <View style={styles.totalsCard}>
-                        <Text style={styles.totalsLabel}>Total estimado</Text>
+                        <Text style={styles.totalsLabel}>{t('mealScan.total')}</Text>
                         <Text style={styles.totalsCalories}>{Math.round(totals.calories)} kcal</Text>
                         <View style={styles.macroRow}>
-                            <Text style={styles.macroText}>Proteína {totals.protein.toFixed(1)}g</Text>
-                            <Text style={styles.macroText}>Carb {totals.carbs.toFixed(1)}g</Text>
-                            <Text style={styles.macroText}>Gordura {totals.fat.toFixed(1)}g</Text>
+                            <Text style={styles.macroText}>{t('mealScan.proteinMacro', { value: formatNumber(totals.protein) })}</Text>
+                            <Text style={styles.macroText}>{t('mealScan.carbsMacro', { value: formatNumber(totals.carbs) })}</Text>
+                            <Text style={styles.macroText}>{t('mealScan.fatMacro', { value: formatNumber(totals.fat) })}</Text>
                         </View>
                     </View>
 
@@ -364,7 +377,7 @@ const NativeMealScan = ({ user, setUser, onClose }) => {
                         disabled={items.length === 0 || status === 'saving'}
                         style={styles.confirmBtn}
                     >
-                        {status === 'saving' ? 'Salvando...' : 'Confirmar Refeição'}
+                        {status === 'saving' ? t('common.saving') : t('mealScan.confirm')}
                     </Button>
                 </ScrollView>
             )}

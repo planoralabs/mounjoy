@@ -20,7 +20,38 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-font"
-    ]
+      "expo-font",
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": [
+              "en",
+              "pt-BR",
+              "es",
+              "fr",
+              "de",
+              "it"
+            ],
+            "android": [
+              "en",
+              "pt-BR",
+              "es",
+              "fr",
+              "de",
+              "it"
+            ]
+          }
+        }
+      ]
+    ],
+    "locales": {
+      "en": "./src/i18n/native/en.json",
+      "pt": "./src/i18n/native/pt.json",
+      "es": "./src/i18n/native/es.json",
+      "fr": "./src/i18n/native/fr.json",
+      "de": "./src/i18n/native/de.json",
+      "it": "./src/i18n/native/it.json"
+    }
   }
 }

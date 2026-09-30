@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from '
 import Svg, { Path } from 'react-native-svg';
 import { Info, CheckCircle2, AlertTriangle, RefreshCw, X } from 'lucide-react-native';
 import { Modal, Button } from './NativeUI';
+import { useTranslation } from 'react-i18next';
 
 const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
+    const { t } = useTranslation();
     const [showInfo, setShowInfo] = useState(false);
 
     const isActive = (id) => selectedSiteId === id;
@@ -16,17 +18,7 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
         return "#FFFFFF";
     };
 
-    const getSiteName = (id) => {
-        const names = {
-            'arm-right': 'Braço Direito',
-            'arm-left': 'Braço Esquerdo',
-            'abdomen-left': 'Abdômen Esquerdo',
-            'abdomen-right': 'Abdômen Direito',
-            'thigh-right': 'Coxa Direita',
-            'thigh-left': 'Coxa Esquerda'
-        };
-        return names[id] || 'Selecione um local';
-    };
+    const getSiteName = (id) => t(`sites.${id}`, { defaultValue: t('sites.selectSite') });
 
     return (
         <View style={styles.container}>
@@ -121,41 +113,41 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
             <View style={styles.indicatorsRow}>
                 <View style={styles.indicatorSuggested}>
                     <View style={styles.dotSuggested} />
-                    <Text style={styles.indicatorTextSuggested}>Sugerido</Text>
+                    <Text style={styles.indicatorTextSuggested}>{t('bodySelector.suggested')}</Text>
                 </View>
                 <View style={styles.indicatorSelected}>
                     <View style={styles.dotSelected} />
-                    <Text style={styles.indicatorTextSelected}>Selecionado</Text>
+                    <Text style={styles.indicatorTextSelected}>{t('bodySelector.selected')}</Text>
                 </View>
             </View>
 
             {/* Guidance Info Modal */}
-            <Modal visible={showInfo} onClose={() => setShowInfo(false)} title="Guia de Aplicação">
+            <Modal visible={showInfo} onClose={() => setShowInfo(false)} title={t('bodySelector.guideTitle')}>
                     {/* Recommended Sites */}
                     <View style={styles.infoSection}>
                         <View style={styles.sectionHeader}>
                             <CheckCircle2 size={16} color="#EA580C" />
-                            <Text style={styles.sectionTitle}>Locais Recomendados</Text>
+                            <Text style={styles.sectionTitle}>{t('bodySelector.recommended')}</Text>
                         </View>
 
                         <View style={styles.tipCard}>
-                            <Text style={styles.tipTitle}>1. Abdômen (Preferido)</Text>
+                            <Text style={styles.tipTitle}>{t('bodySelector.abdomenTitle')}</Text>
                             <Text style={styles.tipDesc}>
-                                Região ao redor do umbigo (evitar ~5 cm do centro). Oferece absorção estável devido ao tecido adiposo.
+                                {t('bodySelector.abdomenDesc')}
                             </Text>
                         </View>
 
                         <View style={styles.tipCard}>
-                            <Text style={styles.tipTitle}>2. Coxa (Frontal/Superior)</Text>
+                            <Text style={styles.tipTitle}>{t('bodySelector.thighTitle')}</Text>
                             <Text style={styles.tipDesc}>
-                                Fácil para autoaplicação. Pode haver maior sensibilidade em pessoas com baixo percentual de gordura.
+                                {t('bodySelector.thighDesc')}
                             </Text>
                         </View>
 
                         <View style={styles.tipCard}>
-                            <Text style={styles.tipTitle}>3. Braço (Parte Posterior)</Text>
+                            <Text style={styles.tipTitle}>{t('bodySelector.armTitle')}</Text>
                             <Text style={styles.tipDesc}>
-                                Região do tríceps. Absorção rápida, mas geralmente requer auxílio de outra pessoa para aplicar.
+                                {t('bodySelector.armDesc')}
                             </Text>
                         </View>
                     </View>
@@ -164,14 +156,14 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                     <View style={styles.rotationCard}>
                         <View style={styles.sectionHeader}>
                             <RefreshCw size={16} color="#2563EB" />
-                            <Text style={[styles.sectionTitle, { color: '#1E40AF' }]}>Rotação Essencial</Text>
+                            <Text style={[styles.sectionTitle, { color: '#1E40AF' }]}>{t('bodySelector.rotationTitle')}</Text>
                         </View>
                         <Text style={styles.rotationDesc}>
-                            Alternar os pontos evita cicatrizes, irritações e lipodistrofia (nódulos de gordura), mantendo a medicação eficaz.
+                            {t('bodySelector.rotationDesc')}
                         </Text>
                         <View style={styles.rotationExampleBox}>
                             <Text style={styles.rotationExampleText}>
-                                Ex: S1 (Abdômen D) → S2 (Abdômen E) → S3 (Coxa D)...
+                                {t('bodySelector.rotationExample')}
                             </Text>
                         </View>
                     </View>
@@ -180,16 +172,15 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                     <View style={styles.careCard}>
                         <View style={styles.sectionHeader}>
                             <AlertTriangle size={16} color="#D97706" />
-                            <Text style={[styles.sectionTitle, { color: '#78350F' }]}>Cuidados Importantes</Text>
+                            <Text style={[styles.sectionTitle, { color: '#78350F' }]}>{t('bodySelector.careTitle')}</Text>
                         </View>
-                        <Text style={styles.careItem}>• Limpar o local com álcool antes de aplicar</Text>
-                        <Text style={styles.careItem}>• Não aplicar sobre hematomas ou peles machucadas</Text>
-                        <Text style={styles.careItem}>• Não massagear a área após a picada</Text>
-                        <Text style={styles.careItem}>• Descarte as agulhas em coletores adequados</Text>
+                        {['care1', 'care2', 'care3', 'care4'].map((key) => (
+                            <Text key={key} style={styles.careItem}>• {t(`bodySelector.${key}`)}</Text>
+                        ))}
                     </View>
 
                     <Button onClick={() => setShowInfo(false)} style={{ width: '100%', marginTop: 8 }}>
-                        Entendi
+                        {t('common.gotIt')}
                     </Button>
             </Modal>
         </View>

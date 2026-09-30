@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, TouchableWithoutFeedback, Keyboard, AppState } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { syncWithDeviceLocale } from './src/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { Home, BarChart3, Settings, CalendarDays, PenLine } from 'lucide-react-native';
@@ -22,8 +24,11 @@ import NativeMealScan from './src/components/native/NativeMealScan';
 const GUEST_STORAGE_KEY = 'mounjoy_guest_user';
 
 const NativeMain = () => {
+    const { t } = useTranslation();
     const { currentUser, userData, profileReady, logout } = useAuth();
     const [activeTab, setActiveTab] = useState('home');
+    // Meal scan is full-screen; closing it returns to the tab that opened it.
+    const [mealScanReturnTab, setMealScanReturnTab] = useState('home');
     const [view, setView] = useState('landing');
     const [guestUser, setGuestUserState] = useState(null);
     const [guestLoaded, setGuestLoaded] = useState(false);
@@ -101,7 +106,7 @@ const NativeMain = () => {
                 date: now,
                 dose: data.currentDose,
                 medication: data.medicationId,
-                site: 'Não registrado'
+                site: 'not_recorded'
             }],
             measurements: [{ date: now, weight: parseFloat(data.startWeight) }],
             sideEffectsLogs: [],
@@ -155,7 +160,7 @@ const NativeMain = () => {
         return (
             <View style={styles.center}>
                 <ActivityIndicator color="#EA580C" size="large" />
-                <Text style={{ marginTop: 12, color: '#64748B' }}>Carregando perfil...</Text>
+                <Text style={{ marginTop: 12, color: '#64748B' }}>{t('app.loadingProfile')}</Text>
             </View>
         );
     }
@@ -163,15 +168,20 @@ const NativeMain = () => {
     // Only guests get the "create account and save" prompt.
     const guestPrompt = currentUser ? null : () => setView('signup');
 
+    const openTab = (tab) => {
+        if (tab === 'mealScan') setMealScanReturnTab(activeTab);
+        setActiveTab(tab);
+    };
+
     const renderContent = () => {
         switch (activeTab) {
-            case 'home': return <NativeDashboard user={user} setUser={setUser} setActiveTab={setActiveTab} onCreateAccount={guestPrompt} />;
-            case 'mealScan': return <NativeMealScan user={user} setUser={setUser} onClose={() => setActiveTab('home')} />;
-            case 'logs': return <NativeLogs user={user} setUser={setUser} />;
+            case 'home': return <NativeDashboard user={user} setUser={setUser} setActiveTab={openTab} onCreateAccount={guestPrompt} />;
+            case 'mealScan': return <NativeMealScan user={user} setUser={setUser} onClose={() => setActiveTab(mealScanReturnTab)} />;
+            case 'logs': return <NativeLogs user={user} setUser={setUser} onScanMeal={() => openTab('mealScan')} />;
             case 'calendar': return <NativeCalendar user={user} setUser={setUser} />;
             case 'stats': return <NativeEvolution user={user} />;
             case 'profile': return <NativeProfile user={user} setUser={setUser} onLogout={handleLogout} />;
-            default: return <NativeDashboard user={user} setUser={setUser} setActiveTab={setActiveTab} onCreateAccount={guestPrompt} />;
+            default: return <NativeDashboard user={user} setUser={setUser} setActiveTab={openTab} onCreateAccount={guestPrompt} />;
         }
     };
 
@@ -183,23 +193,23 @@ const NativeMain = () => {
             <View style={styles.tabBar}>
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('home')}>
                     <Home color={activeTab === 'home' ? '#EA580C' : '#94A3B8'} size={22} />
-                    <Text style={[styles.tabText, activeTab === 'home' && styles.tabTextActive]}>Home</Text>
+                    <Text style={[styles.tabText, activeTab === 'home' && styles.tabTextActive]}>{t('tabs.home')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('logs')}>
                     <PenLine color={activeTab === 'logs' ? '#EA580C' : '#94A3B8'} size={22} />
-                    <Text style={[styles.tabText, activeTab === 'logs' && styles.tabTextActive]}>Diário</Text>
+                    <Text style={[styles.tabText, activeTab === 'logs' && styles.tabTextActive]}>{t('tabs.logs')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('calendar')}>
                     <CalendarDays color={activeTab === 'calendar' ? '#EA580C' : '#94A3B8'} size={22} />
-                    <Text style={[styles.tabText, activeTab === 'calendar' && styles.tabTextActive]}>Agenda</Text>
+                    <Text style={[styles.tabText, activeTab === 'calendar' && styles.tabTextActive]}>{t('tabs.calendar')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('stats')}>
                     <BarChart3 color={activeTab === 'stats' ? '#EA580C' : '#94A3B8'} size={22} />
-                    <Text style={[styles.tabText, activeTab === 'stats' && styles.tabTextActive]}>Dados</Text>
+                    <Text style={[styles.tabText, activeTab === 'stats' && styles.tabTextActive]}>{t('tabs.stats')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tabItem} onPress={() => setActiveTab('profile')}>
                     <Settings color={activeTab === 'profile' ? '#EA580C' : '#94A3B8'} size={22} />
-                    <Text style={[styles.tabText, activeTab === 'profile' && styles.tabTextActive]}>Perfil</Text>
+                    <Text style={[styles.tabText, activeTab === 'profile' && styles.tabTextActive]}>{t('tabs.profile')}</Text>
                 </TouchableOpacity>
             </View>
             )}
@@ -208,6 +218,16 @@ const NativeMain = () => {
 };
 
 export default function App() {
+    // Language / region can change while the app is in the background (system
+    // Settings, or the per-app language on iOS and Android 13+): re-read it
+    // whenever the app comes back to the foreground.
+    useEffect(() => {
+        const sub = AppState.addEventListener('change', (state) => {
+            if (state === 'active') syncWithDeviceLocale();
+        });
+        return () => sub.remove();
+    }, []);
+
     const [fontsLoaded] = useFonts({
         Outfit_400Regular,
         Outfit_600SemiBold,

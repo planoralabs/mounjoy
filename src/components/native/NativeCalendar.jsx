@@ -38,6 +38,8 @@ import {
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { Button, Modal as NativeModal } from './NativeUI';
+import { useTranslation } from 'react-i18next';
+import { unitsFor, formatDate, weekdayName, orderedWeekdays, getWeekStart } from '../../i18n';
 
 const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onActiveStart, onActiveEnd }) => {
     const [containerSize, setContainerSize] = useState(null);
@@ -185,6 +187,11 @@ const AdjustableGridImage = ({ uri, dateStr, adjustment, onAdjustmentChange, onA
 const { width } = Dimensions.get('window');
 
 const NativeCalendar = ({ user, setUser }) => {
+    const { t } = useTranslation();
+    const units = unitsFor(user);
+    // Calendar grids start on the device's first day of the week.
+    const weekStart = getWeekStart();
+    const weekdayLetters = orderedWeekdays().map((d) => weekdayName(d, 'narrow'));
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(null);
 
@@ -226,7 +233,7 @@ const NativeCalendar = ({ user, setUser }) => {
             });
             await Sharing.shareAsync(uri, {
                 mimeType: 'image/png',
-                dialogTitle: 'Compartilhar Evolução',
+                dialogTitle: t('calendar.shareDialog'),
                 UTI: 'public.png'
             });
         } catch (error) {
@@ -316,12 +323,12 @@ const NativeCalendar = ({ user, setUser }) => {
     };
 
     const getFirstDayOfMonth = (date) => {
-        return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+        return (new Date(date.getFullYear(), date.getMonth(), 1).getDay() - weekStart + 7) % 7;
     };
 
     const daysInMonth = getDaysInMonth(currentMonth);
     const firstDay = getFirstDayOfMonth(currentMonth);
-    const monthName = currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+    const monthName = formatDate(currentMonth, { month: 'long', year: 'numeric' });
 
     const getSafeDateKey = (date) => {
         if (!date) return '';
@@ -394,8 +401,8 @@ const NativeCalendar = ({ user, setUser }) => {
                     <View style={styles.headerTitleRow}>
                         <View style={styles.iconBox}><CalendarIcon size={24} color="#3B82F6" /></View>
                         <View>
-                            <Text style={styles.title}>Seu Calendário</Text>
-                            <Text style={styles.subtitle}>Jornada Mounjoy</Text>
+                            <Text style={styles.title}>{t('calendar.title')}</Text>
+                            <Text style={styles.subtitle}>{t('calendar.subtitle')}</Text>
                         </View>
                     </View>
 
@@ -406,7 +413,7 @@ const NativeCalendar = ({ user, setUser }) => {
                             <View style={styles.sectionHeaderRow}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                                     <ImageIcon size={12} color="#94A3B8" />
-                                    <Text style={styles.sectionHeaderTitle}>Galeria</Text>
+                                    <Text style={styles.sectionHeaderTitle}>{t('calendar.gallery')}</Text>
                                 </View>
                                 <View style={styles.galleryCountBadge}>
                                     <Text style={styles.galleryCountText}>{user.photos?.length || 0}</Text>
@@ -428,7 +435,7 @@ const NativeCalendar = ({ user, setUser }) => {
                                                 <Image source={{ uri: typeof photo === 'string' ? photo : photo.url }} style={styles.galleryThumbImg} />
                                                 <View style={styles.galleryThumbDate}>
                                                     <Text style={styles.galleryThumbDateText}>
-                                                        {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(new Date(photo.date || new Date())).replace('/', '-')}
+                                                        {formatDate(photo.date || new Date(), { day: '2-digit', month: '2-digit' }).replace('/', '-')}
                                                     </Text>
                                                 </View>
                                             </TouchableOpacity>
@@ -438,23 +445,26 @@ const NativeCalendar = ({ user, setUser }) => {
                             ) : (
                                 <View style={styles.emptyGalleryBox}>
                                     <ImageIcon size={16} color="#CBD5E1" style={{ marginBottom: 4 }} />
-                                    <Text style={styles.emptyGalleryText}>Sem fotos</Text>
+                                    <Text style={styles.emptyGalleryText}>{t('calendar.noPhotos')}</Text>
                                 </View>
                             )}
                         </View>
 
                         {/* Metrics Snapshot (1/3 width) */}
                         <View style={styles.metricsSnapshotBox}>
-                            <Text style={styles.metricsSnapshotLabel}>Status do Dia</Text>
+                            <Text style={styles.metricsSnapshotLabel}>{t('calendar.dayStatus')}</Text>
                             <Text style={styles.metricsSnapshotWeight}>
-                                {selectedDate ? (getDayData(selectedDate).weight || '--') : (user.currentWeight || '--')}
-                                <Text style={styles.metricsSnapshotWeightUnit}>kg</Text>
+                                {(() => {
+                                    const kg = selectedDate ? getDayData(selectedDate).weight : user.currentWeight;
+                                    return kg ? units.formatWeightValue(kg) : '--';
+                                })()}
+                                <Text style={styles.metricsSnapshotWeightUnit}>{units.weightUnit}</Text>
                             </Text>
 
                             <View style={styles.metricsIntakeSummary}>
                                 <View style={styles.metricsIntakeRow}>
                                     <Text style={styles.waterValueText}>
-                                        {selectedDate ? (getDayData(selectedDate).water?.toFixed(1) || '0.0') : '0.0'}L
+                                        {units.formatVolume(selectedDate ? getDayData(selectedDate).water || 0 : 0)}
                                     </Text>
                                     <Droplet size={10} color="#3B82F6" />
                                 </View>
@@ -468,7 +478,7 @@ const NativeCalendar = ({ user, setUser }) => {
 
                             <View style={styles.daySummaryBadge}>
                                 <Text style={styles.daySummaryBadgeText}>
-                                    {selectedDate ? `Dia ${selectedDate.getDate()}` : 'Resumo'}
+                                    {selectedDate ? t('calendar.day', { day: selectedDate.getDate() }) : t('calendar.summary')}
                                 </Text>
                             </View>
                         </View>
@@ -479,7 +489,7 @@ const NativeCalendar = ({ user, setUser }) => {
                         <View style={styles.calendarHeader}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                                 <Scale size={12} color="#94A3B8" />
-                                <Text style={styles.calendarLabel}>Frequência de Pesagens</Text>
+                                <Text style={styles.calendarLabel}>{t('calendar.weighInFrequency')}</Text>
                             </View>
                             <View style={styles.monthNavRow}>
                                 <TouchableOpacity onPress={prevMonth} style={styles.monthNavBtn}>
@@ -493,7 +503,7 @@ const NativeCalendar = ({ user, setUser }) => {
                         </View>
 
                         <View style={styles.calendarWeekdaysGrid}>
-                            {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => (
+                            {weekdayLetters.map((d, i) => (
                                 <Text key={i} style={styles.weekdayLabel}>{d}</Text>
                             ))}
                         </View>
@@ -578,30 +588,30 @@ const NativeCalendar = ({ user, setUser }) => {
                             
                             <View style={{ marginBottom: 16 }}>
                                 <Text style={styles.detailsDayTitle}>
-                                    {new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).format(selectedDate)}
+                                    {formatDate(selectedDate, { weekday: 'long', day: 'numeric', month: 'long' })}
                                 </Text>
-                                <Text style={styles.detailsDaySub}>Resumo do Dia</Text>
+                                <Text style={styles.detailsDaySub}>{t('calendar.daySummary')}</Text>
                             </View>
 
                             <View style={styles.detailsGrid}>
                                 <View style={styles.detailsGridRow}>
                                     <View style={styles.detailsItemBox}>
-                                        <Text style={styles.detailsItemLabel}><Scale size={12} color="#94A3B8" /> Peso</Text>
+                                        <Text style={styles.detailsItemLabel}><Scale size={12} color="#94A3B8" /> {t('calendar.weight')}</Text>
                                         <Text style={styles.detailsItemValue}>
-                                            {getDayData(selectedDate).weight ? `${getDayData(selectedDate).weight} kg` : "--"}
+                                            {getDayData(selectedDate).weight ? units.formatWeight(getDayData(selectedDate).weight) : "--"}
                                         </Text>
                                     </View>
                                     <View style={[styles.detailsItemBox, { backgroundColor: '#EFF6FF', borderColor: '#DBEAFE' }]}>
-                                        <Text style={[styles.detailsItemLabel, { color: '#3B82F6' }]}><Droplet size={12} color="#3B82F6" /> Hidratação</Text>
+                                        <Text style={[styles.detailsItemLabel, { color: '#3B82F6' }]}><Droplet size={12} color="#3B82F6" /> {t('calendar.hydration')}</Text>
                                         <Text style={[styles.detailsItemValue, { color: '#1E3A8A' }]}>
-                                            {getDayData(selectedDate).water > 0 ? `${getDayData(selectedDate).water} L` : "--"}
+                                            {getDayData(selectedDate).water > 0 ? units.formatVolume(getDayData(selectedDate).water) : "--"}
                                         </Text>
                                     </View>
                                 </View>
 
                                 <View style={styles.detailsGridRow}>
                                     <View style={[styles.detailsItemBox, { backgroundColor: '#FFF7ED', borderColor: '#FFEDD5' }]}>
-                                        <Text style={[styles.detailsItemLabel, { color: '#F97316' }]}><Activity size={12} color="#F97316" /> Proteína</Text>
+                                        <Text style={[styles.detailsItemLabel, { color: '#F97316' }]}><Activity size={12} color="#F97316" /> {t('nutrients.protein')}</Text>
                                         <Text style={[styles.detailsItemValue, { color: '#7C2D12' }]}>
                                             {getDayData(selectedDate).protein > 0 ? `${getDayData(selectedDate).protein} g` : "--"}
                                         </Text>
@@ -652,9 +662,9 @@ const NativeCalendar = ({ user, setUser }) => {
                     <View style={styles.compareHeaderCol}>
                         <View style={styles.compareTitleRow}>
                             <Scale size={16} color="#EA580C" />
-                            <Text style={styles.compareTitleText}>Comparador Visual</Text>
+                            <Text style={styles.compareTitleText}>{t('calendar.compareTitle')}</Text>
                         </View>
-                        <Text style={styles.compareSubTitleText}>Selecione até 4 registros para comparar</Text>
+                        <Text style={styles.compareSubTitleText}>{t('calendar.compareSubtitle')}</Text>
                     </View>
 
                     {/* Horizontal Date Picker */}
@@ -675,10 +685,10 @@ const NativeCalendar = ({ user, setUser }) => {
                                     ]}
                                 >
                                     <Text style={[styles.dateChipDay, isSelected && { color: '#FFFFFF' }]}>
-                                        {d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                                        {formatDate(d, { day: '2-digit', month: 'short' })}
                                     </Text>
                                     <Text style={[styles.dateChipWeight, isSelected && { color: '#FFFFFF' }]}>
-                                        {log.weight}kg
+                                        {units.formatWeight(log.weight)}
                                     </Text>
                                 </TouchableOpacity>
                             );
@@ -721,15 +731,15 @@ const NativeCalendar = ({ user, setUser }) => {
                                                 </TouchableOpacity>
                                                 <View style={styles.compareGridDateOverlay}>
                                                     <Text style={styles.compareGridDateOverlayText}>
-                                                        {new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                                                        {formatDate(dateStr, { day: '2-digit', month: '2-digit' })}
                                                     </Text>
                                                 </View>
                                             </View>
 
                                             <View style={styles.compareGridMeta}>
                                                 <View style={styles.compareGridWeightRow}>
-                                                    <Text style={styles.compareGridWeightBig}>{log.weight}</Text>
-                                                    <Text style={styles.compareGridWeightUnit}>kg</Text>
+                                                    <Text style={styles.compareGridWeightBig}>{units.formatWeightValue(log.weight)}</Text>
+                                                    <Text style={styles.compareGridWeightUnit}>{units.weightUnit}</Text>
                                                 </View>
                                                 {diff !== null && (
                                                     <View style={[
@@ -740,7 +750,7 @@ const NativeCalendar = ({ user, setUser }) => {
                                                             styles.compareGridDiffText,
                                                             parseFloat(diff) <= 0 ? { color: '#EA580C' } : { color: '#EF4444' }
                                                         ]}>
-                                                            {parseFloat(diff) <= 0 ? '' : '+'}{diff}kg
+                                                            {units.formatWeightDiff(parseFloat(diff))}
                                                         </Text>
                                                     </View>
                                                 )}
@@ -756,7 +766,7 @@ const NativeCalendar = ({ user, setUser }) => {
                                     onPress={() => setShowFullComparison(true)}
                                 >
                                     <Maximize2 size={16} color="#EA580C" />
-                                    <Text style={styles.expandBtnText}>Expandir Comparativo</Text>
+                                    <Text style={styles.expandBtnText}>{t('calendar.expand')}</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -765,7 +775,7 @@ const NativeCalendar = ({ user, setUser }) => {
                             <View style={styles.emptyCompareIcon}>
                                 <Scale size={24} color="#EA580C" />
                             </View>
-                            <Text style={styles.emptyCompareText}>Escolha registros acima{"\n"}para iniciar o comparativo</Text>
+                            <Text style={styles.emptyCompareText}>{t('calendar.compareEmpty')}</Text>
                         </View>
                     )}
                 </View>
@@ -775,7 +785,7 @@ const NativeCalendar = ({ user, setUser }) => {
                     <View style={styles.wellnessHeaderRow}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             <BookOpen size={18} color="#64748B" />
-                            <Text style={styles.wellnessTitle}>Registros de Bem-estar</Text>
+                            <Text style={styles.wellnessTitle}>{t('calendar.wellnessTitle')}</Text>
                         </View>
                         <TouchableOpacity
                             onPress={() => {
@@ -800,7 +810,7 @@ const NativeCalendar = ({ user, setUser }) => {
                                         <View style={styles.recordHeaderRow}>
                                             <View style={{ flex: 1, minWidth: 0 }}>
                                                 <Text style={styles.recordDateText}>
-                                                    {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(log.date))}
+                                                    {formatDate(log.date, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                                 </Text>
                                                 {log.foodNoise !== undefined && (
                                                     <View style={styles.recordFoodNoiseRow}>
@@ -832,7 +842,7 @@ const NativeCalendar = ({ user, setUser }) => {
 
                                         {log.trigger && (
                                             <View style={styles.recordTriggerBadge}>
-                                                <Text style={styles.recordTriggerText}>Gatilho: {log.trigger}</Text>
+                                                <Text style={styles.recordTriggerText}>{t('calendar.trigger', { trigger: log.trigger })}</Text>
                                             </View>
                                         )}
                                     </View>
@@ -842,7 +852,7 @@ const NativeCalendar = ({ user, setUser }) => {
                                     <View style={styles.emptyRecordsBox}>
                                         <BookOpen size={32} color="#CBD5E1" style={{ marginBottom: 8 }} />
                                         <Text style={styles.emptyRecordsText}>
-                                            {selectedDate ? 'Nenhum registro neste dia' : 'Nenhum registro encontrado'}
+                                            {selectedDate ? t('calendar.noRecordsDay') : t('calendar.noRecords')}
                                         </Text>
                                     </View>
                                 );
@@ -859,7 +869,7 @@ const NativeCalendar = ({ user, setUser }) => {
                     setShowAddMemoryModal(false);
                     setShowMonthPicker(false);
                 }} 
-                title={showMonthPicker ? "Escolher Data" : "Nova Memória"}
+                title={showMonthPicker ? t('calendar.pickDate') : t('calendar.newMemory')}
             >
                 {!showMonthPicker ? (
                     <>
@@ -894,7 +904,7 @@ const NativeCalendar = ({ user, setUser }) => {
                                             ]}
                                         >
                                             <Text style={[styles.modalDateCardDayLabel, isSelected && { color: '#FFFFFF' }]}>
-                                                {new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(date).replace('.', '').toUpperCase()}
+                                                {weekdayName(date.getDay(), 'short').toLocaleUpperCase()}
                                             </Text>
                                             <Text style={[styles.modalDateCardDayVal, isSelected && { color: '#FFFFFF' }]}>
                                                 {date.getDate()}
@@ -922,19 +932,19 @@ const NativeCalendar = ({ user, setUser }) => {
                         </View>
 
                         <View style={{ marginBottom: 20 }}>
-                            <Text style={styles.inputLabel}>O que você está pensando?</Text>
+                            <Text style={styles.inputLabel}>{t('calendar.memoryLabel')}</Text>
                             <TextInput
                                 style={styles.modalTextArea}
                                 value={modalMemoryNote}
                                 onChangeText={setModalMemoryNote}
-                                placeholder="Escreva aqui sua memória..."
+                                placeholder={t('calendar.memoryPlaceholder')}
                                 multiline
                                 numberOfLines={4}
                             />
                         </View>
 
                         <Button onClick={handleSaveMemory} style={{ width: '100%', marginBottom: 12 }}>
-                            Salvar Memória
+                            {t('calendar.saveMemory')}
                         </Button>
                     </>
                 ) : (
@@ -942,18 +952,18 @@ const NativeCalendar = ({ user, setUser }) => {
                         <View style={styles.modalMonthPickerCard}>
                             <View style={styles.modalMonthPickerMonthHeader}>
                                 <Text style={styles.modalMonthPickerMonthText}>
-                                    {modalSelectedDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                                    {formatDate(modalSelectedDate, { month: 'long', year: 'numeric' })}
                                 </Text>
                             </View>
                             
                             <View style={styles.modalMonthPickerWeekdays}>
-                                {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(d => (
-                                    <Text key={d} style={styles.modalMonthPickerWeekdayText}>{d}</Text>
+                                {weekdayLetters.map((d, i) => (
+                                    <Text key={i} style={styles.modalMonthPickerWeekdayText}>{d}</Text>
                                 ))}
                             </View>
                             
                             {(() => {
-                                const modalFirstDay = new Date(modalSelectedDate.getFullYear(), modalSelectedDate.getMonth(), 1).getDay();
+                                const modalFirstDay = getFirstDayOfMonth(modalSelectedDate);
                                 const modalDaysInMonth = new Date(modalSelectedDate.getFullYear(), modalSelectedDate.getMonth() + 1, 0).getDate();
                                 const modalSlots = [];
                                 for (let i = 0; i < modalFirstDay; i++) {
@@ -1002,7 +1012,7 @@ const NativeCalendar = ({ user, setUser }) => {
                         </View>
                         
                         <Button onClick={() => setShowMonthPicker(false)} style={{ width: '100%', marginBottom: 12 }}>
-                            Confirmar Data
+                            {t('calendar.confirmDate')}
                         </Button>
                     </View>
                 )}
@@ -1033,7 +1043,7 @@ const NativeCalendar = ({ user, setUser }) => {
                         <View style={styles.fullscreenFooter}>
                             {user.photos && user.photos.length > 0 && (
                                 <Text style={styles.fullscreenDateText}>
-                                    {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(user.photos[currentPhotoIndex].date || new Date()))}
+                                    {formatDate(user.photos[currentPhotoIndex].date || new Date(), { day: '2-digit', month: 'long', year: 'numeric' })}
                                 </Text>
                             )}
 
@@ -1080,8 +1090,8 @@ const NativeCalendar = ({ user, setUser }) => {
                         </TouchableOpacity>
                         
                         <View style={{ alignItems: 'center' }}>
-                            <Text style={styles.modalTitle}>Evolução</Text>
-                            <Text style={styles.modalSubTitle}>Ajuste & Compartilhe</Text>
+                            <Text style={styles.modalTitle}>{t('calendar.evolution')}</Text>
+                            <Text style={styles.modalSubTitle}>{t('calendar.adjustShare')}</Text>
                         </View>
                         
                         <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -1173,9 +1183,9 @@ const NativeCalendar = ({ user, setUser }) => {
 
                                         {/* Bottom info overlay */}
                                         <View style={styles.modalPhotoOverlay}>
-                                            <Text style={styles.modalPhotoWeight}>{log?.weight}kg</Text>
+                                            <Text style={styles.modalPhotoWeight}>{log ? units.formatWeight(log.weight) : ''}</Text>
                                             <Text style={styles.modalPhotoDate}>
-                                                {new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}
+                                                {formatDate(dateStr, { day: '2-digit', month: 'short', year: '2-digit' })}
                                             </Text>
                                         </View>
                                     </View>
@@ -1188,7 +1198,7 @@ const NativeCalendar = ({ user, setUser }) => {
                                     styles.modalTotalDiffBadge,
                                     sortedSelectedDates.length === 3 ? { top: '66.66%' } : { top: '50%' }
                                 ]}>
-                                    <Text style={styles.modalTotalDiffText}>{totalDiff > 0 ? '+' : ''}{totalDiff}kg</Text>
+                                    <Text style={styles.modalTotalDiffText}>{units.formatWeightDiff(parseFloat(totalDiff))}</Text>
                                 </View>
                             )}
                         </View>

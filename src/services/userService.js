@@ -81,7 +81,7 @@ export const userService = {
                         date: new Date(d.date).toISOString(),
                         dose: d.dose || '0.25 mg',
                         medication: d.medication || 'ozempic',
-                        site: d.site || 'Não registrado'
+                        site: d.siteId || d.site || 'not_recorded'
                     }));
 
                 if (toInsert.length > 0) {
@@ -203,7 +203,9 @@ export const userService = {
                     date: d.date,
                     dose: d.dose,
                     medication: d.medication,
-                    site: d.site
+                    site: d.site,
+                    // Rotation suggestions (InjectionService) key off siteId.
+                    siteId: d.site
                 })) || [];
 
                 const formattedSideEffectsLogs = symptoms?.map(s => ({
@@ -300,21 +302,30 @@ export const userService = {
     // Edge Function's own temporary auth-optional state. See
     // mobile_documentation.md section 7.9 for what to restore before a real
     // release.
-    analyzeMealPhoto: async (imageBase64, mimeType = 'image/jpeg', totalWeightHintGrams = null) => {
+    // `language` (e.g. 'en', 'pt') asks Gemini to name the foods in the
+    // user's language.
+    analyzeMealPhoto: async (imageBase64, mimeType = 'image/jpeg', totalWeightHintGrams = null, language = 'en') => {
         const { data, error } = await supabase.functions.invoke('analyze-meal-photo', {
-            body: { imageBase64, mimeType, totalWeightHintGrams },
+            body: { imageBase64, mimeType, totalWeightHintGrams, language },
         });
 
         if (error) {
-            // FunctionsHttpError carries the actual response on `.context` —
-            // surface the server's friendly message (rate limit, payload too
-            // large, etc.) instead of a generic "Edge Function returned a
-            // non-2xx status code".
+            // FunctionsHttpError carries the actual response on `.context`.
+            // Rate-limit responses come with a `reason` code
+            // ('too_frequent' | 'daily_limit_reached') that the screen
+            // translates; anything else surfaces the server message instead
+            // of a generic "Edge Function returned a non-2xx status code".
+            let body = null;
             try {
-                const body = await error.context?.json?.();
-                if (body?.error) throw new Error(body.error);
-            } catch (parseError) {
-                if (parseError?.message && parseError.message !== error.message) throw parseError;
+                body = await error.context?.json?.();
+            } catch {
+                // Not a JSON body — fall through to the original error.
+            }
+            if (body?.reason || body?.error) {
+                const friendly = new Error(body.error || error.message);
+                friendly.reason = body.reason;
+                friendly.limit = body.limit;
+                throw friendly;
             }
             throw error;
         }

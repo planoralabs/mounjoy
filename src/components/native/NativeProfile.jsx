@@ -28,6 +28,9 @@ import {
     Check, 
     TrendingUp 
 } from 'lucide-react-native';
+import { Ruler } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
+import { unitsFor } from '../../i18n';
 import { MOCK_MEDICATIONS } from '../../constants/medications';
 import { suggestNextInjection, getSiteById } from '../../services/InjectionService';
 
@@ -47,7 +50,10 @@ const MenuItem = ({ icon: Icon, label, subLabel, onPress, color = '#64748B' }) =
 );
 
 const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
+    const { t } = useTranslation();
+    const units = unitsFor(user);
     const [showProtocolModal, setShowProtocolModal] = useState(false);
+    const [showUnitsModal, setShowUnitsModal] = useState(false);
     const [showMeasureModal, setShowMeasureModal] = useState(false);
     const [showReminderModal, setShowReminderModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -81,7 +87,7 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
     const handlePhotoPick = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permissionResult.granted === false) {
-            alert("Você precisa permitir acesso à galeria de fotos para alterar a foto de perfil!");
+            alert(t('profile.photoPermission'));
             return;
         }
 
@@ -118,8 +124,9 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
             measurements: [
                 {
                     date: now,
-                    waist: parseFloat(measures.waist) || 0,
-                    hip: parseFloat(measures.hip) || 0,
+                    // Typed in cm or in; always stored in cm.
+                    waist: Math.round(units.lengthToCm(parseFloat(measures.waist)) * 10) / 10 || 0,
+                    hip: Math.round(units.lengthToCm(parseFloat(measures.hip)) * 10) / 10 || 0,
                     weight: user.currentWeight
                 },
                 ...(user.measurements || [])
@@ -163,16 +170,13 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
         }, 1500);
     };
 
-    const siteOptions = [
-        { id: 'arm-right', name: 'Braço Direito' },
-        { id: 'arm-left', name: 'Braço Esquerdo' },
-        { id: 'abdomen-left', name: 'Abdômen Esquerdo' },
-        { id: 'abdomen-right', name: 'Abdômen Direito' },
-        { id: 'thigh-right', name: 'Coxa Direita' },
-        { id: 'thigh-left', name: 'Coxa Esquerda' }
-    ];
+    const setUnitSystem = (unitSystem) => {
+        updateGoal('unitSystem', unitSystem);
+        setShowUnitsModal(false);
+    };
 
-    const currentMedicationDisplay = user.medicationId ? (user.medicationId.charAt(0).toUpperCase() + user.medicationId.slice(1)) : 'Protocolo';
+    const currentMedicationDisplay = user.medicationId ? (user.medicationId.charAt(0).toUpperCase() + user.medicationId.slice(1)) : t('profile.protocolFallback');
+    const waterGoal = user.settings?.waterGoal || 2.5;
 
     return (
         <SafeAreaView style={styles.container}>
@@ -192,9 +196,9 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                             <Camera size={16} color="#64748B" />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.profileName}>{user.name || 'Usuário Mounjoy'}</Text>
+                    <Text style={styles.profileName}>{user.name || t('profile.defaultName')}</Text>
                     <Text style={styles.profileMeta}>
-                        Protocolo • {currentMedicationDisplay} ({user.currentDose || 'N/A'})
+                        {t('profile.protocolMeta', { medication: currentMedicationDisplay, dose: user.currentDose || 'N/A' })}
                     </Text>
                 </View>
 
@@ -204,12 +208,12 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                 <View style={styles.goalsCard}>
                     <View style={styles.goalsHeader}>
                         <TrendingUp size={18} color="#EA580C" />
-                        <Text style={styles.goalsTitle}>Metas de Saúde</Text>
+                        <Text style={styles.goalsTitle}>{t('profile.goalsTitle')}</Text>
                     </View>
 
                     <View style={styles.goalsGrid}>
                         <View style={styles.goalRow}>
-                            <Text style={styles.goalLabel}>Proteína (g)</Text>
+                            <Text style={styles.goalLabel}>{t('profile.proteinGoal')}</Text>
                             <View style={styles.goalControlRow}>
                                 <TouchableOpacity 
                                     onPress={() => updateGoal('proteinGoal', Math.max(40, (user.settings?.proteinGoal || 100) - 5))}
@@ -228,7 +232,7 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                         </View>
 
                         <View style={styles.goalRow}>
-                            <Text style={styles.goalLabel}>Água (Litros)</Text>
+                            <Text style={styles.goalLabel}>{t('profile.waterGoal', { unit: units.volumeUnit })}</Text>
                             <View style={styles.goalControlRow}>
                                 <TouchableOpacity 
                                     onPress={() => updateGoal('waterGoal', Math.max(1, (user.settings?.waterGoal || 2.5) - 0.1))}
@@ -236,7 +240,7 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                                 >
                                     <Text style={styles.goalBtnText}>−</Text>
                                 </TouchableOpacity>
-                                <Text style={styles.goalValue}>{(user.settings?.waterGoal || 2.5).toFixed(1)}</Text>
+                                <Text style={styles.goalValue}>{units.formatVolumeValue(waterGoal)}</Text>
                                 <TouchableOpacity 
                                     onPress={() => updateGoal('waterGoal', (user.settings?.waterGoal || 2.5) + 0.1)}
                                     style={styles.goalBtn}
@@ -250,7 +254,7 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                     <View style={styles.fiberDivider} />
 
                     <View style={styles.goalFullRow}>
-                        <Text style={styles.goalLabel}>Fibra (g)</Text>
+                        <Text style={styles.goalLabel}>{t('profile.fiberGoal')}</Text>
                         <View style={styles.goalControlRow}>
                             <TouchableOpacity 
                                 onPress={() => updateGoal('fiberGoal', Math.max(10, (user.settings?.fiberGoal || 25) - 1))}
@@ -271,45 +275,46 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
 
                 {/* Settings list */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Ajustes e Medidas</Text>
+                    <Text style={styles.sectionTitle}>{t('profile.settingsTitle')}</Text>
                     <View style={styles.card}>
-                        <MenuItem icon={Settings} label="Configurar Protocolo" subLabel="Medicamento e Dosagem atual" onPress={() => setShowProtocolModal(true)} color="#EA580C" />
-                        <MenuItem icon={Scale} label="Progresso Corporal (Medidas)" subLabel="Acompanhar medidas corporais" onPress={() => setShowMeasureModal(true)} color="#3B82F6" />
-                        <MenuItem icon={Bell} label="Lembretes" subLabel="Horários dos lembretes de dose" onPress={() => setShowReminderModal(true)} color="#F59E0B" />
+                        <MenuItem icon={Settings} label={t('protocol.title')} subLabel={t('profile.configureProtocolSub')} onPress={() => setShowProtocolModal(true)} color="#EA580C" />
+                        <MenuItem icon={Scale} label={t('profile.bodyProgress')} subLabel={t('profile.bodyProgressSub')} onPress={() => setShowMeasureModal(true)} color="#3B82F6" />
+                        <MenuItem icon={Ruler} label={t('units.title')} subLabel={`${t(`units.${units.system}`)} · ${t(`units.${units.system}Hint`)}`} onPress={() => setShowUnitsModal(true)} color="#10B981" />
+                        <MenuItem icon={Bell} label={t('profile.reminders')} subLabel={t('profile.remindersSub')} onPress={() => setShowReminderModal(true)} color="#F59E0B" />
                     </View>
                 </View>
 
                 {/* Danger Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Conta</Text>
+                    <Text style={styles.sectionTitle}>{t('profile.accountTitle')}</Text>
                     <View style={styles.card}>
-                        <MenuItem icon={LogOut} label="Sair da Conta" subLabel="Desconectar do dispositivo" onPress={onLogout} color="#EF4444" />
+                        <MenuItem icon={LogOut} label={t('profile.logout')} subLabel={t('profile.logoutSub')} onPress={onLogout} color="#EF4444" />
                     </View>
                     <TouchableOpacity 
                         style={styles.deleteLink}
                         onPress={() => { setDeleteStep(1); setShowDeleteModal(true); }}
                     >
-                        <Text style={styles.deleteLinkText}>Apagar Minha Conta e Dados Permanentemente</Text>
+                        <Text style={styles.deleteLinkText}>{t('profile.deleteAccount')}</Text>
                     </TouchableOpacity>
                 </View>
 
             </ScrollView>
 
             {/* Modal: Configurar Protocolo */}
-            <Modal visible={showProtocolModal} onClose={() => setShowProtocolModal(false)} title="Configurar Protocolo">
+            <Modal visible={showProtocolModal} onClose={() => setShowProtocolModal(false)} title={t('protocol.title')}>
                 <View style={styles.routeSelectorRow}>
                     <TouchableOpacity onPress={() => setRouteFilter('all')} style={[styles.routeBtn, routeFilter === 'all' && styles.routeBtnActive]}>
-                        <Text style={[styles.routeBtnText, routeFilter === 'all' && styles.routeBtnTextActive]}>Todos</Text>
+                        <Text style={[styles.routeBtnText, routeFilter === 'all' && styles.routeBtnTextActive]}>{t('protocol.all')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setRouteFilter('injectable')} style={[styles.routeBtn, routeFilter === 'injectable' && styles.routeBtnActive]}>
-                        <Text style={[styles.routeBtnText, routeFilter === 'injectable' && styles.routeBtnTextActive]}>Injetável</Text>
+                        <Text style={[styles.routeBtnText, routeFilter === 'injectable' && styles.routeBtnTextActive]}>{t('protocol.injectable')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setRouteFilter('oral')} style={[styles.routeBtn, routeFilter === 'oral' && styles.routeBtnActive]}>
-                        <Text style={[styles.routeBtnText, routeFilter === 'oral' && styles.routeBtnTextActive]}>Via Oral</Text>
+                        <Text style={[styles.routeBtnText, routeFilter === 'oral' && styles.routeBtnTextActive]}>{t('protocol.oral')}</Text>
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.modalSubLabelText}>Medicamento</Text>
+                <Text style={styles.modalSubLabelText}>{t('protocol.medication')}</Text>
                 <View style={styles.medGrid}>
                     {filteredMeds.map(med => (
                         <TouchableOpacity 
@@ -325,7 +330,7 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                     ))}
                 </View>
 
-                <Text style={styles.modalSubLabelText}>Dosagem</Text>
+                <Text style={styles.modalSubLabelText}>{t('protocol.dosage')}</Text>
                 <View style={styles.doseGrid}>
                     {currentMedInfo?.doses.map(dose => (
                         <TouchableOpacity 
@@ -342,18 +347,18 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                 </View>
 
                 <Button onClick={handleUpdateProtocol} style={{ width: '100%', marginTop: 16 }}>
-                    Salvar Alterações
+                    {t('protocol.save')}
                 </Button>
             </Modal>
 
             {/* Modal: Progresso Corporal (Medidas) */}
-            <Modal visible={showMeasureModal} onClose={() => setShowMeasureModal(false)} title="Progresso Corporal">
-                <Text style={styles.modalIntroText}>Monitore suas medidas para ver a perda de gordura além da balança.</Text>
+            <Modal visible={showMeasureModal} onClose={() => setShowMeasureModal(false)} title={t('profile.measuresTitle')}>
+                <Text style={styles.modalIntroText}>{t('profile.measuresIntro')}</Text>
                 <View style={styles.measuresInputRow}>
                     <View style={{ flex: 1 }}>
                         <Input 
-                            label="Cintura (cm)" 
-                            placeholder="Ex: 80" 
+                            label={t('profile.waist', { unit: units.lengthUnit })} 
+                            placeholder={t('common.example', { value: units.imperial ? 32 : 80 })} 
                             value={measures.waist} 
                             onChangeText={(val) => setMeasures({ ...measures, waist: val })}
                             keyboardType="numeric"
@@ -361,8 +366,8 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                     </View>
                     <View style={{ flex: 1, marginLeft: 12 }}>
                         <Input 
-                            label="Quadril (cm)" 
-                            placeholder="Ex: 95" 
+                            label={t('profile.hip', { unit: units.lengthUnit })} 
+                            placeholder={t('common.example', { value: units.imperial ? 38 : 95 })} 
                             value={measures.hip} 
                             onChangeText={(val) => setMeasures({ ...measures, hip: val })}
                             keyboardType="numeric"
@@ -371,68 +376,90 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                 </View>
 
                 <Button onClick={handleSaveMeasures} style={{ width: '100%', marginTop: 16 }}>
-                    Salvar Medidas
+                    {t('profile.saveMeasures')}
                 </Button>
             </Modal>
 
             {/* Modal: Lembretes */}
-            <Modal visible={showReminderModal} onClose={() => setShowReminderModal(false)} title="Configurar Lembretes">
+            <Modal visible={showReminderModal} onClose={() => setShowReminderModal(false)} title={t('profile.remindersTitle')}>
                 <View style={styles.reminderToggleRow}>
                     <View>
-                        <Text style={styles.reminderToggleTitle}>Notificações</Text>
-                        <Text style={styles.reminderToggleSub}>Alertas no dispositivo</Text>
+                        <Text style={styles.reminderToggleTitle}>{t('profile.notifications')}</Text>
+                        <Text style={styles.reminderToggleSub}>{t('profile.notificationsSub')}</Text>
                     </View>
                     <Switch 
                         value={reminderSettings.enabled}
                         onValueChange={(val) => setReminderSettings({ ...reminderSettings, enabled: val })}
-                        thumbColor={Platform.OS === 'android' ? '#EA580C' : undefined}
-                        trackColor={{ true: '#FFEDD5' }}
+                        // Brand orange on every platform (web defaults to teal).
+                        thumbColor={reminderSettings.enabled ? '#EA580C' : '#F8FAFC'}
+                        activeThumbColor="#EA580C"
+                        trackColor={{ false: '#E2E8F0', true: '#FED7AA' }}
+                        activeTrackColor="#FED7AA"
+                        ios_backgroundColor="#E2E8F0"
                     />
                 </View>
 
                 <View style={{ marginTop: 16 }}>
                     <Input 
-                        label="Horário Preferencial"
-                        placeholder="Ex: 09:00"
+                        label={t('profile.preferredTime')}
+                        placeholder={t('common.example', { value: '09:00' })}
                         value={reminderSettings.time}
                         onChangeText={(val) => setReminderSettings({ ...reminderSettings, time: val })}
                     />
-                    <Text style={styles.reminderInfoTip}>Este é o horário que o banner aparecerá no seu dia de dose.</Text>
+                    <Text style={styles.reminderInfoTip}>{t('profile.reminderTip')}</Text>
                 </View>
 
                 <Button onClick={handleSaveReminders} style={{ width: '100%', marginTop: 20 }}>
-                    Salvar Configurações
+                    {t('profile.saveSettings')}
                 </Button>
             </Modal>
 
 
 
             {/* Modal: Confirmação de Exclusão */}
-            <Modal visible={showDeleteModal} onClose={() => !isDeleting && setShowDeleteModal(false)} title={deleteStep === 1 ? "🚨 Aviso Importante" : "⚠️ Última Chance"}>
+            <Modal visible={showDeleteModal} onClose={() => !isDeleting && setShowDeleteModal(false)} title={deleteStep === 1 ? t('profile.deleteWarningTitle') : t('profile.deleteLastChance')}>
                 <View style={styles.deleteModalContent}>
                     <View style={styles.deleteAlertBox}>
-                        <Text style={styles.deleteAlertTitle}>Ação Irreversível</Text>
+                        <Text style={styles.deleteAlertTitle}>{t('profile.irreversible')}</Text>
                         <Text style={styles.deleteAlertDesc}>
                             {deleteStep === 1 
-                                ? "Ao apagar sua conta, todas as suas fotos de evolução, registros de doses, peso e histórico clínico serão DELETADOS PARA SEMPRE."
-                                : "Nós NÃO poderemos recuperar seus dados caso você mude de ideia depois. Você tem certeza ABSOLUTA de que deseja prosseguir?"}
+                                ? t('profile.deleteStep1')
+                                : t('profile.deleteStep2')}
                         </Text>
                     </View>
 
                     <View style={{ gap: 12, width: '100%' }}>
                         {deleteStep === 1 ? (
                             <Button onClick={() => setDeleteStep(2)} style={{ backgroundColor: '#EF4444' }}>
-                                Eu entendo, quero prosseguir
+                                {t('profile.understand')}
                             </Button>
                         ) : (
                             <Button onClick={handleDeleteAccount} disabled={isDeleting} style={{ backgroundColor: '#7F1D1D' }}>
-                                {isDeleting ? "Apagando tudo..." : "APAGAR TUDO AGORA"}
+                                {isDeleting ? t('profile.deleting') : t('profile.deleteNow')}
                             </Button>
                         )}
                         <TouchableOpacity onPress={() => setShowDeleteModal(false)} style={styles.cancelLink} disabled={isDeleting}>
-                            <Text style={styles.cancelLinkText}>Cancelar e Voltar</Text>
+                            <Text style={styles.cancelLinkText}>{t('profile.cancelBack')}</Text>
                         </TouchableOpacity>
                     </View>
+                </View>
+            </Modal>
+
+            {/* Modal: Sistema de Medidas */}
+            <Modal visible={showUnitsModal} onClose={() => setShowUnitsModal(false)} title={t('units.title')}>
+                <Text style={styles.modalIntroText}>{t('profile.unitsIntro')}</Text>
+                <View style={styles.unitGrid}>
+                    {['metric', 'imperial'].map((id) => (
+                        <TouchableOpacity
+                            key={id}
+                            onPress={() => setUnitSystem(id)}
+                            style={[styles.unitCard, units.system === id && styles.unitCardActive]}
+                            testID={`profile-unit-${id}`}
+                        >
+                            <Text style={[styles.unitCardLabel, units.system === id && styles.unitCardLabelActive]}>{t(`units.${id}`)}</Text>
+                            <Text style={styles.unitCardHint}>{t(`units.${id}Hint`)}</Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
             </Modal>
 
@@ -721,6 +748,12 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
 
+    unitGrid: { flexDirection: 'row', gap: 12, marginTop: 8 },
+    unitCard: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 24, borderWidth: 2, borderColor: '#F1F5F9', paddingVertical: 20, alignItems: 'center', gap: 4 },
+    unitCardActive: { borderColor: '#EA580C', backgroundColor: '#FFF7ED' },
+    unitCardLabel: { fontSize: 16, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
+    unitCardLabelActive: { color: '#EA580C' },
+    unitCardHint: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', letterSpacing: 0.5 },
     modalIntroText: {
         fontSize: 12,
         fontFamily: 'Outfit_600SemiBold',

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
     View, 
     Text, 
@@ -14,25 +14,21 @@ import {
 import { LineChart } from 'react-native-chart-kit';
 import { 
     TrendingUp, 
-    Activity, 
     ChevronRight, 
     X, 
     Calendar,
     ChevronLeft
 } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
+import { unitsFor, formatDate } from '../../i18n';
+import { siteLabel } from '../../services/InjectionService';
 
 const { width } = Dimensions.get('window');
 
 const NativeEvolution = ({ user }) => {
-    const [view, setView] = useState('weight'); // 'weight' or 'glucose'
+    const { t } = useTranslation();
+    const units = unitsFor(user);
     const [tooltip, setTooltip] = useState(null);
-
-    useEffect(() => {
-        setTooltip(null);
-    }, [view]);
-
-    // Glucose Mock History
-    const glucoseHistory = [98, 105, 92, 110, 89, 94, 91];
 
     const hasEnoughData = user.measurements && user.measurements.length >= 3;
 
@@ -55,33 +51,18 @@ const NativeEvolution = ({ user }) => {
         return logs;
     }, [user.measurements, hasEnoughData]);
 
-    const chartData = useMemo(() => {
-        const logs = view === 'weight' ? baseWeightLogs : baseWeightLogs.slice(-7); // Keep weight logs full, glucose sliced or full
-        if (view === 'weight') {
-            return {
-                labels: logs.map(l => new Date(l.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })),
-                datasets: [{
-                    data: logs.map(l => l.weight),
-                    color: (opacity = 1) => `rgba(234, 88, 12, ${opacity})`,
-                    strokeWidth: 3
-                }]
-            };
-        } else {
-            return {
-                labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6', 'Sem 7'],
-                datasets: [{
-                    data: glucoseHistory,
-                    color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-                    strokeWidth: 3
-                }]
-            };
-        }
-    }, [baseWeightLogs, view]);
+    const chartData = useMemo(() => ({
+        labels: baseWeightLogs.map(l => formatDate(l.date, { day: '2-digit', month: '2-digit' })),
+        datasets: [{
+            data: baseWeightLogs.map(l => units.weight(l.weight)),
+            color: (opacity = 1) => `rgba(234, 88, 12, ${opacity})`,
+            strokeWidth: 3
+        }]
+    }), [baseWeightLogs, units.system]);
 
     const chartWidth = useMemo(() => {
-        const pointCount = view === 'weight' ? baseWeightLogs.length : 7;
-        return Math.max(width - 32, pointCount * 65);
-    }, [baseWeightLogs, view, width]);
+        return Math.max(width - 32, baseWeightLogs.length * 65);
+    }, [baseWeightLogs, width]);
 
     const getXForIndex = (index, totalPoints) => {
         const w = chartWidth - 40;
@@ -95,8 +76,8 @@ const NativeEvolution = ({ user }) => {
         return pLeft + (index * (w - pLeft - pRight)) / (totalPoints - 1);
     };
 
-    const getYForValue = (value, logs, chartView) => {
-        const values = chartView === 'weight' ? logs.map(l => l.weight) : logs.map(l => l.value);
+    const getYForValue = (value, logs) => {
+        const values = logs.map(l => l.weight);
         const maxVal = Math.max(...values);
         const minVal = Math.min(...values);
         const range = maxVal - minVal;
@@ -110,50 +91,17 @@ const NativeEvolution = ({ user }) => {
     };
 
     const handlePointClick = (index) => {
-        if (view === 'weight') {
-            const logs = baseWeightLogs;
-            const log = logs[index];
-            if (!log) return;
-            const logDate = new Date(log.date);
-            const formattedDate = logDate.toLocaleDateString('pt-BR', { month: 'long' });
-            const pointImc = (log.weight / (heightInMeters * heightInMeters)).toFixed(1);
-            
-            const prevLogIndex = baseWeightLogs.findIndex(l => l.date === log.date) - 1;
-            let status = "Estável";
-            if (prevLogIndex >= 0) {
-                const prevWeight = baseWeightLogs[prevLogIndex].weight;
-                status = log.weight < prevWeight ? "Em evolução" : (log.weight === prevWeight ? "Estável" : "Em alerta");
-            }
+        const logs = baseWeightLogs;
+        const log = logs[index];
+        if (!log) return;
 
-            const totalPoints = logs.length;
-            const x = getXForIndex(index, totalPoints);
-            const y = getYForValue(log.weight, logs, 'weight');
-
-            setTooltip({
-                x,
-                y,
-                value: log.weight,
-                date: formattedDate,
-                imc: pointImc,
-                status
-            });
-        } else {
-            const logs = glucoseHistory.map((val) => ({ date: new Date().toISOString(), value: val }));
-            const value = glucoseHistory[index];
-            
-            const totalPoints = glucoseHistory.length;
-            const x = getXForIndex(index, totalPoints);
-            const y = getYForValue(value, logs, 'glucose');
-
-            setTooltip({
-                x,
-                y,
-                value,
-                date: `Sem ${index + 1}`,
-                imc: null,
-                status: null
-            });
-        }
+        setTooltip({
+            x: getXForIndex(index, logs.length),
+            y: getYForValue(log.weight, logs),
+            value: log.weight,
+            date: formatDate(log.date, { month: 'long' }),
+            imc: (log.weight / (heightInMeters * heightInMeters)).toFixed(1)
+        });
     };
 
     const heightInMeters = parseFloat(user.height) || 1.7;
@@ -170,15 +118,7 @@ const NativeEvolution = ({ user }) => {
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Sua Evolução</Text>
-                    <View style={styles.tabContainer}>
-                        <TouchableOpacity onPress={() => setView('weight')} style={[styles.tab, view === 'weight' && styles.tabActive]}>
-                            <Text style={[styles.tabText, view === 'weight' && styles.tabTextActive]}>PESO</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setView('glucose')} style={[styles.tab, view === 'glucose' && styles.tabActive]}>
-                            <Text style={[styles.tabText, view === 'glucose' && styles.tabTextActive]}>GLICEMIA</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={styles.title}>{t('evolution.title')}</Text>
                 </View>
 
                 {/* Chart Section */}
@@ -226,14 +166,14 @@ const NativeEvolution = ({ user }) => {
                                 backgroundGradientFrom: '#ffffff',
                                 backgroundGradientTo: '#ffffff',
                                 decimalPlaces: 1,
-                                color: (opacity = 1) => view === 'weight' ? `rgba(234, 88, 12, ${opacity})` : `rgba(16, 185, 129, ${opacity})`,
+                                color: (opacity = 1) => `rgba(234, 88, 12, ${opacity})`,
                                 labelColor: (opacity = 1) => `rgba(148, 163, 184, ${opacity})`,
                                 propsForLabels: {
                                     fontFamily: 'Outfit_700Bold',
                                     fontSize: 10
                                 },
                                 style: { borderRadius: 32 },
-                                propsForDots: { r: '6', strokeWidth: '2', stroke: view === 'weight' ? '#EA580C' : '#10B981' },
+                                propsForDots: { r: '6', strokeWidth: '2', stroke: '#EA580C' },
                                 gridColor: 'rgba(241, 245, 249, 1)'
                             }}
                             bezier
@@ -290,11 +230,11 @@ const NativeEvolution = ({ user }) => {
                                     </TouchableOpacity>
                                     <Text style={styles.tooltipDate}>{tooltip.date}</Text>
                                     <Text style={styles.tooltipText}>
-                                        {view === 'weight' ? 'Peso: ' : 'Glicemia: '}
-                                        <Text style={styles.tooltipBold}>{tooltip.value}{view === 'weight' ? 'kg' : ' mg/dL'}</Text>
+                                        {t('evolution.weightLabel')}{': '}
+                                        <Text style={styles.tooltipBold}>{units.formatWeight(tooltip.value)}</Text>
                                     </Text>
-                                    {view === 'weight' && tooltip.imc && (
-                                        <Text style={styles.tooltipText}>IMC: <Text style={styles.tooltipBold}>{tooltip.imc}</Text></Text>
+                                    {!!tooltip.imc && (
+                                        <Text style={styles.tooltipText}>{t('evolution.bmi')}: <Text style={styles.tooltipBold}>{tooltip.imc}</Text></Text>
                                     )}
                                 </Pressable>
                             </>
@@ -302,21 +242,13 @@ const NativeEvolution = ({ user }) => {
                     </ScrollView>
                 </View>
 
-                {/* Summary Grid (Average Glycemia & Current BMI) */}
+                {/* Summary (Current BMI) */}
                 <View style={styles.summaryGrid}>
-                    <View style={styles.summaryCard}>
-                        <View style={[styles.iconBox, { backgroundColor: '#F0FDF4' }]}>
-                            <Activity size={20} color="#16A34A" />
-                        </View>
-                        <Text style={styles.summaryLabel}>Glicemia Média</Text>
-                        <Text style={styles.summaryValue}>92 <Text style={styles.summaryUnit}>mg/dL</Text></Text>
-                    </View>
-
                     <View style={styles.summaryCard}>
                         <View style={[styles.iconBox, { backgroundColor: '#EFF6FF' }]}>
                             <TrendingUp size={20} color="#2563EB" />
                         </View>
-                        <Text style={styles.summaryLabel}>IMC Atual</Text>
+                        <Text style={styles.summaryLabel}>{t('evolution.currentBmi')}</Text>
                         <Text style={styles.summaryValue}>{imc}</Text>
                     </View>
                 </View>
@@ -328,8 +260,8 @@ const NativeEvolution = ({ user }) => {
                             <Calendar size={20} color="#EA580C" />
                         </View>
                         <View>
-                            <Text style={styles.doseHistoryTitle}>Controle de Protocolo</Text>
-                            <Text style={styles.doseHistorySub}>{user.medicationId} • Recentes</Text>
+                            <Text style={styles.doseHistoryTitle}>{t('evolution.protocolTitle')}</Text>
+                            <Text style={styles.doseHistorySub}>{t('evolution.recent', { medication: user.medicationId })}</Text>
                         </View>
                     </View>
                     
@@ -339,22 +271,22 @@ const NativeEvolution = ({ user }) => {
                                 <View key={idx} style={styles.doseHistoryItem}>
                                     <View>
                                         <Text style={styles.doseHistoryDate}>
-                                            {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(dose.date))}
+                                            {formatDate(dose.date, { day: '2-digit', month: 'short' })}
                                         </Text>
-                                        <Text style={styles.doseHistoryArea}>{dose.area || 'Não registrado'}</Text>
+                                        <Text style={styles.doseHistoryArea}>{siteLabel(t, dose)}</Text>
                                     </View>
                                     <Text style={styles.doseHistoryVal}>{dose.dose}</Text>
                                 </View>
                             ))
                         ) : (
-                            <Text style={styles.emptyDoses}>Nenhuma dose registrada ainda.</Text>
+                            <Text style={styles.emptyDoses}>{t('common.noDosesYet')}</Text>
                         )}
 
                         {nextDoseDate && (
                             <View style={styles.nextDoseBox}>
-                                <Text style={styles.nextDoseLabel}>Próxima Dose Sugerida</Text>
+                                <Text style={styles.nextDoseLabel}>{t('evolution.nextDose')}</Text>
                                 <Text style={styles.nextDoseDateText}>
-                                    {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(nextDoseDate)}
+                                    {formatDate(nextDoseDate, { day: '2-digit', month: 'short' })}
                                 </Text>
                             </View>
                         )}
@@ -372,11 +304,6 @@ const styles = StyleSheet.create({
     scroll: { padding: 24, paddingBottom: 120 },
     header: { marginBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: Platform.OS === 'android' ? 20 : 0 },
     title: { fontSize: 24, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
-    tabContainer: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 12, padding: 4 },
-    tab: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-    tabActive: { backgroundColor: '#fff', elevation: 2 },
-    tabText: { fontSize: 10, fontFamily: 'Outfit_700Bold', color: '#64748B' },
-    tabTextActive: { color: '#EA580C' },
 
     chartCard: { 
         backgroundColor: '#fff', 
@@ -428,11 +355,6 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontFamily: 'Outfit_700Bold',
         color: '#0F172A',
-    },
-    summaryUnit: {
-        fontSize: 12,
-        fontFamily: 'Outfit_600SemiBold',
-        color: '#94A3B8',
     },
 
     doseHistoryCard: {

@@ -15,6 +15,9 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:8081',
+    // O app segue o idioma do dispositivo; as specs conferem textos em
+    // português, então o navegador de teste roda em pt-BR.
+    locale: 'pt-BR',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

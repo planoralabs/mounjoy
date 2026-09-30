@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Platform, PanResponder } from 'react-native';
 import { Button, Modal } from './NativeUI';
-import { Info, AlertCircle, UtensilsCrossed } from 'lucide-react-native';
+import { Info, AlertCircle, UtensilsCrossed, Camera } from 'lucide-react-native';
 import { userService } from '../../services/userService';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '../../i18n';
 
 const FoodNoiseSlider = ({ value, onChange }) => {
+    const { t } = useTranslation();
     const percentage = Math.max(0, Math.min(100, (value / 10) * 100));
     const [trackWidth, setTrackWidth] = useState(0);
     const trackWidthRef = useRef(0);
@@ -95,14 +98,15 @@ const FoodNoiseSlider = ({ value, onChange }) => {
                 <Text style={[styles.sliderValueText, { color: getColor() }]}>{value}</Text>
             </View>
             <View style={styles.sliderLabelsRow}>
-                <Text style={styles.sliderLabelText}>Silencioso</Text>
-                <Text style={styles.sliderLabelText}>Intenso</Text>
+                <Text style={styles.sliderLabelText}>{t('logs.quiet')}</Text>
+                <Text style={styles.sliderLabelText}>{t('logs.intense')}</Text>
             </View>
         </View>
     );
 };
 
-const NativeLogs = ({ user, setUser }) => {
+const NativeLogs = ({ user, setUser, onScanMeal }) => {
+    const { t } = useTranslation();
     const [foodNoise, setFoodNoise] = useState(3);
     const [note, setNote] = useState('');
     const [trigger, setTrigger] = useState('');
@@ -121,12 +125,13 @@ const NativeLogs = ({ user, setUser }) => {
         });
     }, [user?.uid]);
 
+    // ids are stored in sideEffectsLogs — keep them stable; labels are translated.
     const symptoms = [
-        { id: 'nausea', emoji: '🤢', label: 'Náusea' },
-        { id: 'vomito', emoji: '🤮', label: 'Vômito' },
-        { id: 'fadiga', emoji: '🥱', label: 'Fadiga' },
-        { id: 'azia', emoji: '🔥', label: 'Azia' },
-        { id: 'constipação', emoji: '🧱', label: 'Constipação' },
+        { id: 'nausea', emoji: '🤢', label: t('symptoms.nausea') },
+        { id: 'vomito', emoji: '🤮', label: t('symptoms.vomito') },
+        { id: 'fadiga', emoji: '🥱', label: t('symptoms.fadiga') },
+        { id: 'azia', emoji: '🔥', label: t('symptoms.azia') },
+        { id: 'constipação', emoji: '🧱', label: t('symptoms.constipacao') },
     ];
 
     const toggleSymptom = (id) => {
@@ -170,23 +175,27 @@ const NativeLogs = ({ user, setUser }) => {
     };
 
     const getSliderText = () => {
-        if (foodNoise <= 3) return 'Silencioso';
-        if (foodNoise <= 7) return 'Moderado';
-        return 'Alto';
+        if (foodNoise <= 3) return t('logs.quiet');
+        if (foodNoise <= 7) return t('logs.moderate');
+        return t('logs.high');
     };
 
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                <Text style={styles.title}>Diário de Hoje</Text>
+                <Text style={styles.title}>{t('logs.title')}</Text>
+                <Text style={styles.todayDate}>{(() => {
+                    const today = formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' });
+                    return today.charAt(0).toLocaleUpperCase() + today.slice(1);
+                })()}</Text>
 
                 {/* Meal History Section */}
                 <View style={styles.card}>
-                    <Text style={[styles.cardLabel, styles.cardLabelWithMargin]}>Refeições Registradas</Text>
+                    <Text style={[styles.cardLabel, styles.cardLabelWithMargin]}>{t('logs.mealsTitle')}</Text>
                     {loadingMeals ? (
-                        <Text style={styles.emptyMealsText}>Carregando...</Text>
+                        <Text style={styles.emptyMealsText}>{t('common.loading')}</Text>
                     ) : mealLogs.length === 0 ? (
-                        <Text style={styles.emptyMealsText}>Nenhuma refeição escaneada ainda. Use o botão "Escanear Refeição" na Home.</Text>
+                        <Text style={styles.emptyMealsText}>{t('logs.noMeals')}</Text>
                     ) : (
                         <View style={styles.mealList}>
                             {mealLogs.map((meal) => (
@@ -196,25 +205,31 @@ const NativeLogs = ({ user, setUser }) => {
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.mealDate}>
-                                            {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(meal.logged_at))}
+                                            {formatDate(meal.logged_at, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                         </Text>
                                         <Text style={styles.mealItemNames} numberOfLines={1}>
-                                            {(meal.items || []).map((i) => i.name).join(', ') || 'Sem itens'}
+                                            {(meal.items || []).map((i) => i.name).join(', ') || t('logs.noItems')}
                                         </Text>
                                     </View>
                                     <View style={styles.mealMacros}>
                                         <Text style={styles.mealCalories}>{Math.round(meal.total_calories)} kcal</Text>
-                                        <Text style={styles.mealMacroText}>P {meal.total_protein.toFixed(0)}g · C {meal.total_carbs.toFixed(0)}g · G {meal.total_fat.toFixed(0)}g</Text>
+                                        <Text style={styles.mealMacroText}>{t('logs.macros', { p: meal.total_protein.toFixed(0), c: meal.total_carbs.toFixed(0), f: meal.total_fat.toFixed(0) })}</Text>
                                     </View>
                                 </View>
                             ))}
                         </View>
                     )}
+                    {onScanMeal ? (
+                        <TouchableOpacity onPress={onScanMeal} style={styles.logMealBtn} activeOpacity={0.85} testID="logs-scan-meal-button">
+                            <Camera size={16} color="#EA580C" />
+                            <Text style={styles.logMealBtnText}>{t('logs.logMeal')}</Text>
+                        </TouchableOpacity>
+                    ) : null}
                 </View>
 
                 {/* Symptoms Section */}
                 <View style={styles.card}>
-                    <Text style={[styles.cardLabel, styles.cardLabelWithMargin]}>Sintomas do Dia</Text>
+                    <Text style={[styles.cardLabel, styles.cardLabelWithMargin]}>{t('logs.symptomsTitle')}</Text>
                     <View style={styles.symptomsGrid}>
                         {symptoms.map((s) => (
                             <TouchableOpacity 
@@ -232,13 +247,13 @@ const NativeLogs = ({ user, setUser }) => {
                         <View style={styles.triggerField}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                                 <AlertCircle size={14} color="#EA580C" />
-                                <Text style={styles.triggerLabel}>Identificar Gatilho</Text>
+                                <Text style={styles.triggerLabel}>{t('logs.triggerLabel')}</Text>
                             </View>
                             <TextInput 
                                 style={styles.triggerInput}
                                 value={trigger}
                                 onChangeText={setTrigger}
-                                placeholder="Ex: Doce, gordura, cheiro forte..."
+                                placeholder={t('logs.triggerPlaceholder')}
                                 placeholderTextColor="#CBD5E1"
                             />
                         </View>
@@ -264,12 +279,12 @@ const NativeLogs = ({ user, setUser }) => {
 
                 {/* Daily Note */}
                 <View style={styles.card}>
-                    <Text style={[styles.cardLabel, styles.cardLabelWithMargin]}>Diário Rápido</Text>
+                    <Text style={[styles.cardLabel, styles.cardLabelWithMargin]}>{t('logs.quickNote')}</Text>
                     <TextInput 
                         style={styles.textArea}
                         multiline
                         numberOfLines={4}
-                        placeholder="Como você se sentiu hoje? Ex: Senti um pouco de tontura ao levantar..."
+                        placeholder={t('logs.notePlaceholder')}
                         placeholderTextColor="#CBD5E1"
                         value={note}
                         onChangeText={setNote}
@@ -281,40 +296,40 @@ const NativeLogs = ({ user, setUser }) => {
                     disabled={isSaving}
                     style={{ backgroundColor: '#0F172A', shadowColor: '#000', elevation: 4 }}
                 >
-                    {isSaving ? 'Salvando...' : 'Salvar Registro'}
+                    {isSaving ? t('common.saving') : t('logs.save')}
                 </Button>
             </ScrollView>
 
             {/* Modal: O que é Food Noise? */}
-            <Modal visible={showFoodNoiseInfo} onClose={() => setShowFoodNoiseInfo(false)} title="O que é Food Noise?">
+            <Modal visible={showFoodNoiseInfo} onClose={() => setShowFoodNoiseInfo(false)} title={t('logs.foodNoiseInfoTitle')}>
                 <View style={{ gap: 12, marginVertical: 16 }}>
                     <Text style={styles.modalText}>
-                        O "ruído alimentar" são aqueles pensamentos constantes e intrusivos sobre comida que podem dificultar o controle do peso.
+                        {t('logs.foodNoiseInfoIntro')}
                     </Text>
                     <View style={[styles.infoRowBadge, { backgroundColor: '#FFF7ED', borderColor: '#FFEDD5' }]}>
                         <Text style={[styles.infoRowBadgeVal, { color: '#EA580C' }]}>0-3</Text>
                         <Text style={styles.infoRowBadgeText}>
-                            <Text style={{ fontFamily: 'Outfit_700Bold', color: '#9A3412' }}>Silencioso: </Text>
-                            Você só pensa em comida quando está com fome física real.
+                            <Text style={{ fontFamily: 'Outfit_700Bold', color: '#9A3412' }}>{t('logs.quiet')}: </Text>
+                            {t('logs.quietDesc')}
                         </Text>
                     </View>
                     <View style={[styles.infoRowBadge, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
                         <Text style={[styles.infoRowBadgeVal, { color: '#D97706' }]}>4-7</Text>
                         <Text style={styles.infoRowBadgeText}>
-                            <Text style={{ fontFamily: 'Outfit_700Bold', color: '#78350F' }}>Moderado: </Text>
-                            Pensamentos ocasionais sobre comida ou desejo por snacks específicos.
+                            <Text style={{ fontFamily: 'Outfit_700Bold', color: '#78350F' }}>{t('logs.moderate')}: </Text>
+                            {t('logs.moderateDesc')}
                         </Text>
                     </View>
                     <View style={[styles.infoRowBadge, { backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' }]}>
                         <Text style={[styles.infoRowBadgeVal, { color: '#EF4444' }]}>8-10</Text>
                         <Text style={styles.infoRowBadgeText}>
-                            <Text style={{ fontFamily: 'Outfit_700Bold', color: '#7F1D1D' }}>Alto: </Text>
-                            Pensamentos constantes sobre a próxima refeição ou snacks.
+                            <Text style={{ fontFamily: 'Outfit_700Bold', color: '#7F1D1D' }}>{t('logs.high')}: </Text>
+                            {t('logs.highDesc')}
                         </Text>
                     </View>
                 </View>
                 <Button onClick={() => setShowFoodNoiseInfo(false)} style={{ width: '100%', marginBottom: 12 }}>
-                    Entendi
+                    {t('common.gotIt')}
                 </Button>
             </Modal>
         </SafeAreaView>
@@ -326,7 +341,8 @@ export default NativeLogs;
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#FAF7F2' },
     scroll: { padding: 24, paddingBottom: 110 },
-    title: { fontSize: 24, fontFamily: 'Outfit_900Black', color: '#0F172A', marginBottom: 24, marginTop: Platform.OS === 'android' ? 20 : 0 },
+    title: { fontSize: 24, fontFamily: 'Outfit_900Black', color: '#0F172A', marginBottom: 4, marginTop: Platform.OS === 'android' ? 20 : 0 },
+    todayDate: { fontSize: 14, fontFamily: 'Outfit_600SemiBold', color: '#EA580C', marginBottom: 20 },
     card: { 
         backgroundColor: '#FFFFFF', 
         borderRadius: 32, 
@@ -351,6 +367,8 @@ const styles = StyleSheet.create({
 
     emptyMealsText: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', lineHeight: 18 },
     mealList: { gap: 12 },
+    logMealBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, paddingVertical: 12, borderRadius: 16, backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: '#FFEDD5' },
+    logMealBtnText: { fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#EA580C' },
     mealRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     mealIconWrap: { width: 36, height: 36, borderRadius: 14, backgroundColor: '#FFF7ED', justifyContent: 'center', alignItems: 'center' },
     mealDate: { fontSize: 11, fontFamily: 'Outfit_700Bold', color: '#0F172A' },

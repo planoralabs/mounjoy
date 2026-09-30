@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { TouchableOpacity, Text, StyleSheet, View, TextInput, Platform, Dimensions, Modal as RNModal, PanResponder, Animated, Pressable, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 const { width, height } = Dimensions.get('window');
 
@@ -74,7 +75,9 @@ export const Input = ({ label, value, onChangeText, placeholder, ...props }) => 
     </View>
 );
 
-export const Slider = ({ label, value, onChange, min, max, step, suffix }) => {
+// `displayValue` overrides the big value in the header (e.g. 5′ 7″ while the
+// slider and text field work in inches).
+export const Slider = ({ label, value, onChange, min, max, step, suffix, displayValue }) => {
     const parsedValue = parseFloat(value) || min;
     const percentage = Math.max(0, Math.min(100, ((parsedValue - min) / (max - min)) * 100));
     
@@ -180,7 +183,7 @@ export const Slider = ({ label, value, onChange, min, max, step, suffix }) => {
                 <View style={styles.sliderHeaderValueRow}>
                     <Animated.View style={[styles.pulseDot, { opacity: pulseAnim }]} />
                     <Text style={styles.sliderValue}>
-                        {value} <Text style={styles.sliderValueSuffix}>{suffix}</Text>
+                        {displayValue ?? <>{value} <Text style={styles.sliderValueSuffix}>{suffix}</Text></>}
                     </Text>
                 </View>
             </View>
@@ -219,6 +222,7 @@ export const Slider = ({ label, value, onChange, min, max, step, suffix }) => {
 };
 
 export const Modal = ({ visible, onClose, title, children }) => {
+    const { t } = useTranslation();
     const [renderModal, setRenderModal] = useState(visible);
     const panY = useRef(new Animated.Value(600)).current;
 
@@ -294,7 +298,7 @@ export const Modal = ({ visible, onClose, title, children }) => {
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>{title}</Text>
                         <TouchableOpacity onPress={onClose}>
-                            <Text style={styles.closeText}>Fechar</Text>
+                            <Text style={styles.closeText}>{t('common.close')}</Text>
                         </TouchableOpacity>
                     </View>
                     <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>

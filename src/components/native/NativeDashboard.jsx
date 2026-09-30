@@ -21,6 +21,8 @@ import NativeBodySelector from './NativeBodySelector';
 import { MOCK_MEDICATIONS } from '../../constants/medications';
 import { ReminderService } from '../../services/ReminderService';
 import { suggestNextInjection, getSiteById } from '../../services/InjectionService';
+import { useTranslation } from 'react-i18next';
+import { unitsFor, formatDate, formatNumber } from '../../i18n';
 import Svg, { Path, Defs, LinearGradient, Stop, ClipPath, Rect } from 'react-native-svg';
 import { 
     ChevronLeft, 
@@ -132,14 +134,6 @@ const mascotHydratedImg = require('../../../assets/mascothydrated.png');
 const mascotZenImg = require('../../../assets/mascotzen.png');
 const mascotMirrorImg = require('../../../assets/mascotmirror.png');
 
-const TIPS = [
-    "Beba pelo menos 2.5L de água para ajudar os rins a processar a quebra de gordura.",
-    "Priorize proteínas em todas as refeições para evitar a perda de massa muscular.",
-    "Se sentir náusea, experimente comer porções menores e evitar frituras.",
-    "A constipação é comum; aumente a ingestão de fibras e considere um suplemento.",
-    "Mantenha um sono regular; o descanso é fundamental para o equilíbrio hormonal."
-];
-
 const SvgDroplet = ({ fillLevel }) => (
     <Svg viewBox="0 0 24 24" style={{ width: '100%', height: '100%' }}>
         <Defs>
@@ -178,6 +172,8 @@ const SvgDroplet = ({ fillLevel }) => (
 );
 
 const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
+    const { t } = useTranslation();
+    const units = unitsFor(user);
     const [simulatedDays, setSimulatedDays] = useState(0);
     const [showWeightModal, setShowWeightModal] = useState(false);
     const [newWeight, setNewWeight] = useState('');
@@ -211,15 +207,6 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
         setShowProtocolModal(false);
         setShowDoseModal(true);
     };
-
-    const siteOptions = [
-        { id: 'arm-right', name: 'Braço Direito' },
-        { id: 'arm-left', name: 'Braço Esquerdo' },
-        { id: 'abdomen-left', name: 'Abdômen Esquerdo' },
-        { id: 'abdomen-right', name: 'Abdômen Direito' },
-        { id: 'thigh-right', name: 'Coxa Direita' },
-        { id: 'thigh-left', name: 'Coxa Esquerda' }
-    ];
 
     useEffect(() => {
         if (user.photos && user.photos.length > 0) {
@@ -265,7 +252,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
     const handlePhotoPick = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permissionResult.granted === false) {
-            alert("Você precisa permitir acesso à galeria de fotos para adicionar imagens!");
+            alert(t('dashboard.photoPermission'));
             return;
         }
 
@@ -335,11 +322,11 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
     const isFiberComplete = fiberPercentage >= 100;
 
     const reminder = ReminderService.calculateNextDose(user.doseHistory || [], 7, getSimulatedDate());
-    const timeRemaining = ReminderService.formatTimeRemaining(reminder.daysRemaining, reminder.status);
+    const timeRemaining = ReminderService.formatTimeRemaining(reminder.daysRemaining, reminder.status, t);
 
     const cycleInfo = useMemo(() => {
         const lastDose = user.doseHistory?.[0];
-        if (!lastDose) return { message: "Nenhuma dose registrada ainda.", level: 0, color: "#64748B", daysSinceDose: 7 };
+        if (!lastDose) return { messageKey: 'dashboard.cycle.noDose', level: 0, color: "#64748B", daysSinceDose: 7 };
 
         const lastDoseDate = new Date(lastDose.date);
         const todayDate = getSimulatedDate();
@@ -347,20 +334,20 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
 
         const drugLevel = Math.exp(-0.138 * daysSinceDose) * 100;
 
-        let message = "";
+        let messageKey = '';
         let color = "#EA580C";
         if (daysSinceDose <= 2) {
-            message = "Fase de Pico: Priorize refeições leves.";
+            messageKey = 'dashboard.cycle.peak';
             color = "#EA580C";
         } else if (daysSinceDose >= 6) {
-            message = "Nível Baixo: O Food Noise pode aumentar. Mantenha o foco!";
+            messageKey = 'dashboard.cycle.low';
             color = "#F97316";
         } else {
-            message = "Nível Estável: Aproveite para focar em treinos de força.";
+            messageKey = 'dashboard.cycle.stable';
             color = "#2563EB";
         }
 
-        return { message, level: drugLevel, color, daysSinceDose };
+        return { messageKey, level: drugLevel, color, daysSinceDose };
     }, [user.doseHistory, simulatedDays]);
 
     const fillLevel = isApplied ? 100 : Math.max(8, Math.min(100, ((7 - cycleInfo.daysSinceDose) / 7) * 100));
@@ -531,7 +518,9 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
     const updateWeight = () => {
         if (!newWeight) return;
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        const weightValue = parseFloat(newWeight);
+        // Typed in the user's unit (kg or lb); always stored in kg.
+        const weightValue = Math.round(units.weightToKg(parseFloat(newWeight)) * 100) / 100;
+        if (!weightValue) return;
         const now = new Date().toISOString();
 
         setUser({
@@ -561,8 +550,9 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
             dose: user.currentDose,
             medication: user.medicationId,
             siteId: isOral ? null : siteId,
-            area: isOral ? 'Oral' : site?.area || 'Abdômen',
-            side: isOral ? 'N/A' : site?.side || 'E'
+            site: isOral ? 'oral' : siteId,
+            area: isOral ? 'oral' : site?.area || 'abdomen',
+            side: isOral ? null : site?.side || 'left'
         };
 
         setUser({
@@ -580,8 +570,6 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
     };
 
     const startWeight = user.history?.[0] || user.currentWeight || 80.0;
-    const progress5Percent = Math.min(100, Math.max(0, ((startWeight - user.currentWeight) / (startWeight * 0.05)) * 100));
-    const progress10Percent = Math.min(100, Math.max(0, ((startWeight - user.currentWeight) / (startWeight * 0.10)) * 100));
 
     const dailyTip = useMemo(() => {
         const now = getSimulatedDate();
@@ -589,8 +577,9 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
         const diff = now - start;
         const oneDay = 1000 * 60 * 60 * 24;
         const day = Math.floor(diff / oneDay);
-        return TIPS[day % TIPS.length];
-    }, [simulatedDays]);
+        const tips = t('dashboard.tips', { returnObjects: true });
+        return Array.isArray(tips) ? tips[day % tips.length] : null;
+    }, [simulatedDays, t]);
 
     const weekNumber = useMemo(() => {
         if (!user.startDate) return 1;
@@ -624,8 +613,8 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                 {/* Header Section */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.greeting}>Oi, {user.name || 'Usuário'}! 🎈</Text>
-                        <Text style={styles.subtitle}>Você está arrasando na {weekNumber}ª semana de {medication?.name || 'Protocolo'}!</Text>
+                        <Text style={styles.greeting}>{user.name ? t('dashboard.greeting', { name: user.name }) : t('dashboard.greetingNoName')}</Text>
+                        <Text style={styles.subtitle}>{t('dashboard.weekSubtitle', { week: weekNumber, medication: medication?.name || t('dashboard.protocolFallback') })}</Text>
                     </View>
                     <TouchableOpacity 
                         style={styles.avatar}
@@ -640,10 +629,10 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                     <View style={styles.guestCard}>
                         <Image source={mascotRememberImg} style={styles.guestMascot} resizeMode="contain" />
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.guestTitle}>Salve seu progresso</Text>
-                            <Text style={styles.guestText}>Seus dados estão só neste aparelho. Crie uma conta grátis para não perder nada!</Text>
+                            <Text style={styles.guestTitle}>{t('dashboard.guestTitle')}</Text>
+                            <Text style={styles.guestText}>{t('dashboard.guestText')}</Text>
                             <TouchableOpacity onPress={onCreateAccount} style={styles.guestBtn} testID="guest-create-account-button">
-                                <Text style={styles.guestBtnText}>Criar conta e salvar</Text>
+                                <Text style={styles.guestBtnText}>{t('dashboard.guestButton')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -661,9 +650,9 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                                     <Image source={mascotFoodNoiseImg} style={styles.bannerIconMascot} resizeMode="contain" />
                                 </View>
                                 <View style={styles.bannerTextContainer}>
-                                    <Text style={styles.bannerTagline}>Cuidado com o Food Noise 🎈</Text>
-                                    <Text style={styles.bannerTitle}>Mantenha o foco!</Text>
-                                    <Text style={styles.bannerDesc}>Sua dose está baixando. Priorize as proteínas agora!</Text>
+                                    <Text style={styles.bannerTagline}>{t('dashboard.foodNoiseTagline')}</Text>
+                                    <Text style={styles.bannerTitle}>{t('dashboard.foodNoiseTitle')}</Text>
+                                    <Text style={styles.bannerDesc}>{t('dashboard.foodNoiseDesc')}</Text>
                                 </View>
                             </View>
                         </View>
@@ -672,9 +661,9 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                     <View style={styles.doseBanner}>
                         <Image source={mascotZenImg} style={styles.doseBannerMascot} resizeMode="contain" />
                         <View style={styles.doseBannerTextContainer}>
-                            <Text style={styles.doseBannerTagline}>Dia de Brilhar 💉</Text>
-                            <Text style={styles.doseBannerTitle}>Dia da sua dose!</Text>
-                            <Text style={styles.doseBannerDesc}>Prepare tudo com calma e respire fundo. Você está indo bem!</Text>
+                            <Text style={styles.doseBannerTagline}>{t('dashboard.doseDayTagline')}</Text>
+                            <Text style={styles.doseBannerTitle}>{t('dashboard.doseDayTitle')}</Text>
+                            <Text style={styles.doseBannerDesc}>{t('dashboard.doseDayDesc')}</Text>
                         </View>
                     </View>
                 ) : null}
@@ -688,9 +677,9 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                         <ChevronLeft size={20} color="#94A3B8" />
                     </TouchableOpacity>
                     <View style={styles.simulatorInfo}>
-                        <Text style={styles.simulatorLabel}>Simulador</Text>
+                        <Text style={styles.simulatorLabel}>{t('dashboard.simulator')}</Text>
                         <Text style={styles.simulatorVal}>
-                            {simulatedDays === 0 ? "Tempo Real" : `${simulatedDays > 0 ? '+' : ''}${simulatedDays} Dias`}
+                            {simulatedDays === 0 ? t('dashboard.realTime') : t('dashboard.simulatedDays', { count: Math.abs(simulatedDays), value: `${simulatedDays > 0 ? '+' : ''}${simulatedDays}` })}
                         </Text>
                     </View>
                     <TouchableOpacity 
@@ -719,7 +708,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                                     />
                                 </TouchableOpacity>
                                 <View style={styles.photoHeaderOverlay}>
-                                    <Text style={styles.photoHeaderTag}>Sua Evolução</Text>
+                                    <Text style={styles.photoHeaderTag}>{t('dashboard.yourProgress')}</Text>
                                     <TouchableOpacity 
                                         onPress={handlePhotoPick}
                                         style={styles.photoAddBtnSmall}
@@ -731,11 +720,11 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                                 <View style={styles.photoFooterOverlay}>
                                     <View style={styles.photoBadgeRow}>
                                         <Text style={styles.photoBadgeText}>
-                                            {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(new Date(user.photos[currentPhotoIndex].date || new Date())).replace('/', '-')}
+                                            {formatDate(user.photos[currentPhotoIndex].date || new Date(), { day: '2-digit', month: '2-digit' }).replace('/', '-')}
                                         </Text>
                                         {getPhotoWeight(user.photos[currentPhotoIndex].date) && (
                                             <Text style={styles.photoBadgeText}>
-                                                {getPhotoWeight(user.photos[currentPhotoIndex].date)}kg
+                                                {units.formatWeight(getPhotoWeight(user.photos[currentPhotoIndex].date))}
                                             </Text>
                                         )}
                                     </View>
@@ -782,8 +771,8 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                                 <View style={styles.cameraIconBox}>
                                     <Camera size={24} color="#94A3B8" />
                                 </View>
-                                <Text style={styles.photoGalleryLabel}>Sua Evolução</Text>
-                                <Text style={styles.photoGallerySubLabel}>Adicionar foto</Text>
+                                <Text style={styles.photoGalleryLabel}>{t('dashboard.yourProgress')}</Text>
+                                <Text style={styles.photoGallerySubLabel}>{t('dashboard.addPhoto')}</Text>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -795,10 +784,10 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                         </View>
                         
                         <View style={styles.weightHeaderRow}>
-                            <Text style={styles.weightCardLabel}>Progresso</Text>
+                            <Text style={styles.weightCardLabel}>{t('dashboard.progress')}</Text>
                             <TouchableOpacity 
                                 onPress={() => {
-                                    setNewWeight(user.currentWeight.toString());
+                                    setNewWeight(String(units.weight(user.currentWeight)));
                                     setShowWeightModal(true);
                                 }}
                                 style={styles.weightPlusBtn}
@@ -808,15 +797,15 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                         </View>
                         
                         <View style={styles.weightMetricContainer}>
-                            <Text style={styles.weightBigValue}>{user.currentWeight}</Text>
-                            <Text style={styles.weightMetricSuffix}>kg</Text>
+                            <Text style={styles.weightBigValue}>{units.formatWeightValue(user.currentWeight)}</Text>
+                            <Text style={styles.weightMetricSuffix}>{units.weightUnit}</Text>
                         </View>
 
                         <View style={styles.weightGaugesContainer}>
                             {/* Protein gauge */}
                             <View style={styles.weightGauge}>
                                 <View style={styles.weightGaugeHeader}>
-                                    <Text style={styles.weightGaugeLabel}>Proteína</Text>
+                                    <Text style={styles.weightGaugeLabel}>{t('nutrients.protein')}</Text>
                                     <Text style={styles.weightGaugeValue}>{dailyData.protein}/{proteinGoal}g</Text>
                                 </View>
                                 <View style={styles.weightGaugeTrack}>
@@ -827,8 +816,8 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                             {/* Water gauge */}
                             <View style={styles.weightGauge}>
                                 <View style={styles.weightGaugeHeader}>
-                                    <Text style={styles.weightGaugeLabel}>Água</Text>
-                                    <Text style={styles.weightGaugeValue}>{dailyData.water}/{waterGoal}L</Text>
+                                    <Text style={styles.weightGaugeLabel}>{t('nutrients.water')}</Text>
+                                    <Text style={styles.weightGaugeValue}>{units.formatVolumeValue(dailyData.water)}/{units.formatVolume(waterGoal)}</Text>
                                 </View>
                                 <View style={styles.weightGaugeTrack}>
                                     <View style={[styles.weightGaugeFill, { backgroundColor: '#3B82F6', width: `${waterPercentage}%` }]} />
@@ -838,7 +827,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                             {/* Fiber gauge */}
                             <View style={styles.weightGauge}>
                                 <View style={styles.weightGaugeHeader}>
-                                    <Text style={styles.weightGaugeLabel}>Fibra</Text>
+                                    <Text style={styles.weightGaugeLabel}>{t('nutrients.fiber')}</Text>
                                     <Text style={styles.weightGaugeValue}>{dailyData.fiber}/{fiberGoal}g</Text>
                                 </View>
                                 <View style={styles.weightGaugeTrack}>
@@ -860,14 +849,14 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                             <View style={styles.injectionInfoCol}>
                                 <View style={styles.injectionHeaderRow}>
                                     <Text style={styles.injectionLabel}>
-                                        {isApplied ? 'Finalizado' : 'Próxima Dose'}
+                                        {isApplied ? t('dashboard.finished') : t('dashboard.nextDose')}
                                     </Text>
                                     <View style={styles.weekBadge}>
-                                        <Text style={styles.weekBadgeText}>Semana {weekNumber}</Text>
+                                        <Text style={styles.weekBadgeText}>{t('dashboard.week', { week: weekNumber })}</Text>
                                     </View>
                                 </View>
                                 <Text style={styles.injectionBigTitle}>
-                                    {isApplied ? 'Sucesso! 🎈' : (timeRemaining === 'Hoje!' ? "Hoje!" : `Em ${timeRemaining}`)}
+                                    {isApplied ? t('dashboard.success') : (reminder.status === 'due_today' || reminder.status === 'overdue' || reminder.daysRemaining === 1 ? timeRemaining : t('dashboard.inTime', { time: timeRemaining }))}
                                 </Text>
                             </View>
 
@@ -887,7 +876,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                                             <SvgDroplet fillLevel={fillLevel} />
                                         </View>
                                         <Text style={styles.physicalBtnText}>
-                                            {isApplied ? 'Sucesso!' : 'Registrar Dose'}
+                                            {isApplied ? t('dashboard.successShort') : t('dashboard.logDose')}
                                         </Text>
                                     </View>
                                 </View>
@@ -896,7 +885,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
 
                         <View style={styles.medDetailsBox}>
                             <View>
-                                <Text style={styles.medDetailsLabel}>Seu Protocolo</Text>
+                                <Text style={styles.medDetailsLabel}>{t('dashboard.yourProtocol')}</Text>
                                 <Text style={styles.medDetailsName}>{medication.name}</Text>
                             </View>
                             <View style={styles.dosePill}>
@@ -911,16 +900,16 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                                     onPress={() => setShowDoseModal(true)}
                                     activeOpacity={0.8}
                                 >
-                                    <Text style={styles.suggestedSiteLabel}>Local Sugerido</Text>
+                                    <Text style={styles.suggestedSiteLabel}>{t('dashboard.suggestedSite')}</Text>
                                     <View style={styles.suggestedSiteValueRow}>
                                         <Text style={styles.suggestedSiteIcon}>📍</Text>
-                                        <Text style={styles.suggestedSiteText}>{injectionSuggestion.label}</Text>
+                                        <Text style={styles.suggestedSiteText}>{t(`sitesShort.${injectionSuggestion.id}`)}</Text>
                                     </View>
                                 </TouchableOpacity>
 
                                 <View style={styles.cycleTipCard}>
-                                    <Text style={styles.cycleTipLabel}>Dica de Ciclo</Text>
-                                    <Text style={styles.cycleTipText}>{cycleInfo.message}</Text>
+                                    <Text style={styles.cycleTipLabel}>{t('dashboard.cycleTip')}</Text>
+                                    <Text style={styles.cycleTipText}>{t(cycleInfo.messageKey)}</Text>
                                 </View>
                             </View>
                         )}
@@ -935,8 +924,8 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                                 <TrendingUp size={20} color="#D97706" />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.alertTitlePlateau}>Alerta de Platô</Text>
-                                <Text style={styles.alertDescPlateau}>Peso estável há 14 dias. Tente variar a rotina de exercícios ou hidratação.</Text>
+                                <Text style={styles.alertTitlePlateau}>{t('dashboard.plateauTitle')}</Text>
+                                <Text style={styles.alertDescPlateau}>{t('dashboard.plateauDesc')}</Text>
                             </View>
                         </View>
                     )}
@@ -947,8 +936,8 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                                 <Zap size={20} color="#EA580C" />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.alertTitleLowHunger}>Baixa Fome Detectada</Text>
-                                <Text style={styles.alertDescLowHunger}>Priorize refeições leves e densas em proteína: ovos, iogurte ou shake.</Text>
+                                <Text style={styles.alertTitleLowHunger}>{t('dashboard.lowHungerTitle')}</Text>
+                                <Text style={styles.alertDescLowHunger}>{t('dashboard.lowHungerDesc')}</Text>
                             </View>
                         </View>
                     )}
@@ -964,17 +953,17 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                         <Camera size={20} color="#EA580C" />
                     </View>
                     <View style={{ flex: 1 }}>
-                        <Text style={styles.mealScanTitle}>Escanear Refeição</Text>
-                        <Text style={styles.mealScanSubtitle}>Tire uma foto e identifique os alimentos</Text>
+                        <Text style={styles.mealScanTitle}>{t('dashboard.mealScanTitle')}</Text>
+                        <Text style={styles.mealScanSubtitle}>{t('dashboard.mealScanSubtitle')}</Text>
                     </View>
                 </TouchableOpacity>
 
                 {/* Daily wellness Snap Carousel */}
                 <View style={styles.carouselHeader}>
-                    <Text style={styles.carouselTitle}>Meta do Dia</Text>
+                    <Text style={styles.carouselTitle}>{t('dashboard.dailyGoal')}</Text>
                     <View style={styles.rateBadge}>
                         <Text style={styles.rateBadgeText}>
-                            Taxa: {((startWeight - user.currentWeight) / Math.max(1, weekNumber)).toFixed(2)} kg/sem
+                            {t('dashboard.rate', { value: units.formatWeight((startWeight - user.currentWeight) / Math.max(1, weekNumber), 2) })}
                         </Text>
                     </View>
                 </View>
@@ -995,8 +984,8 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                         {showWaterConfetti && <ConfettiContainer />}
                         
                         <View style={styles.cardHeader}>
-                            <Text style={[styles.cardTitleText, isWaterComplete && { color: '#FFFFFF' }]}>ÁGUA</Text>
-                            <Text style={[styles.cardGoalText, isWaterComplete && { color: 'rgba(255,255,255,0.8)' }]}>{waterGoal} L/Dia</Text>
+                            <Text style={[styles.cardTitleText, isWaterComplete && { color: '#FFFFFF' }]}>{t('nutrients.water').toLocaleUpperCase()}</Text>
+                            <Text style={[styles.cardGoalText, isWaterComplete && { color: 'rgba(255,255,255,0.8)' }]}>{t('units.perDay', { value: units.formatVolume(waterGoal) })}</Text>
                         </View>
 
                         <View style={styles.cardIconWrapper}>
@@ -1036,7 +1025,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                         )}
 
                         <View style={styles.cardProgressRow}>
-                            <Text style={[styles.cardProgressValue, isWaterComplete && { color: '#FFFFFF' }]}>{dailyData.water}</Text>
+                            <Text style={[styles.cardProgressValue, isWaterComplete && { color: '#FFFFFF' }]}>{units.formatVolumeValue(dailyData.water)}</Text>
                             <View style={[styles.cardProgressBarTrack, isWaterComplete ? { backgroundColor: 'rgba(255,255,255,0.2)' } : { backgroundColor: '#EFF6FF' }]}>
                                 <View style={[styles.cardProgressBarFill, { backgroundColor: isWaterComplete ? '#FFFFFF' : '#3B82F6', width: `${waterPercentage}%` }]} />
                             </View>
@@ -1068,8 +1057,8 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                         {showProteinConfetti && <ConfettiContainer />}
                         
                         <View style={styles.cardHeader}>
-                            <Text style={[styles.cardTitleText, isProteinComplete && { color: '#FFFFFF' }]}>PROTEÍNA</Text>
-                            <Text style={[styles.cardGoalText, isProteinComplete && { color: 'rgba(255,255,255,0.8)' }]}>{proteinGoal} g/Dia</Text>
+                            <Text style={[styles.cardTitleText, isProteinComplete && { color: '#FFFFFF' }]}>{t('nutrients.protein').toLocaleUpperCase()}</Text>
+                            <Text style={[styles.cardGoalText, isProteinComplete && { color: 'rgba(255,255,255,0.8)' }]}>{t('units.perDay', { value: `${proteinGoal} g` })}</Text>
                         </View>
 
                         <View style={styles.cardIconWrapper}>
@@ -1141,8 +1130,8 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                         {showFiberConfetti && <ConfettiContainer />}
                         
                         <View style={styles.cardHeader}>
-                            <Text style={[styles.cardTitleText, isFiberComplete && { color: '#FFFFFF' }]}>FIBRA</Text>
-                            <Text style={[styles.cardGoalText, isFiberComplete && { color: 'rgba(255,255,255,0.8)' }]}>{fiberGoal} g/Dia</Text>
+                            <Text style={[styles.cardTitleText, isFiberComplete && { color: '#FFFFFF' }]}>{t('nutrients.fiber').toLocaleUpperCase()}</Text>
+                            <Text style={[styles.cardGoalText, isFiberComplete && { color: 'rgba(255,255,255,0.8)' }]}>{t('units.perDay', { value: `${fiberGoal} g` })}</Text>
                         </View>
 
                         <View style={styles.cardIconWrapper}>
@@ -1207,36 +1196,6 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                     </View>
                 </ScrollView>
 
-                {/* Success Milestones Card */}
-                <View style={styles.milestonesCard}>
-                    <View style={styles.milestonesHeader}>
-                        <View style={styles.milestonesIconBox}>
-                            <Image source={mascotAchieveImg} style={styles.milestonesIcon} resizeMode="contain" />
-                        </View>
-                        <Text style={styles.milestonesTitle}>Marcos de Sucesso</Text>
-                    </View>
-                    
-                    <View style={styles.milestoneItem}>
-                        <View style={styles.milestoneLabelRow}>
-                            <Text style={styles.milestoneName}>Meta 5% Clinicamente Significativa</Text>
-                            <Text style={styles.milestoneTarget}>{(startWeight * 0.95).toFixed(1)} kg</Text>
-                        </View>
-                        <View style={styles.milestoneProgressTrack}>
-                            <View style={[styles.milestoneProgressFill, { width: `${progress5Percent}%` }]} />
-                        </View>
-                    </View>
-
-                    <View style={styles.milestoneItem}>
-                        <View style={styles.milestoneLabelRow}>
-                            <Text style={styles.milestoneName}>Meta 10% Transformação Metabólica</Text>
-                            <Text style={styles.milestoneTarget}>{(startWeight * 0.90).toFixed(1)} kg</Text>
-                        </View>
-                        <View style={styles.milestoneProgressTrack}>
-                            <View style={[styles.milestoneProgressFill, { width: `${progress10Percent}%` }]} />
-                        </View>
-                    </View>
-                </View>
-
                 {/* Daily Tip box */}
                 {dailyTip && (
                     <View style={styles.tipCard}>
@@ -1244,7 +1203,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                             <Info size={20} color="#3B82F6" />
                         </View>
                         <View style={styles.tipContent}>
-                            <Text style={styles.tipTitle}>Dica do Dia</Text>
+                            <Text style={styles.tipTitle}>{t('dashboard.tipOfDay')}</Text>
                             <Text style={styles.tipDesc}>{dailyTip}</Text>
                         </View>
                     </View>
@@ -1252,19 +1211,19 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
             </ScrollView>
 
             {/* Modal: Atualizar Peso */}
-            <Modal visible={showWeightModal} onClose={() => setShowWeightModal(false)} title="Atualizar Peso">
+            <Modal visible={showWeightModal} onClose={() => setShowWeightModal(false)} title={t('dashboard.updateWeightTitle')}>
                 <View style={styles.modalWeightStatusCard}>
                     <View style={styles.modalWeightCol}>
-                        <Text style={styles.modalWeightBadgeLabel}>Anterior</Text>
-                        <Text style={styles.modalWeightBadgeVal}>{user.currentWeight}kg</Text>
+                        <Text style={styles.modalWeightBadgeLabel}>{t('dashboard.previous')}</Text>
+                        <Text style={styles.modalWeightBadgeVal}>{units.formatWeight(user.currentWeight)}</Text>
                     </View>
                     <Image source={scalerImg} style={styles.modalScalerImg} resizeMode="contain" />
                 </View>
 
                 <View style={{ marginBottom: 20 }}>
                     <Input 
-                        label="Novo Peso (kg)" 
-                        placeholder="Ex: 80.5" 
+                        label={t('dashboard.newWeight', { unit: units.weightUnit })} 
+                        placeholder={t('common.example', { value: formatNumber(units.imperial ? 177.5 : 80.5) })} 
                         value={newWeight} 
                         onChangeText={setNewWeight}
                         keyboardType="numeric"
@@ -1272,18 +1231,18 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                 </View>
                 
                 <Button onClick={updateWeight} style={{ width: '100%', marginBottom: 12 }}>
-                    Confirmar Peso
+                    {t('dashboard.confirmWeight')}
                 </Button>
                 <TouchableOpacity onPress={() => setShowWeightModal(false)} style={styles.cancelBtn}>
-                    <Text style={styles.cancelBtnText}>Cancelar</Text>
+                    <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
             </Modal>
 
             {/* Modal: Protocolo de Aplicação (Registrar Dose) */}
-            <Modal visible={showDoseModal} onClose={() => setShowDoseModal(false)} title="Protocolo de Aplicação">
+            <Modal visible={showDoseModal} onClose={() => setShowDoseModal(false)} title={t('dashboard.doseModalTitle')}>
                     <View style={styles.modalWeightStatusCard}>
                         <View style={styles.modalWeightCol}>
-                            <Text style={styles.modalWeightBadgeLabel}>Medicamento & Dose</Text>
+                            <Text style={styles.modalWeightBadgeLabel}>{t('dashboard.medAndDose')}</Text>
                             <Text style={styles.modalWeightBadgeVal}>
                                 {medication?.name} <Text style={{ fontSize: 16, color: '#EA580C', fontFamily: 'Outfit_700Bold' }}>{user.currentDose}</Text>
                             </Text>
@@ -1304,7 +1263,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                                 borderRadius: 12,
                             }}
                         >
-                            <Text style={{ fontSize: 11, fontFamily: 'Outfit_900Black', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.5 }}>Mudar</Text>
+                            <Text style={{ fontSize: 11, fontFamily: 'Outfit_900Black', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('dashboard.change')}</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -1313,15 +1272,15 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                         <View style={styles.warningBox}>
                             <AlertCircle size={20} color="#EA580C" style={{ marginTop: 2 }} />
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.warningTitle}>Intervalo Reduzido</Text>
+                                <Text style={styles.warningTitle}>{t('dashboard.reducedIntervalTitle')}</Text>
                                 <Text style={styles.warningText}>
-                                    Faltam apenas {cycleInfo.daysSinceDose} dias desde sua última dose. Aplicar o medicamento antes do intervalo de 6-7 dias pode aumentar os riscos de efeitos colaterais e sobrecarga. Deseja prosseguir mesmo assim?
+                                    {t('dashboard.reducedIntervalText', { count: cycleInfo.daysSinceDose })}
                                 </Text>
                             </View>
                         </View>
                     )}
 
-                    <Text style={styles.modalSubLabelText}>Selecione o local de hoje</Text>
+                    <Text style={styles.modalSubLabelText}>{t('dashboard.selectSite')}</Text>
                     <View style={{ marginVertical: 12, width: '100%' }}>
                         <NativeBodySelector 
                             selectedSiteId={selectedSiteId || injectionSuggestion.id}
@@ -1332,12 +1291,12 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
 
                     <View style={styles.tipBox}>
                         <Text style={styles.tipText}>
-                            * A rotação dos locais é fundamental para evitar lipodistrofia e garantir a absorção correta do medicamento.
+                            {t('dashboard.rotationTip')}
                         </Text>
                     </View>
 
                     <Button onClick={handleConfirmInjection} style={{ width: '100%', marginTop: 16 }} testID="body-map-confirm-button">
-                        Confirmar Aplicação
+                        {t('dashboard.confirmDose')}
                     </Button>
             </Modal>
 
@@ -1365,7 +1324,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
 
                         {/* Top bar with tag & actions */}
                         <View style={styles.fullscreenHeaderModal}>
-                            <Text style={styles.fullscreenHeaderTag}>Sua Evolução</Text>
+                            <Text style={styles.fullscreenHeaderTag}>{t('dashboard.yourProgress')}</Text>
                             <View style={{ flexDirection: 'row', gap: 12 }}>
                                 <TouchableOpacity onPress={deletePhoto} style={styles.fullscreenDeleteBtn}>
                                     <Trash2 size={18} color="#FFFFFF" />
@@ -1379,7 +1338,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                         <View style={styles.fullscreenFooter}>
                             {user.photos && user.photos.length > 0 && (
                                 <Text style={styles.fullscreenDateText}>
-                                    {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(user.photos[currentPhotoIndex].date || new Date()))}
+                                    {formatDate(user.photos[currentPhotoIndex].date || new Date(), { day: '2-digit', month: 'long', year: 'numeric' })}
                                 </Text>
                             )}
 
@@ -1414,20 +1373,20 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
             </RNModal>
 
             {/* Modal: Configurar Protocolo */}
-            <Modal visible={showProtocolModal} onClose={() => { setShowProtocolModal(false); setTimeout(() => { setShowDoseModal(true); }, 300); }} title="Configurar Protocolo">
+            <Modal visible={showProtocolModal} onClose={() => { setShowProtocolModal(false); setTimeout(() => { setShowDoseModal(true); }, 300); }} title={t('protocol.title')}>
                 <View style={styles.routeSelectorRow}>
                     <TouchableOpacity onPress={() => setRouteFilter('all')} style={[styles.routeBtn, routeFilter === 'all' && styles.routeBtnActive]}>
-                        <Text style={[styles.routeBtnText, routeFilter === 'all' && styles.routeBtnTextActive]}>Todos</Text>
+                        <Text style={[styles.routeBtnText, routeFilter === 'all' && styles.routeBtnTextActive]}>{t('protocol.all')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setRouteFilter('injectable')} style={[styles.routeBtn, routeFilter === 'injectable' && styles.routeBtnActive]}>
-                        <Text style={[styles.routeBtnText, routeFilter === 'injectable' && styles.routeBtnTextActive]}>Injetável</Text>
+                        <Text style={[styles.routeBtnText, routeFilter === 'injectable' && styles.routeBtnTextActive]}>{t('protocol.injectable')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setRouteFilter('oral')} style={[styles.routeBtn, routeFilter === 'oral' && styles.routeBtnActive]}>
-                        <Text style={[styles.routeBtnText, routeFilter === 'oral' && styles.routeBtnTextActive]}>Via Oral</Text>
+                        <Text style={[styles.routeBtnText, routeFilter === 'oral' && styles.routeBtnTextActive]}>{t('protocol.oral')}</Text>
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.modalSubLabelText}>Medicamento</Text>
+                <Text style={styles.modalSubLabelText}>{t('protocol.medication')}</Text>
                 <View style={styles.medGrid}>
                     {filteredMeds.map(med => (
                         <TouchableOpacity 
@@ -1443,7 +1402,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                     ))}
                 </View>
 
-                <Text style={styles.modalSubLabelText}>Dosagem</Text>
+                <Text style={styles.modalSubLabelText}>{t('protocol.dosage')}</Text>
                 <View style={styles.doseGrid}>
                     {currentMedInfo?.doses.map(dose => (
                         <TouchableOpacity 
@@ -1460,7 +1419,7 @@ const NativeDashboard = ({ user, setUser, setActiveTab, onCreateAccount }) => {
                 </View>
 
                 <Button onClick={handleUpdateProtocol} style={{ width: '100%', marginTop: 16 }}>
-                    Salvar Alterações
+                    {t('protocol.save')}
                 </Button>
             </Modal>
         </SafeAreaView>
@@ -1767,19 +1726,6 @@ const styles = StyleSheet.create({
     cardActionRow: { flexDirection: 'row', gap: 12, zIndex: 10 },
     cardActionBtn: { flex: 1, height: 48, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
     cardActionBtnText: { fontSize: 20, fontFamily: 'Outfit_700Bold' },
-
-    // Milestones
-    milestonesCard: { backgroundColor: '#FFFFFF', padding: 20, borderRadius: 36, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#F1F5F9', marginBottom: 20 },
-    milestonesHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
-    milestonesIconBox: { width: 24, height: 24, borderRadius: 8, backgroundColor: '#FFF7ED', justifyContent: 'center', alignItems: 'center' },
-    milestonesIcon: { width: 14, height: 14 },
-    milestonesTitle: { fontSize: 12, fontFamily: 'Outfit_900Black', color: '#EA580C', textTransform: 'uppercase', letterSpacing: 1 },
-    milestoneItem: { marginBottom: 16 },
-    milestoneLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-    milestoneName: { fontSize: 9, fontFamily: 'Outfit_900Black', color: '#1E293B', textTransform: 'uppercase' },
-    milestoneTarget: { fontSize: 10, fontFamily: 'Outfit_700Bold', color: '#94A3B8' },
-    milestoneProgressTrack: { height: 12, backgroundColor: '#FAF7F2', borderRadius: 6, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden' },
-    milestoneProgressFill: { height: '100%', backgroundColor: '#EA580C', borderRadius: 6 },
 
     // Tips Card
     tipCard: { backgroundColor: '#EFF6FF', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#DBEAFE', flexDirection: 'row', gap: 12, alignItems: 'start' },

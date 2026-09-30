@@ -27,12 +27,12 @@ export async function completeGuestOnboarding(page, { name = 'Visitante Teste' }
     await next.click(); // 3 (peso/altura, padrões) -> 4
     await next.click(); // 4 (meta, padrão) -> 5
 
-    await page.getByTestId('onboarding-substance-Semaglutida').click();
+    await page.getByTestId('onboarding-substance-semaglutide').click();
     await page.getByTestId('onboarding-medication-ozempic').click();
     await next.click(); // 5 (medicamento) -> 6
 
     await page.getByTestId('onboarding-dose-0.5 mg').click();
-    await page.getByTestId('onboarding-day-Segunda').click();
+    await page.getByTestId('onboarding-day-1').click(); // 1 = segunda-feira
     await next.click(); // 6 (dose e dia) -> finaliza
 
     await expect(page.getByTestId('main-app-screen')).toBeVisible();

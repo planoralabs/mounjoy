@@ -376,8 +376,27 @@ porções — inclusive nos pesos estimados desta nova feature (o Gemini
 sempre estima em gramas internamente; a UI converte pra oz se o usuário
 estiver em `imperial`).
 
-Ainda não implementado — hoje o onboarding (`NativeOnboarding.jsx`/
-`Onboarding.jsx`) só aceita peso/altura sem escolha de sistema.
+**Implementado (2026-09-30).** O passo de unidades do onboarding vem
+pré-selecionado pelo sistema de medidas do aparelho (`expo-localization`:
+iOS respeita Ajustes › Idioma e Região; Android deriva da região; na web
+usa a região do navegador — `src/i18n/resolve.js`), e o usuário pode trocar
+depois em Perfil › Sistema de Medidas. O armazenamento continua sempre
+métrico (kg, m, cm, L, g); toda conversão de exibição/entrada passa por
+`src/utils/units.js` (`unitsFor(user)` em `src/i18n`). Imperial exibe
+lb, ft/in, in, fl oz e oz.
+
+### 7.6.1 Idiomas (i18n)
+
+O app não tem seletor de idioma: segue o idioma do aparelho (ou o
+"idioma por app" do iOS / Android 13+). Traduções em
+`src/i18n/locales/*.json` (i18next + react-i18next); idioma sem tradução
+cai em inglês. Idiomas ativos: en, pt, es, fr, de, it (as páginas das
+lojas começam só em en e pt). Datas e números usam `formatDate` /
+`formatNumber` de `src/i18n`, nunca `'pt-BR'` fixo. Valores gravados são
+chaves estáveis (dia da semana 0–6, `site` = id do local, `substance` =
+chave), nunca texto de tela. `tests/unit/i18n.test.js` garante que todos
+os idiomas têm as mesmas chaves e placeholders. Em dev, `?lng=de` na URL
+força um idioma na web para revisar traduções.
 
 ### 7.7 UI de revisão manual
 

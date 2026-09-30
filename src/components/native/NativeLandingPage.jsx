@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, Platform, Dimensions, Image, TouchableOpacity } from 'react-native';
 import { Button } from './NativeUI';
 import { Heart, ArrowRight, ShieldCheck, Zap, Activity, Star } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -13,6 +14,7 @@ const mascotZenImg = require('../../../assets/mascotzen.png');
 const footerImg = require('../../../assets/footer.png');
 
 const NativeLandingPage = ({ onStart, onLogin }) => {
+    const { t } = useTranslation();
     const brands = ['Mounjaro', 'Ozempic', 'Zepbound', 'Wegovy', 'Saxenda', 'Victoza', 'Trulicity', 'Rybelsus'];
 
     return (
@@ -25,7 +27,7 @@ const NativeLandingPage = ({ onStart, onLogin }) => {
                         <Text style={styles.brandName}>Mounjoy</Text>
                     </View>
                     <TouchableOpacity onPress={onLogin} style={styles.loginBtn} testID="landing-login-button">
-                        <Text style={styles.loginBtnText}>Entrar</Text>
+                        <Text style={styles.loginBtnText}>{t('landing.login')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -33,21 +35,21 @@ const NativeLandingPage = ({ onStart, onLogin }) => {
                 <View style={styles.hero}>
                     <View style={styles.badge}>
                         <Heart size={14} color="#EF4444" fill="#EF4444" />
-                        <Text style={styles.badgeText}>Sua Jornada Metabólica</Text>
+                        <Text style={styles.badgeText}>{t('landing.badge')}</Text>
                     </View>
 
                     <Text style={styles.heroTitle}>
-                        Sua jornada{"\n"}
-                        <Text style={styles.highlight}>GLP-1</Text> nunca foi{"\n"}
-                        tão leve! 🎈
+                        {t('landing.heroBefore')}
+                        <Text style={styles.highlight}>GLP-1</Text>
+                        {t('landing.heroAfter')}
                     </Text>
 
                     <Text style={styles.heroSubtitle}>
-                        O aliado perfeito para sua jornada com Mounjaro, Ozempic ou qualquer outro protocolo de emagrecimento.
+                        {t('landing.heroSubtitle')}
                     </Text>
 
                     <Button onClick={onStart} style={styles.ctaBtn} textStyle={styles.ctaBtnText} testID="landing-start-button">
-                        Começar grátis hoje! <ArrowRight size={20} color="#fff" />
+                        {t('landing.cta')} <ArrowRight size={20} color="#fff" />
                     </Button>
 
                     <Image source={scaladeImg} style={styles.heroImage} resizeMode="contain" />
@@ -56,12 +58,12 @@ const NativeLandingPage = ({ onStart, onLogin }) => {
                 {/* Features Blue Box Container */}
                 <View style={styles.blueBoxSection}>
                     <View style={styles.blueBox}>
-                        <Text style={styles.blueBoxTitle}>Funcionalidades</Text>
+                        <Text style={styles.blueBoxTitle}>{t('landing.featuresTitle')}</Text>
                         
                         {/* Card 1: Controle Total */}
                         <View style={styles.nativeCard}>
-                            <Text style={styles.nativeCardTitle}>Controle Total</Text>
-                            <Text style={styles.nativeCardText}>Nunca perca o dia da picada. Avisamos tudo sobre suas canetas e doses.</Text>
+                            <Text style={styles.nativeCardTitle}>{t('landing.feature1Title')}</Text>
+                            <Text style={styles.nativeCardText}>{t('landing.feature1Text')}</Text>
                             <View style={styles.cardMascotContainer}>
                                 <Image source={mascotImg} style={styles.cardMascot} resizeMode="contain" />
                             </View>
@@ -69,8 +71,8 @@ const NativeLandingPage = ({ onStart, onLogin }) => {
 
                         {/* Card 2: Veja sua Evolução */}
                         <View style={styles.nativeCard}>
-                            <Text style={styles.nativeCardTitle}>Veja sua Evolução</Text>
-                            <Text style={styles.nativeCardText}>Compare seu "antes e depois" e compartilhe seu progresso!</Text>
+                            <Text style={styles.nativeCardTitle}>{t('landing.feature2Title')}</Text>
+                            <Text style={styles.nativeCardText}>{t('landing.feature2Text')}</Text>
                             <View style={styles.cardMascotContainer}>
                                 <Image source={mascotResultsImg} style={styles.cardMascot} resizeMode="contain" />
                             </View>
@@ -78,8 +80,8 @@ const NativeLandingPage = ({ onStart, onLogin }) => {
 
                         {/* Card 3: Mantenha-se Saudável */}
                         <View style={styles.nativeCard}>
-                            <Text style={styles.nativeCardTitle}>Mantenha-se Saudável</Text>
-                            <Text style={styles.nativeCardText}>Dicas de hidratação e proteínas para você se sentir bem todos os dias.</Text>
+                            <Text style={styles.nativeCardTitle}>{t('landing.feature3Title')}</Text>
+                            <Text style={styles.nativeCardText}>{t('landing.feature3Text')}</Text>
                             <View style={styles.cardMascotContainer}>
                                 <Image source={mascotZenImg} style={styles.cardMascot} resizeMode="contain" />
                             </View>
@@ -89,8 +91,8 @@ const NativeLandingPage = ({ onStart, onLogin }) => {
 
                 {/* Compatible Protocols Ticker Scroll */}
                 <View style={styles.tickerSection}>
-                    <Text style={styles.tickerSectionTitle}>Compatibilidade total</Text>
-                    <Text style={styles.tickerSectionSubtitle}>Funciona com todos os protocolos</Text>
+                    <Text style={styles.tickerSectionTitle}>{t('landing.compatTitle')}</Text>
+                    <Text style={styles.tickerSectionSubtitle}>{t('landing.compatSubtitle')}</Text>
                     
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tickerScroll}>
                         {brands.map((brand, i) => (
@@ -110,7 +112,7 @@ const NativeLandingPage = ({ onStart, onLogin }) => {
                     </View>
                     <View style={styles.testimonialBubble}>
                         <Text style={styles.testimonialText}>
-                            "Com o Mounjoy sinto que tenho o controle total da minha jornada. O app transformou o acompanhamento do meu tratamento em algo leve e até prazeroso de fazer todos os dias."
+                            {t('landing.testimonial')}
                         </Text>
                     </View>
                 </View>
@@ -118,14 +120,14 @@ const NativeLandingPage = ({ onStart, onLogin }) => {
                 {/* Ready to start CTA Footer */}
                 <View style={styles.ctaFooter}>
                     <View style={styles.ctaFooterCard}>
-                        <Text style={styles.ctaFooterTitle}>Pronto para entrar nessa jornada?</Text>
-                        <Text style={styles.ctaFooterSubtitle}>Baixe o Mounjoy agora e comece a se sentir incrível.</Text>
+                        <Text style={styles.ctaFooterTitle}>{t('landing.footerCtaTitle')}</Text>
+                        <Text style={styles.ctaFooterSubtitle}>{t('landing.footerCtaSubtitle')}</Text>
                         <Button
                             onClick={onStart}
                             style={styles.ctaFooterBtn}
                             textStyle={styles.ctaFooterBtnText}
                         >
-                            Quero meu Mounjoy!
+                            {t('landing.footerCtaButton')}
                         </Button>
                         <View style={styles.ctaFooterMascotContainer}>
                             <Image source={footerImg} style={styles.ctaFooterMascot} resizeMode="contain" />
@@ -137,7 +139,7 @@ const NativeLandingPage = ({ onStart, onLogin }) => {
                 <View style={styles.footer}>
                     <Image source={logoImg} style={styles.footerLogo} resizeMode="contain" />
                     <Text style={styles.footerText}>
-                        © 2026 Mounjoy. Feito com ❤️ e muita diversão.
+                        {t('landing.footer')}
                     </Text>
                 </View>
             </ScrollView>
