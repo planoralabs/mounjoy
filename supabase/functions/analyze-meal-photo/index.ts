@@ -42,13 +42,13 @@ const PROMPT = `You are a nutrition-estimation assistant. Identify every distinc
 For each item, estimate its weight in grams based on typical portion sizes and visual cues (plate size, comparison to utensils, etc), and estimate its typical macronutrients PER 100 GRAMS (not for the estimated portion — per 100g, like a nutrition label) based on your general nutrition knowledge for that kind of food.
 
 Respond with ONLY a JSON array (no markdown, no prose), in this exact shape:
-[{ "name": string, "category": string, "estimatedGrams": number, "confidence": number, "caloriesPer100g": number, "proteinPer100g": number, "carbsPer100g": number, "fatPer100g": number }]
+[{ "name": string, "category": string, "estimatedGrams": number, "confidence": number, "caloriesPer100g": number, "proteinPer100g": number, "carbsPer100g": number, "fatPer100g": number, "fiberPer100g": number }]
 
 - "name": short, common food name, written in {{LANGUAGE}}.
 - "category": one of "protein", "carb", "vegetable", "fruit", "dairy", "fat", "beverage", "other".
 - "estimatedGrams": your best estimate of the portion size shown, a positive number.
 - "confidence": 0 to 1, how confident you are in the identification (not the weight or the macros).
-- "caloriesPer100g", "proteinPer100g" (grams), "carbsPer100g" (grams), "fatPer100g" (grams): typical values for this food PER 100 GRAMS, using your general nutrition knowledge — these should stay roughly the same regardless of the portion size shown.
+- "caloriesPer100g", "proteinPer100g" (grams), "carbsPer100g" (grams), "fatPer100g" (grams), "fiberPer100g" (grams of dietary fiber): typical values for this food PER 100 GRAMS, using your general nutrition knowledge — these should stay roughly the same regardless of the portion size shown.
 
 If no food is visible, respond with an empty array: []`;
 
@@ -189,6 +189,7 @@ Deno.serve(async (req) => {
         proteinPer100g: positiveNumber(item.proteinPer100g),
         carbsPer100g: positiveNumber(item.carbsPer100g),
         fatPer100g: positiveNumber(item.fatPer100g),
+        fiberPer100g: positiveNumber(item.fiberPer100g),
       }));
 
     return jsonResponse({ items: cleanItems });
