@@ -258,7 +258,8 @@
     "saveFailed": "We couldn't save your meal. Please try again.",
     "errors": {
       "tooFrequent": "Please wait a few seconds before scanning another meal.",
-      "dailyLimit": "You've reached the daily limit of {{limit}} scans. Try again tomorrow."
+      "dailyLimit": "You've reached the daily limit of {{limit}} scans. Try again tomorrow.",
+      "globalLimit": "Today's analyses are used up. Try again tomorrow or add the items manually."
     },
     "noItems": "No items identified. Add them manually below.",
     "noNutrition": "no nutrition data",

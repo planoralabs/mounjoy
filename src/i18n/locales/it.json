@@ -258,7 +258,8 @@
     "saveFailed": "Non siamo riusciti a salvare il tuo pasto. Riprova.",
     "errors": {
       "tooFrequent": "Attendi qualche secondo prima di scansionare un altro piatto.",
-      "dailyLimit": "Hai raggiunto il limite giornaliero di {{limit}} analisi. Riprova domani."
+      "dailyLimit": "Hai raggiunto il limite giornaliero di {{limit}} analisi. Riprova domani.",
+      "globalLimit": "Le analisi di oggi sono esaurite. Riprova domani o aggiungi gli alimenti manualmente."
     },
     "noItems": "Nessun alimento riconosciuto. Aggiungili manualmente qui sotto.",
     "noNutrition": "nessun dato nutrizionale",

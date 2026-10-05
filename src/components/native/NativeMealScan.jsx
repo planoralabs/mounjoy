@@ -147,7 +147,9 @@ export const useMealScan = ({ user, setUser }) => {
                 ? t('mealScan.errors.tooFrequent')
                 : e.reason === 'daily_limit_reached'
                     ? t('mealScan.errors.dailyLimit', { limit: e.limit || 20 })
-                    : t('mealScan.analyzeFailed');
+                    : e.reason === 'global_limit_reached'
+                        ? t('mealScan.errors.globalLimit')
+                        : t('mealScan.analyzeFailed');
             setJob((prev) => (prev && prev.startedAt === startedAt ? { ...prev, status: 'review', items: [], error } : prev));
         }
     };
@@ -179,7 +181,7 @@ export const useMealScan = ({ user, setUser }) => {
                 await userService.saveMealLog(current.uid, {
                     items: meal.items,
                     totalCalories: meal.total_calories, totalProtein: meal.total_protein,
-                    totalCarbs: meal.total_carbs, totalFat: meal.total_fat,
+                    totalCarbs: meal.total_carbs, totalFat: meal.total_fat, totalFiber: meal.total_fiber,
                 });
             }
             const key = intakeKey(new Date());

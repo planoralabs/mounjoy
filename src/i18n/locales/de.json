@@ -258,7 +258,8 @@
     "saveFailed": "Deine Mahlzeit konnte nicht gespeichert werden. Bitte versuch es erneut.",
     "errors": {
       "tooFrequent": "Warte ein paar Sekunden, bevor du die nächste Mahlzeit scannst.",
-      "dailyLimit": "Tageslimit von {{limit}} Analysen erreicht. Versuch es morgen wieder."
+      "dailyLimit": "Tageslimit von {{limit}} Analysen erreicht. Versuch es morgen wieder.",
+      "globalLimit": "Die Analysen für heute sind aufgebraucht. Versuche es morgen erneut oder füge die Lebensmittel manuell hinzu."
     },
     "noItems": "Keine Lebensmittel erkannt. Füge sie unten manuell hinzu.",
     "noNutrition": "keine Nährwerte",

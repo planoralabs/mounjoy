@@ -258,7 +258,8 @@
     "saveFailed": "Não conseguimos salvar seu prato. Tente de novo.",
     "errors": {
       "tooFrequent": "Aguarde alguns segundos antes de escanear outro prato.",
-      "dailyLimit": "Limite diário de {{limit}} análises atingido. Tente novamente amanhã."
+      "dailyLimit": "Limite diário de {{limit}} análises atingido. Tente novamente amanhã.",
+      "globalLimit": "As análises de hoje estão esgotadas. Tente novamente amanhã ou adicione os itens manualmente."
     },
     "noItems": "Nenhum item identificado. Adicione manualmente abaixo.",
     "noNutrition": "sem dados nutricionais",

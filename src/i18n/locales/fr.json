@@ -258,7 +258,8 @@
     "saveFailed": "Impossible d'enregistrer votre repas. Veuillez réessayer.",
     "errors": {
       "tooFrequent": "Patientez quelques secondes avant de scanner un autre repas.",
-      "dailyLimit": "Limite quotidienne de {{limit}} analyses atteinte. Réessayez demain."
+      "dailyLimit": "Limite quotidienne de {{limit}} analyses atteinte. Réessayez demain.",
+      "globalLimit": "Les analyses du jour sont épuisées. Réessayez demain ou ajoutez les aliments manuellement."
     },
     "noItems": "Aucun aliment identifié. Ajoutez-les manuellement ci-dessous.",
     "noNutrition": "pas de données nutritionnelles",

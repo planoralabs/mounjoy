@@ -9,14 +9,51 @@
 //
 // Deploy: supabase functions deploy analyze-meal-photo
 // Secret:  supabase secrets set GEMINI_API_KEY=your-key-here
+//
+// Usage limits (protect the Gemini account). All optional secrets; the
+// defaults below are the production values. A test/dev project can raise
+// them, e.g.: supabase secrets set MEAL_SCAN_ANON_DAILY_LIMIT=100
+//   MEAL_SCAN_DAILY_LIMIT        scans per signed-in user per day   (20)
+//   MEAL_SCAN_ANON_DAILY_LIMIT   scans per device/IP without login  (5)
+//   MEAL_SCAN_GLOBAL_DAILY_LIMIT scans for the whole app per day    (300)
+//   MEAL_SCAN_MIN_SECONDS        minimum gap between two scans      (5)
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const GEMINI_MODEL = "gemini-flash-lite-latest";
 
-// Anti-abuse limits — tune here if legitimate users start hitting them.
-const DAILY_SCAN_LIMIT = 20;
-const MIN_SECONDS_BETWEEN_SCANS = 5;
+const envInt = (name: string, fallback: number) => {
+  const v = parseInt(Deno.env.get(name) ?? "", 10);
+  return Number.isFinite(v) && v >= 0 ? v : fallback;
+};
+const DAILY_SCAN_LIMIT = envInt("MEAL_SCAN_DAILY_LIMIT", 20);
+const ANON_DAILY_SCAN_LIMIT = envInt("MEAL_SCAN_ANON_DAILY_LIMIT", 5);
+const GLOBAL_DAILY_SCAN_LIMIT = envInt("MEAL_SCAN_GLOBAL_DAILY_LIMIT", 300);
+const MIN_SECONDS_BETWEEN_SCANS = envInt("MEAL_SCAN_MIN_SECONDS", 5);
+
+// Hash of the caller's IP: enough to count requests per device without
+// ever storing the address itself.
+const hashIp = async (ip: string) => {
+  const salt = Deno.env.get("SUPABASE_URL") ?? "";
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${salt}:${ip}`));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+};
+
+const limitResponse = (usage: { reason?: string; limit?: number } | null, fallbackLimit: number) =>
+  jsonResponse(
+    {
+      error: usage?.reason === "too_frequent"
+        ? "Aguarde alguns segundos antes de escanear outro prato."
+        : usage?.reason === "global_limit_reached"
+        ? "As análises de hoje estão esgotadas. Tente novamente amanhã."
+        : `Limite diário de ${usage?.limit ?? fallbackLimit} análises atingido. Tente novamente amanhã.`,
+      // The app translates `reason` (+ `limit`) itself; `error` stays
+      // as a Portuguese fallback for older app builds.
+      reason: usage?.reason,
+      limit: usage?.limit ?? fallbackLimit,
+    },
+    429,
+  );
 // Base64 is ~4/3 the size of the raw bytes; 7,000,000 chars ≈ 5.2MB image.
 const MAX_BASE64_LENGTH = 7_000_000;
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic"]);
@@ -58,14 +95,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // ⚠️ TEMPORARY (2026-08-25): auth is optional right now so guest mode
-    // can be tested without wiring up anonymous sign-in yet. This disables
-    // the per-user rate limit for unauthenticated callers — anyone with the
-    // public anon key can call this function and spend Gemini quota with no
-    // throttling. Re-enable before any real/store release: either make
-    // authHeader required again (see git history for the strict version) or
-    // wire up supabase.auth.signInAnonymously() on the client so guests get
-    // a real JWT — see mobile_documentation.md section 7.9.
+    // Auth is optional while the app runs without login ("Continue"): signed-in
+    // callers are limited per account, everyone else per device (IP hash), and
+    // everybody together by a global daily cap. See mobile_documentation.md 7.9.
     const authHeader = req.headers.get("Authorization");
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -75,13 +107,21 @@ Deno.serve(async (req) => {
 
     let user = null;
     if (authHeader) {
+      // The anon key also arrives as a Bearer token; getUser() only returns
+      // a user for a real session.
       const { data } = await supabaseClient.auth.getUser();
       user = data.user;
     }
 
+    // Service role: the only role allowed to run the anonymous and global
+    // counters (see supabase/migrations/20261005_app_reorg.sql).
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
     // Rate limit BEFORE touching the request body — reject cheaply, without
     // even parsing a potentially large payload, once a caller is over quota.
-    // Only enforced for authenticated callers right now (see warning above).
     if (user) {
       const { data: usage, error: usageError } = await supabaseClient.rpc(
         "check_and_increment_meal_scan_usage",
@@ -91,21 +131,31 @@ Deno.serve(async (req) => {
         console.error("Rate-limit check failed:", usageError);
         return jsonResponse({ error: "Internal error" }, 500);
       }
-      if (!usage?.allowed) {
-        return jsonResponse(
-          {
-            error: usage?.reason === "too_frequent"
-              ? "Aguarde alguns segundos antes de escanear outro prato."
-              : `Limite diário de ${usage?.limit ?? DAILY_SCAN_LIMIT} análises atingido. Tente novamente amanhã.`,
-            // The app translates `reason` (+ `limit`) itself; `error` stays
-            // as a Portuguese fallback for older app builds.
-            reason: usage?.reason,
-            limit: usage?.limit ?? DAILY_SCAN_LIMIT,
-          },
-          429,
-        );
+      if (!usage?.allowed) return limitResponse(usage, DAILY_SCAN_LIMIT);
+    } else {
+      const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() ||
+        req.headers.get("x-real-ip") || "unknown";
+      const { data: usage, error: usageError } = await adminClient.rpc(
+        "check_and_increment_anon_meal_scan",
+        { p_ip_hash: await hashIp(ip), daily_limit: ANON_DAILY_SCAN_LIMIT, min_interval_seconds: MIN_SECONDS_BETWEEN_SCANS },
+      );
+      if (usageError) {
+        console.error("Anonymous rate-limit check failed:", usageError);
+        return jsonResponse({ error: "Internal error" }, 500);
       }
+      if (!usage?.allowed) return limitResponse(usage, ANON_DAILY_SCAN_LIMIT);
     }
+
+    // Global cap for the whole app — the last line of defence for the bill.
+    const { data: globalUsage, error: globalError } = await adminClient.rpc(
+      "check_and_increment_global_meal_scan",
+      { daily_limit: GLOBAL_DAILY_SCAN_LIMIT },
+    );
+    if (globalError) {
+      console.error("Global rate-limit check failed:", globalError);
+      return jsonResponse({ error: "Internal error" }, 500);
+    }
+    if (!globalUsage?.allowed) return limitResponse(globalUsage, GLOBAL_DAILY_SCAN_LIMIT);
 
     const { imageBase64, mimeType, totalWeightHintGrams, language } = await req.json();
     const languageName = LANGUAGE_NAMES[language] || LANGUAGE_NAMES.en;

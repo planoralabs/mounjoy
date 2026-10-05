@@ -258,7 +258,8 @@
     "saveFailed": "No pudimos guardar tu comida. Inténtalo de nuevo.",
     "errors": {
       "tooFrequent": "Espera unos segundos antes de escanear otro plato.",
-      "dailyLimit": "Has alcanzado el límite diario de {{limit}} análisis. Inténtalo de nuevo mañana."
+      "dailyLimit": "Has alcanzado el límite diario de {{limit}} análisis. Inténtalo de nuevo mañana.",
+      "globalLimit": "Se agotaron los análisis de hoy. Inténtalo mañana o añade los elementos manualmente."
     },
     "noItems": "No se identificó ningún alimento. Añádelos manualmente abajo.",
     "noNutrition": "sin datos nutricionales",
