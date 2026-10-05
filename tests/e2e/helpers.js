@@ -2,7 +2,8 @@ import { expect } from '@playwright/test';
 
 /**
  * Completa o wizard de onboarding do app Expo (rodando no navegador via
- * `npm run web`) como convidado (sem login), do zero até o Dashboard.
+ * `npm run web`) pelo botão "Continuar" da tela de entrada (sem login; os
+ * dados ficam só no aparelho), do zero até a tela Hoje.
  * Reaproveitado por toda spec que só precisa de um usuário pronto — evita
  * repetir os 7 passos em cada teste.
  *
@@ -11,7 +12,7 @@ import { expect } from '@playwright/test';
  */
 export async function completeGuestOnboarding(page, { name = 'Visitante Teste' } = {}) {
     await page.goto('/');
-    await page.getByTestId('landing-start-button').click();
+    await page.getByTestId('welcome-continue-button').click();
     await expect(page.getByTestId('onboarding-screen')).toBeVisible();
 
     const next = page.getByTestId('onboarding-next-button');

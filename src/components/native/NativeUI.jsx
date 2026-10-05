@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, View, TextInput, Platform, Dimensions, Modal as RNModal, PanResponder, Animated, Pressable, ScrollView } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, TextInput, Platform, Dimensions, Modal as RNModal, PanResponder, Animated, Pressable, ScrollView, KeyboardAvoidingView } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { getFormatLocale } from '../../i18n';
 
 const { width, height } = Dimensions.get('window');
 
@@ -240,8 +241,10 @@ export const Modal = ({ visible, onClose, title, children }) => {
                 toValue: 600,
                 duration: 200,
                 useNativeDriver: true
-            }).start(() => {
-                setRenderModal(false);
+            }).start(({ finished }) => {
+                // Reopening interrupts this animation (finished: false); hiding
+                // then would leave the modal "open" but never rendered.
+                if (finished) setRenderModal(false);
             });
         }
     }, [visible]);
@@ -289,7 +292,8 @@ export const Modal = ({ visible, onClose, title, children }) => {
 
     return (
         <RNModal visible={renderModal} transparent animationType="none" onRequestClose={onClose}>
-            <View style={[styles.modalOverlay, !visible && { backgroundColor: 'transparent' }]}>
+            {/* Keeps the focused field above the keyboard on iOS / Android. */}
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.modalOverlay, !visible && { backgroundColor: 'transparent' }]}>
                 <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
                 <Animated.View style={[styles.modalContent, { transform: [{ translateY: panY }] }]}>
                     <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
@@ -305,8 +309,44 @@ export const Modal = ({ visible, onClose, title, children }) => {
                         {children}
                     </ScrollView>
                 </Animated.View>
-            </View>
+            </KeyboardAvoidingView>
         </RNModal>
+    );
+};
+
+// Number field with − / + buttons on each side. The value stays typeable;
+// the buttons add or subtract `step` (in the unit shown).
+export const NumberStepper = ({ label, value, onChangeText, step = 1, decimals = 1, min = 0, max = 9999, unit, testID }) => {
+    const sep = (1.1).toLocaleString(getFormatLocale()).charAt(1) === ',' ? ',' : '.';
+    const parse = (v) => parseFloat(String(v).replace(',', '.'));
+    const bump = (dir) => {
+        const current = parse(value);
+        const next = Math.min(max, Math.max(min, (isNaN(current) ? 0 : current) + dir * step));
+        onChangeText(next.toFixed(decimals).replace('.', sep));
+    };
+    return (
+        <View style={styles.inputContainer}>
+            {label && <Text style={styles.inputLabel}>{label}</Text>}
+            <View style={styles.stepperRow}>
+                <TouchableOpacity onPress={() => bump(-1)} style={styles.stepperBtn} testID={testID ? `${testID}-minus` : undefined}>
+                    <Text style={styles.stepperBtnText}>−</Text>
+                </TouchableOpacity>
+                <View style={styles.stepperField}>
+                    <TextInput
+                        value={String(value ?? '')}
+                        onChangeText={onChangeText}
+                        keyboardType="decimal-pad"
+                        selectTextOnFocus
+                        style={styles.stepperInput}
+                        testID={testID}
+                    />
+                    {!!unit && <Text style={styles.stepperUnit}>{unit}</Text>}
+                </View>
+                <TouchableOpacity onPress={() => bump(1)} style={[styles.stepperBtn, styles.stepperBtnPlus]} testID={testID ? `${testID}-plus` : undefined}>
+                    <Text style={[styles.stepperBtnText, { color: '#FFFFFF' }]}>+</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
     );
 };
 
@@ -460,6 +500,13 @@ const styles = StyleSheet.create({
         color: '#0F172A',
         height: 48,
     },
+    stepperRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    stepperBtn: { width: 52, height: 52, borderRadius: 18, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', justifyContent: 'center', alignItems: 'center' },
+    stepperBtnPlus: { backgroundColor: '#EA580C', borderColor: '#EA580C' },
+    stepperBtnText: { fontSize: 26, fontFamily: 'Outfit_700Bold', color: '#64748B', lineHeight: 30 },
+    stepperField: { flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', backgroundColor: '#FFF7ED', borderRadius: 18, borderWidth: 1, borderColor: '#FFEDD5', height: 64, paddingHorizontal: 8 },
+    stepperInput: { minWidth: 60, maxWidth: 140, textAlign: 'center', fontSize: 30, fontFamily: 'Outfit_900Black', color: '#9A3412', paddingVertical: 8 },
+    stepperUnit: { fontSize: 15, fontFamily: 'Outfit_700Bold', color: '#EA580C', marginLeft: 4 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, minHeight: 300, maxHeight: height * 0.85 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },

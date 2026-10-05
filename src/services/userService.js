@@ -197,7 +197,9 @@ export const userService = {
                     hip: m.hip ? parseFloat(m.hip) : 0
                 })) || [];
 
-                const formattedHistory = formattedMeasurements.map(m => m.weight).reverse();
+                // Waist/hip-only entries are stored with weight 0; they are not weigh-ins.
+                const weighIns = formattedMeasurements.filter(m => m.weight > 0);
+                const formattedHistory = weighIns.map(m => m.weight).reverse();
 
                 const formattedDoseHistory = doses?.map(d => ({
                     date: d.date,
@@ -234,7 +236,7 @@ export const userService = {
                     medicationId: profile.medication_id,
                     currentDose: profile.current_dose,
                     isMaintenance: profile.is_maintenance,
-                    currentWeight: formattedMeasurements[0]?.weight || 0,
+                    currentWeight: weighIns[0]?.weight || 0,
                     history: formattedHistory,
                     doseHistory: formattedDoseHistory,
                     measurements: formattedMeasurements,

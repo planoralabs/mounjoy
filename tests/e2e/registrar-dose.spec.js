@@ -8,7 +8,7 @@ test('registrar uma nova aplicação soma ao histórico de doses', async ({ page
     const doseCountBefore = before.doseHistory.length;
 
     await page.getByTestId('injection-open-button').click();
-    await expect(page.getByText('Protocolo de Aplicação')).toBeVisible();
+    await expect(page.getByText('Registrar aplicação')).toBeVisible();
 
     await page.getByTestId('body-map-confirm-button').click();
 
