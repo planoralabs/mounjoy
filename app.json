@@ -43,7 +43,8 @@
             ]
           }
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "locales": {
       "en": "./src/i18n/native/en.json",
