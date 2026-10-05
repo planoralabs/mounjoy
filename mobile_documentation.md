@@ -640,3 +640,43 @@ impressão.
 - [ ] CLI `npm run bench:meals`
 - [ ] Primeira rodada + decisão registrada aqui
 - [ ] Migração da Edge Function (se o vencedor não for o modelo atual)
+
+---
+
+## 8. Nuvem e limites de uso (outubro/2026)
+
+### 8.1 Limites da análise de refeições
+
+A função `analyze-meal-photo` aceita chamadas sem login enquanto o app roda
+no modo "Continuar", então ela tem três travas, todas checadas antes de gastar
+cota do Gemini:
+
+| Quem | Limite padrão | Secret para mudar |
+|---|---|---|
+| Usuário logado (por conta) | 20 por dia | `MEAL_SCAN_DAILY_LIMIT` |
+| Sem login (por aparelho, via hash do IP) | 5 por dia | `MEAL_SCAN_ANON_DAILY_LIMIT` |
+| O app inteiro (soma de todos) | 300 por dia | `MEAL_SCAN_GLOBAL_DAILY_LIMIT` |
+| Intervalo mínimo entre duas análises | 5 s | `MEAL_SCAN_MIN_SECONDS` |
+
+Os padrões são os valores de produção. Para testar com mais folga, sem mexer
+no código: `npx supabase secrets set MEAL_SCAN_ANON_DAILY_LIMIT=100` (e depois
+voltar com `npx supabase secrets unset MEAL_SCAN_ANON_DAILY_LIMIT`), ou usar um
+projeto Supabase de teste com limites maiores. O IP nunca é guardado, só um
+hash. Tabelas `meal_scan_anon_usage` e `meal_scan_global_usage`, escritas só
+pela função (service role). Recomendado também: um teto de gasto/cota na
+própria chave do Gemini (Google AI Studio / Google Cloud).
+
+### 8.2 Sincronização dos dados (pronta, ainda inativa)
+
+Nada é gravado na nuvem no modo "Continuar". Para quem entra com conta,
+`userService.saveUserProfile` agora espelha as listas do app: insere registros
+novos, **atualiza** os editados e **apaga** os removidos (medidas, aplicações e
+"Como estou"; casados pela data/hora). Também salva as metas de calorias,
+gorduras e carboidratos, altura, peso inicial, meta de peso, dia da dose,
+lembretes, o consumo diário de calorias/gorduras/carboidratos e a fibra das
+refeições. Refeições da conta podem ser removidas pelo Diário.
+
+Pré-requisito antes de ativar o login: rodar
+`supabase/migrations/20261005_app_reorg.sql` no SQL editor do projeto (só
+acrescenta colunas/tabelas). Fotos de progresso continuam só no aparelho, por
+decisão (fase de testes).

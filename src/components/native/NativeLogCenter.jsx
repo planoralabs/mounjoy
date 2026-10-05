@@ -7,6 +7,7 @@ import { Button, Modal, NumberStepper } from './NativeUI';
 import NativeBodySelector from './NativeBodySelector';
 import { MOCK_MEDICATIONS } from '../../constants/medications';
 import { suggestNextInjection, getSiteById } from '../../services/InjectionService';
+import { userService } from '../../services/userService';
 import { unitsFor, formatDate, formatNumber, weekdayName, orderedWeekdays } from '../../i18n';
 import { recordDateFor, latestWeight, sortedDoses, isSameDay, daysBetween, intakeKey } from '../../utils/journal';
 
@@ -331,7 +332,7 @@ const NativeLogCenter = ({ user, setUser, onScanMeal, children }) => {
 
     // Removes one Journal entry. Older records can hold a weight and body
     // measures in the same measurement; removing one keeps the other.
-    const deleteEntry = () => {
+    const deleteEntry = async () => {
         const entry = target;
         if (!entry) return;
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -356,6 +357,16 @@ const NativeLogCenter = ({ user, setUser, onScanMeal, children }) => {
         } else if (entry.type === 'meal') {
             // A saved meal added its nutrients to that day's intake; take them back out.
             const m = entry.data;
+            const isLocal = (user.meals || []).some((x) => x === m || x.id === m.id);
+            if (!isLocal && user.uid && m.id) {
+                try {
+                    await userService.deleteMealLog(user.uid, m.id);
+                } catch (e) {
+                    console.error('Failed to delete meal:', e);
+                    close();
+                    return;
+                }
+            }
             const key = intakeKey(m.logged_at);
             const day = user.dailyIntakeHistory?.[key] || {};
             const minus = (field, value) => Math.max(0, Math.round(((day[field] || 0) - (value || 0)) * 10) / 10);

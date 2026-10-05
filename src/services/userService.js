@@ -1,6 +1,56 @@
 import { supabase } from '../supabaseClient';
 import { sanitizeInput } from '../utils/securityUtils';
 
+const isoDate = (d) => {
+    const t = new Date(d);
+    return isNaN(t.getTime()) ? null : t.toISOString();
+};
+
+/**
+ * Makes a per-user table match the app's list. Records are identified by
+ * their timestamp (the app has no row ids): a stored row with the same
+ * timestamp is updated when its fields changed, list entries with no stored
+ * row are inserted, and stored rows no longer in the list are deleted —
+ * that is how edits and removals made in the Journal reach the database.
+ */
+const syncRows = async (uid, table, records, toFields) => {
+    const { data: existing, error: readError } = await supabase.from(table).select('*').eq('user_id', uid);
+    if (readError) throw readError;
+
+    const byDate = new Map();
+    (existing || []).forEach((row) => {
+        const key = isoDate(row.date);
+        if (!byDate.has(key)) byDate.set(key, []);
+        byDate.get(key).push(row);
+    });
+
+    const toInsert = [];
+    for (const record of records) {
+        const date = isoDate(record.date);
+        if (!date) continue;
+        const fields = toFields(record);
+        const row = byDate.get(date)?.shift();
+        if (!row) {
+            toInsert.push({ user_id: uid, date, ...fields });
+        } else if (Object.entries(fields).some(([k, v]) => JSON.stringify(row[k] ?? null) !== JSON.stringify(v ?? null))) {
+            const { error } = await supabase.from(table).update(fields).eq('id', row.id);
+            if (error) throw error;
+        }
+    }
+
+    for (const leftovers of byDate.values()) {
+        for (const row of leftovers) {
+            const { error } = await supabase.from(table).delete().eq('id', row.id);
+            if (error) throw error;
+        }
+    }
+
+    if (toInsert.length > 0) {
+        const { error } = await supabase.from(table).insert(toInsert);
+        if (error) throw error;
+    }
+};
+
 /**
  * Service to handle user-related data operations in Supabase (PostgreSQL).
  */
@@ -29,7 +79,10 @@ export const userService = {
      */
     saveUserProfile: async (uid, userData) => {
         try {
-            // 1. Update Profile Table
+            const settings = userData.settings || {};
+            const num = (v) => (v === undefined || v === null || v === '' || isNaN(parseFloat(v)) ? null : parseFloat(v));
+
+            // 1. Profile row
             const { error: profileError } = await supabase.from('profiles').upsert({
                 id: uid,
                 name: sanitizeInput(userData.name),
@@ -39,95 +92,69 @@ export const userService = {
                 medication_id: userData.medicationId || 'ozempic',
                 current_dose: userData.currentDose || '0.25 mg',
                 is_maintenance: userData.isMaintenance || false,
-                protein_goal: userData.settings?.proteinGoal || 100,
-                water_goal: userData.settings?.waterGoal || 2.5,
-                fiber_goal: userData.settings?.fiberGoal || 25,
-                unit_system: userData.settings?.unitSystem || 'metric',
+                protein_goal: settings.proteinGoal || 100,
+                water_goal: settings.waterGoal || 2.5,
+                fiber_goal: settings.fiberGoal || 25,
+                calorie_goal: settings.calorieGoal || 1800,
+                fat_goal: settings.fatGoal || 60,
+                carbs_goal: settings.carbsGoal || 150,
+                unit_system: settings.unitSystem || 'metric',
+                height_m: num(userData.height),
+                start_weight: num(userData.startWeight),
+                goal_weight: num(userData.goalWeight),
+                injection_day: userData.injectionDay ?? null,
+                reminders_enabled: settings.remindersEnabled ?? true,
+                reminder_time: settings.reminderTime || '09:00',
                 updated_at: new Date().toISOString()
             });
 
             if (profileError) throw profileError;
 
-            // 2. Sync measurements
-            if (userData.measurements && userData.measurements.length > 0) {
-                const { data: existing } = await supabase.from('measurements').select('date').eq('user_id', uid);
-                const existingDates = new Set(existing?.map(e => new Date(e.date).toISOString()) || []);
-
-                const toInsert = userData.measurements
-                    .filter(m => m.date && !existingDates.has(new Date(m.date).toISOString()))
-                    .map(m => ({
-                        user_id: uid,
-                        date: new Date(m.date).toISOString(),
-                        weight: parseFloat(m.weight) || 0,
-                        waist: parseFloat(m.waist) || 0,
-                        hip: parseFloat(m.hip) || 0
-                    }));
-
-                if (toInsert.length > 0) {
-                    const { error: mError } = await supabase.from('measurements').insert(toInsert);
-                    if (mError) throw mError;
-                }
+            // 2–4. Record tables mirror the app's lists exactly: new records
+            // are inserted, edited ones updated and removed ones deleted.
+            if (Array.isArray(userData.measurements)) {
+                await syncRows(uid, 'measurements', userData.measurements, (m) => ({
+                    weight: parseFloat(m.weight) || 0,
+                    waist: parseFloat(m.waist) || 0,
+                    hip: parseFloat(m.hip) || 0,
+                }));
             }
 
-            // 3. Sync dose history
-            if (userData.doseHistory && userData.doseHistory.length > 0) {
-                const { data: existing } = await supabase.from('dose_history').select('date').eq('user_id', uid);
-                const existingDates = new Set(existing?.map(e => new Date(e.date).toISOString()) || []);
-
-                const toInsert = userData.doseHistory
-                    .filter(d => d.date && !existingDates.has(new Date(d.date).toISOString()))
-                    .map(d => ({
-                        user_id: uid,
-                        date: new Date(d.date).toISOString(),
-                        dose: d.dose || '0.25 mg',
-                        medication: d.medication || 'ozempic',
-                        site: d.siteId || d.site || 'not_recorded'
-                    }));
-
-                if (toInsert.length > 0) {
-                    const { error: dError } = await supabase.from('dose_history').insert(toInsert);
-                    if (dError) throw dError;
-                }
+            if (Array.isArray(userData.doseHistory)) {
+                await syncRows(uid, 'dose_history', userData.doseHistory, (d) => ({
+                    dose: d.dose || '0.25 mg',
+                    medication: d.medication || 'ozempic',
+                    site: d.siteId || d.site || 'not_recorded',
+                }));
             }
 
-            // 4. Sync symptoms/side effects logs
-            if (userData.sideEffectsLogs && userData.sideEffectsLogs.length > 0) {
-                const { data: existing } = await supabase.from('symptoms_logs').select('date').eq('user_id', uid);
-                const existingDates = new Set(existing?.map(e => new Date(e.date).toISOString()) || []);
-
-                const toInsert = userData.sideEffectsLogs
-                    .filter(s => s.date && !existingDates.has(new Date(s.date).toISOString()))
-                    .map(s => ({
-                        user_id: uid,
-                        date: new Date(s.date).toISOString(),
-                        nausea: parseInt(s.nausea) || 0,
-                        headache: parseInt(s.headache) || 0,
-                        fatigue: parseInt(s.fatigue) || 0,
-                        notes: s.notes || ''
-                    }));
-
-                if (toInsert.length > 0) {
-                    const { error: sError } = await supabase.from('symptoms_logs').insert(toInsert);
-                    if (sError) throw sError;
-                }
+            if (Array.isArray(userData.sideEffectsLogs)) {
+                await syncRows(uid, 'symptoms_logs', userData.sideEffectsLogs, (s) => ({
+                    symptoms: Array.isArray(s.symptoms) ? s.symptoms : [],
+                    food_noise: Number.isInteger(s.foodNoise) ? s.foodNoise : null,
+                    trigger: s.trigger || '',
+                    notes: s.note ?? s.notes ?? '',
+                    is_memory_only: !!s.isMemoryOnly,
+                }));
             }
 
-            // 5. Sync daily intakes
+            // 5. Daily intakes (one row per day)
             if (userData.dailyIntakeHistory && Object.keys(userData.dailyIntakeHistory).length > 0) {
                 const toUpsert = Object.entries(userData.dailyIntakeHistory).map(([dateStr, intake]) => ({
                     user_id: uid,
                     date: dateStr,
                     water: parseFloat(intake.water) || 0,
                     protein: parseFloat(intake.protein) || 0,
-                    fiber: parseFloat(intake.fiber) || 0
+                    fiber: parseFloat(intake.fiber) || 0,
+                    calories: parseFloat(intake.calories) || 0,
+                    fat: parseFloat(intake.fat) || 0,
+                    carbs: parseFloat(intake.carbs) || 0
                 }));
 
-                if (toUpsert.length > 0) {
-                    const { error: diError } = await supabase.from('daily_intake').upsert(toUpsert, {
-                        onConflict: 'user_id,date'
-                    });
-                    if (diError) throw diError;
-                }
+                const { error: diError } = await supabase.from('daily_intake').upsert(toUpsert, {
+                    onConflict: 'user_id,date'
+                });
+                if (diError) throw diError;
             }
         } catch (error) {
             console.error("Error saving user profile in Supabase:", error);
@@ -210,20 +237,32 @@ export const userService = {
                     siteId: d.site
                 })) || [];
 
-                const formattedSideEffectsLogs = symptoms?.map(s => ({
-                    date: s.date,
-                    nausea: s.nausea,
-                    headache: s.headache,
-                    fatigue: s.fatigue,
-                    notes: s.notes
-                })) || [];
+                // Current check-ins carry `symptoms`/`food_noise`; rows saved by
+                // older builds only have the 0–10 nausea/fatigue columns.
+                const formattedSideEffectsLogs = symptoms?.map(s => {
+                    const list = Array.isArray(s.symptoms) && s.symptoms.length > 0
+                        ? s.symptoms
+                        : [...(s.nausea > 0 ? ['nausea'] : []), ...(s.fatigue > 0 ? ['fadiga'] : [])];
+                    return {
+                        date: s.date,
+                        symptoms: list,
+                        ...(s.food_noise !== null && s.food_noise !== undefined ? { foodNoise: s.food_noise } : {}),
+                        trigger: s.trigger || '',
+                        note: s.notes || '',
+                        ...(s.is_memory_only ? { isMemoryOnly: true } : {}),
+                    };
+                }) || [];
 
                 const dailyIntakeHistory = {};
                 dailyIntakes?.forEach(di => {
                     dailyIntakeHistory[di.date] = {
                         water: parseFloat(di.water) || 0,
                         protein: parseFloat(di.protein) || 0,
-                        fiber: parseFloat(di.fiber) || 0
+                        fiber: parseFloat(di.fiber) || 0,
+                        // Present once the October/2026 migration has run.
+                        ...(di.calories != null ? { calories: parseFloat(di.calories) || 0 } : {}),
+                        ...(di.fat != null ? { fat: parseFloat(di.fat) || 0 } : {}),
+                        ...(di.carbs != null ? { carbs: parseFloat(di.carbs) || 0 } : {}),
                     };
                 });
 
@@ -236,6 +275,10 @@ export const userService = {
                     medicationId: profile.medication_id,
                     currentDose: profile.current_dose,
                     isMaintenance: profile.is_maintenance,
+                    ...(profile.height_m != null ? { height: String(profile.height_m) } : {}),
+                    ...(profile.start_weight != null ? { startWeight: String(profile.start_weight) } : {}),
+                    ...(profile.goal_weight != null ? { goalWeight: String(profile.goal_weight) } : {}),
+                    ...(profile.injection_day != null ? { injectionDay: profile.injection_day } : {}),
                     currentWeight: weighIns[0]?.weight || 0,
                     history: formattedHistory,
                     doseHistory: formattedDoseHistory,
@@ -246,9 +289,12 @@ export const userService = {
                         proteinGoal: parseFloat(profile.protein_goal) || 100,
                         waterGoal: parseFloat(profile.water_goal) || 2.5,
                         fiberGoal: parseFloat(profile.fiber_goal) || 25,
+                        calorieGoal: parseFloat(profile.calorie_goal) || 1800,
+                        fatGoal: parseFloat(profile.fat_goal) || 60,
+                        carbsGoal: parseFloat(profile.carbs_goal) || 150,
                         unitSystem: profile.unit_system || 'metric',
-                        remindersEnabled: true,
-                        reminderTime: '09:00'
+                        remindersEnabled: profile.reminders_enabled ?? true,
+                        reminderTime: profile.reminder_time || '09:00'
                     }
                 };
 
@@ -379,8 +425,15 @@ export const userService = {
             total_protein: meal.totalProtein,
             total_carbs: meal.totalCarbs,
             total_fat: meal.totalFat,
+            total_fiber: meal.totalFiber || 0,
         });
 
+        if (error) throw error;
+    },
+
+    /** Removes one meal from the history (Journal → trash). */
+    deleteMealLog: async (uid, mealId) => {
+        const { error } = await supabase.from('meal_logs').delete().eq('id', mealId).eq('user_id', uid);
         if (error) throw error;
     },
 

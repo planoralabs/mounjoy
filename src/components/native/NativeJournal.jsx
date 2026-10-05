@@ -49,7 +49,8 @@ const NativeJournal = ({ user }) => {
     useEffect(() => {
         if (!user?.uid) return;
         userService.getMealLogs(user.uid, 100).then((logs) => setMeals(logs || [])).catch(() => {});
-    }, [user?.uid]);
+    // Refetched when the record changes (e.g. a meal was added or removed).
+    }, [user?.uid, user?.dailyIntakeHistory]);
 
     const animate = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
@@ -284,7 +285,7 @@ const NativeJournal = ({ user }) => {
                                 <Pencil size={13} color="#64748B" />
                             </TouchableOpacity>
                         )}
-                        {(['weight', 'measures', 'dose', 'checkin', 'note'].includes(entry.type) || (entry.type === 'meal' && (user.meals || []).includes(entry.data))) && (
+                        {(['weight', 'measures', 'dose', 'checkin', 'note'].includes(entry.type) || entry.type === 'meal') && (
                             <TouchableOpacity onPress={() => openLog('delete', { entry })} style={styles.entryAction} hitSlop={6} testID={`journal-delete-${entry.type}`}>
                                 <Trash2 size={13} color="#EF4444" />
                             </TouchableOpacity>
