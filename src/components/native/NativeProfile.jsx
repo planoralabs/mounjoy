@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { 
     View, 
     Text, 
@@ -12,8 +12,7 @@ import {
     Switch
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Button, Modal, Input } from './NativeUI';
-import NativeBodySelector from './NativeBodySelector';
+import { Button, Modal, Input, NumberStepper } from './NativeUI';
 import { 
     User, 
     Shield, 
@@ -22,20 +21,21 @@ import {
     ChevronRight, 
     LogOut, 
     Bell, 
-    Settings, 
-    Scale, 
     Camera, 
     Check, 
-    TrendingUp 
+    TrendingUp,
+    Ruler,
+    PersonStanding,
+    Syringe,
+    Pill
 } from 'lucide-react-native';
-import { Ruler } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { unitsFor } from '../../i18n';
-import { MOCK_MEDICATIONS } from '../../constants/medications';
-import { suggestNextInjection, getSiteById } from '../../services/InjectionService';
+import { unitsFor, weekdayName, formatNumber } from '../../i18n';
+import { startWeightOf, photoUri } from '../../utils/journal';
+import { useLog, getMedication } from './NativeLogCenter';
 
-const MenuItem = ({ icon: Icon, label, subLabel, onPress, color = '#64748B' }) => (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
+const MenuItem = ({ icon: Icon, label, subLabel, onPress, color = '#64748B', testID }) => (
+    <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7} testID={testID}>
         <View style={styles.menuItemLeft}>
             <View style={[styles.menuIconBox, { backgroundColor: color + '15' }]}>
                 <Icon size={20} color={color} />
@@ -49,40 +49,22 @@ const MenuItem = ({ icon: Icon, label, subLabel, onPress, color = '#64748B' }) =
     </TouchableOpacity>
 );
 
-const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
+const NativeProfile = ({ user, setUser, onLogout, onDeleteAccount }) => {
     const { t } = useTranslation();
+    const { openLog } = useLog();
     const units = unitsFor(user);
-    const [showProtocolModal, setShowProtocolModal] = useState(false);
     const [showUnitsModal, setShowUnitsModal] = useState(false);
-    const [showMeasureModal, setShowMeasureModal] = useState(false);
+    const [showBodyModal, setShowBodyModal] = useState(false);
+    const [bodyData, setBodyData] = useState({ height: '', startWeight: '', goalWeight: '' });
     const [showReminderModal, setShowReminderModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteStep, setDeleteStep] = useState(1);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const [selectedMed, setSelectedMed] = useState(user.medicationId || 'ozempic');
-    const [selectedDose, setSelectedDose] = useState(user.currentDose || '0.25 mg');
-    const [routeFilter, setRouteFilter] = useState('all');
-    const [selectedSiteId, setSelectedSiteId] = useState(null);
-    const [measures, setMeasures] = useState({ waist: '', hip: '' });
-
     const [reminderSettings, setReminderSettings] = useState({
         enabled: user.settings?.remindersEnabled ?? true,
         time: user.settings?.reminderTime || '09:00'
     });
-
-    const filteredMeds = useMemo(() => {
-        if (routeFilter === 'all') return MOCK_MEDICATIONS;
-        return MOCK_MEDICATIONS.filter(m => m.route === routeFilter);
-    }, [routeFilter]);
-
-    const injectionSuggestion = useMemo(() => {
-        return suggestNextInjection(user.doseHistory || []);
-    }, [user.doseHistory]);
-
-    const currentMedInfo = useMemo(() => {
-        return MOCK_MEDICATIONS.find(m => m.id === selectedMed) || MOCK_MEDICATIONS[0];
-    }, [selectedMed]);
 
     const handlePhotoPick = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -92,7 +74,7 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.7,
@@ -100,43 +82,13 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
         });
 
         if (!result.canceled && result.assets && result.assets[0].base64) {
-            const base64Url = `data:image/webp;base64,${result.assets[0].base64}`;
+            const base64Url = `data:${result.assets[0].mimeType || 'image/jpeg'};base64,${result.assets[0].base64}`;
             setUser({
                 ...user,
                 photoURL: base64Url
             });
         }
     };
-
-    const handleUpdateProtocol = () => {
-        setUser({
-            ...user,
-            medicationId: selectedMed,
-            currentDose: selectedDose
-        });
-        setShowProtocolModal(false);
-    };
-
-    const handleSaveMeasures = () => {
-        const now = new Date().toISOString();
-        setUser({
-            ...user,
-            measurements: [
-                {
-                    date: now,
-                    // Typed in cm or in; always stored in cm.
-                    waist: Math.round(units.lengthToCm(parseFloat(measures.waist)) * 10) / 10 || 0,
-                    hip: Math.round(units.lengthToCm(parseFloat(measures.hip)) * 10) / 10 || 0,
-                    weight: user.currentWeight
-                },
-                ...(user.measurements || [])
-            ]
-        });
-        setShowMeasureModal(false);
-        setMeasures({ waist: '', hip: '' });
-    };
-
-
 
     const handleSaveReminders = () => {
         setUser({
@@ -162,12 +114,43 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
 
     const handleDeleteAccount = async () => {
         setIsDeleting(true);
-        // Emulador local / Limpeza do estado
-        setTimeout(() => {
+        try {
+            await (onDeleteAccount ? onDeleteAccount() : onLogout());
+        } finally {
             setIsDeleting(false);
             setShowDeleteModal(false);
-            onLogout && onLogout();
-        }, 1500);
+        }
+    };
+
+    // Height and weights from onboarding, in the user's units (stored metric:
+    // height in metres, weights in kg).
+    const decimalSep = formatNumber(1.5).includes(',') ? ',' : '.';
+    const toField = (n, digits = 1) => (n ? Number(n).toFixed(digits).replace('.', decimalSep) : '');
+    const fromField = (v) => parseFloat(String(v).replace(',', '.'));
+    const heightM = parseFloat(user.height) || null;
+
+    const openBodyModal = () => {
+        const start = startWeightOf(user);
+        const goal = parseFloat(user.goalWeight);
+        setBodyData({
+            height: heightM ? toField(units.length(heightM * 100), 0) : '',
+            startWeight: start ? toField(units.weight(start)) : '',
+            goalWeight: goal ? toField(units.weight(goal)) : '',
+        });
+        setShowBodyModal(true);
+    };
+
+    const saveBodyData = () => {
+        const cm = units.lengthToCm(fromField(bodyData.height));
+        const start = units.weightToKg(fromField(bodyData.startWeight));
+        const goal = units.weightToKg(fromField(bodyData.goalWeight));
+        setUser({
+            ...user,
+            ...(cm > 0 ? { height: (cm / 100).toFixed(3) } : {}),
+            ...(start > 0 ? { startWeight: start.toFixed(2) } : {}),
+            ...(goal > 0 ? { goalWeight: goal.toFixed(2) } : {}),
+        });
+        setShowBodyModal(false);
     };
 
     const setUnitSystem = (unitSystem) => {
@@ -175,7 +158,8 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
         setShowUnitsModal(false);
     };
 
-    const currentMedicationDisplay = user.medicationId ? (user.medicationId.charAt(0).toUpperCase() + user.medicationId.slice(1)) : t('profile.protocolFallback');
+    const medication = getMedication(user);
+    const currentMedicationDisplay = medication?.name || t('profile.protocolFallback');
     const waterGoal = user.settings?.waterGoal || 2.5;
 
     return (
@@ -187,7 +171,7 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                     <View style={styles.avatarLargeContainer}>
                         <TouchableOpacity style={styles.avatarLarge} onPress={handlePhotoPick}>
                             {user.photoURL ? (
-                                <Image source={{ uri: user.photoURL }} style={styles.avatarImage} />
+                                <Image source={{ uri: photoUri(user.photoURL) }} style={styles.avatarImage} />
                             ) : (
                                 <Text style={styles.avatarTextLarge}>{user.name?.charAt(0).toUpperCase() || 'U'}</Text>
                             )}
@@ -197,88 +181,68 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                         </TouchableOpacity>
                     </View>
                     <Text style={styles.profileName}>{user.name || t('profile.defaultName')}</Text>
-                    <Text style={styles.profileMeta}>
-                        {t('profile.protocolMeta', { medication: currentMedicationDisplay, dose: user.currentDose || 'N/A' })}
-                    </Text>
+                    <Text style={styles.profileMeta}>{user.email || t('profile.localSession')}</Text>
                 </View>
 
+                {/* Treatment */}
+                <TouchableOpacity style={styles.treatmentCard} onPress={() => openLog('protocol')} activeOpacity={0.85} testID="profile-treatment-card">
+                    <View style={styles.treatmentTopRow}>
+                        <View style={styles.treatmentIcon}>
+                            {medication?.route === 'oral' ? <Pill size={16} color="#FFFFFF" /> : <Syringe size={16} color="#FFFFFF" />}
+                        </View>
+                        <Text style={styles.treatmentKicker} numberOfLines={1}>{t('profile.treatmentTitle')}</Text>
+                        <View style={styles.treatmentEdit}><Text style={styles.treatmentEditText}>{t('dashboard.change')}</Text></View>
+                    </View>
+                    <Text style={styles.treatmentName}>{currentMedicationDisplay} · {user.currentDose || 'N/A'}</Text>
+                    <Text style={styles.treatmentSub}>
+                        {medication?.frequency === 'daily'
+                            ? t('profile.everyDay')
+                            : user.injectionDay != null ? t('profile.everyWeekday', { day: weekdayName(user.injectionDay) }) : t('profile.weekly')}
+                    </Text>
+                </TouchableOpacity>
 
-
-                {/* Health Goals Card */}
+                {/* Daily goals: same order and colors as the Today screen */}
                 <View style={styles.goalsCard}>
                     <View style={styles.goalsHeader}>
                         <TrendingUp size={18} color="#EA580C" />
                         <Text style={styles.goalsTitle}>{t('profile.goalsTitle')}</Text>
                     </View>
-
-                    <View style={styles.goalsGrid}>
-                        <View style={styles.goalRow}>
-                            <Text style={styles.goalLabel}>{t('profile.proteinGoal')}</Text>
+                    {[
+                        { key: 'waterGoal', label: t('profile.waterGoal', { unit: units.volumeUnit }), color: '#3B82F6', value: units.formatVolumeValue(waterGoal), dec: () => Math.max(1, Math.round((waterGoal - 0.1) * 10) / 10), inc: () => Math.round((waterGoal + 0.1) * 10) / 10 },
+                        { key: 'proteinGoal', label: t('profile.proteinGoal'), color: '#F97316', value: user.settings?.proteinGoal || 100, dec: () => Math.max(40, (user.settings?.proteinGoal || 100) - 5), inc: () => (user.settings?.proteinGoal || 100) + 5 },
+                        { key: 'fiberGoal', label: t('profile.fiberGoal'), color: '#10B981', value: user.settings?.fiberGoal || 25, dec: () => Math.max(10, (user.settings?.fiberGoal || 25) - 1), inc: () => (user.settings?.fiberGoal || 25) + 1 },
+                        { key: 'calorieGoal', label: t('profile.calorieGoal'), color: '#EF4444', value: user.settings?.calorieGoal || 1800, dec: () => Math.max(800, (user.settings?.calorieGoal || 1800) - 50), inc: () => (user.settings?.calorieGoal || 1800) + 50 },
+                        { key: 'fatGoal', label: t('profile.fatGoal'), color: '#EAB308', value: user.settings?.fatGoal || 60, dec: () => Math.max(20, (user.settings?.fatGoal || 60) - 5), inc: () => (user.settings?.fatGoal || 60) + 5 },
+                        { key: 'carbsGoal', label: t('profile.carbsGoal'), color: '#8B5CF6', value: user.settings?.carbsGoal || 150, dec: () => Math.max(30, (user.settings?.carbsGoal || 150) - 10), inc: () => (user.settings?.carbsGoal || 150) + 10 },
+                    ].map((g, i) => (
+                        <View key={g.key} style={[styles.goalLine, i > 0 && styles.goalLineDivider]}>
+                            <View style={[styles.goalDot, { backgroundColor: g.color }]} />
+                            <Text style={styles.goalLineLabel}>{g.label}</Text>
                             <View style={styles.goalControlRow}>
-                                <TouchableOpacity 
-                                    onPress={() => updateGoal('proteinGoal', Math.max(40, (user.settings?.proteinGoal || 100) - 5))}
-                                    style={styles.goalBtn}
-                                >
+                                <TouchableOpacity onPress={() => updateGoal(g.key, g.dec())} style={styles.goalBtn}>
                                     <Text style={styles.goalBtnText}>−</Text>
                                 </TouchableOpacity>
-                                <Text style={styles.goalValue}>{user.settings?.proteinGoal || 100}</Text>
-                                <TouchableOpacity 
-                                    onPress={() => updateGoal('proteinGoal', (user.settings?.proteinGoal || 100) + 5)}
-                                    style={styles.goalBtn}
-                                >
+                                <Text style={styles.goalValue}>{g.value}</Text>
+                                <TouchableOpacity onPress={() => updateGoal(g.key, g.inc())} style={styles.goalBtn}>
                                     <Text style={styles.goalBtnText}>+</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
-
-                        <View style={styles.goalRow}>
-                            <Text style={styles.goalLabel}>{t('profile.waterGoal', { unit: units.volumeUnit })}</Text>
-                            <View style={styles.goalControlRow}>
-                                <TouchableOpacity 
-                                    onPress={() => updateGoal('waterGoal', Math.max(1, (user.settings?.waterGoal || 2.5) - 0.1))}
-                                    style={styles.goalBtn}
-                                >
-                                    <Text style={styles.goalBtnText}>−</Text>
-                                </TouchableOpacity>
-                                <Text style={styles.goalValue}>{units.formatVolumeValue(waterGoal)}</Text>
-                                <TouchableOpacity 
-                                    onPress={() => updateGoal('waterGoal', (user.settings?.waterGoal || 2.5) + 0.1)}
-                                    style={styles.goalBtn}
-                                >
-                                    <Text style={styles.goalBtnText}>+</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </View>
-
-                    <View style={styles.fiberDivider} />
-
-                    <View style={styles.goalFullRow}>
-                        <Text style={styles.goalLabel}>{t('profile.fiberGoal')}</Text>
-                        <View style={styles.goalControlRow}>
-                            <TouchableOpacity 
-                                onPress={() => updateGoal('fiberGoal', Math.max(10, (user.settings?.fiberGoal || 25) - 1))}
-                                style={styles.goalBtn}
-                            >
-                                <Text style={styles.goalBtnText}>−</Text>
-                            </TouchableOpacity>
-                            <Text style={styles.goalValue}>{user.settings?.fiberGoal || 25}</Text>
-                            <TouchableOpacity 
-                                onPress={() => updateGoal('fiberGoal', (user.settings?.fiberGoal || 25) + 1)}
-                                style={styles.goalBtn}
-                            >
-                                <Text style={styles.goalBtnText}>+</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                    ))}
                 </View>
 
                 {/* Settings list */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>{t('profile.settingsTitle')}</Text>
                     <View style={styles.card}>
-                        <MenuItem icon={Settings} label={t('protocol.title')} subLabel={t('profile.configureProtocolSub')} onPress={() => setShowProtocolModal(true)} color="#EA580C" />
-                        <MenuItem icon={Scale} label={t('profile.bodyProgress')} subLabel={t('profile.bodyProgressSub')} onPress={() => setShowMeasureModal(true)} color="#3B82F6" />
+                        <MenuItem
+                            icon={PersonStanding}
+                            label={t('profile.bodyData')}
+                            subLabel={heightM ? t('profile.bodyDataSub', { height: units.formatHeight(heightM), goal: user.goalWeight ? units.formatWeight(parseFloat(user.goalWeight)) : '--' }) : t('profile.bodyDataEmpty')}
+                            onPress={openBodyModal}
+                            color="#8B5CF6"
+                            testID="profile-body-data"
+                        />
                         <MenuItem icon={Ruler} label={t('units.title')} subLabel={`${t(`units.${units.system}`)} · ${t(`units.${units.system}Hint`)}`} onPress={() => setShowUnitsModal(true)} color="#10B981" />
                         <MenuItem icon={Bell} label={t('profile.reminders')} subLabel={t('profile.remindersSub')} onPress={() => setShowReminderModal(true)} color="#F59E0B" />
                     </View>
@@ -288,7 +252,7 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>{t('profile.accountTitle')}</Text>
                     <View style={styles.card}>
-                        <MenuItem icon={LogOut} label={t('profile.logout')} subLabel={t('profile.logoutSub')} onPress={onLogout} color="#EF4444" />
+                        <MenuItem icon={LogOut} label={t('profile.logout')} subLabel={t('profile.logoutSub')} onPress={onLogout} color="#EF4444" testID="profile-logout-button" />
                     </View>
                     <TouchableOpacity 
                         style={styles.deleteLink}
@@ -299,86 +263,6 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                 </View>
 
             </ScrollView>
-
-            {/* Modal: Configurar Protocolo */}
-            <Modal visible={showProtocolModal} onClose={() => setShowProtocolModal(false)} title={t('protocol.title')}>
-                <View style={styles.routeSelectorRow}>
-                    <TouchableOpacity onPress={() => setRouteFilter('all')} style={[styles.routeBtn, routeFilter === 'all' && styles.routeBtnActive]}>
-                        <Text style={[styles.routeBtnText, routeFilter === 'all' && styles.routeBtnTextActive]}>{t('protocol.all')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setRouteFilter('injectable')} style={[styles.routeBtn, routeFilter === 'injectable' && styles.routeBtnActive]}>
-                        <Text style={[styles.routeBtnText, routeFilter === 'injectable' && styles.routeBtnTextActive]}>{t('protocol.injectable')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setRouteFilter('oral')} style={[styles.routeBtn, routeFilter === 'oral' && styles.routeBtnActive]}>
-                        <Text style={[styles.routeBtnText, routeFilter === 'oral' && styles.routeBtnTextActive]}>{t('protocol.oral')}</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <Text style={styles.modalSubLabelText}>{t('protocol.medication')}</Text>
-                <View style={styles.medGrid}>
-                    {filteredMeds.map(med => (
-                        <TouchableOpacity 
-                            key={med.id} 
-                            onClick={() => { setSelectedMed(med.id); setSelectedDose(med.doses[0]); }}
-                            onPress={() => { setSelectedMed(med.id); setSelectedDose(med.doses[0]); }}
-                            style={[styles.medChip, selectedMed === med.id && styles.medChipActive]}
-                        >
-                            <Text style={[styles.medChipText, selectedMed === med.id && styles.medChipTextActive]}>
-                                {med.name}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                <Text style={styles.modalSubLabelText}>{t('protocol.dosage')}</Text>
-                <View style={styles.doseGrid}>
-                    {currentMedInfo?.doses.map(dose => (
-                        <TouchableOpacity 
-                            key={dose} 
-                            onClick={() => setSelectedDose(dose)}
-                            onPress={() => setSelectedDose(dose)}
-                            style={[styles.doseChip, selectedDose === dose && styles.doseChipActive]}
-                        >
-                            <Text style={[styles.doseChipText, selectedDose === dose && styles.doseChipTextActive]}>
-                                {dose}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                <Button onClick={handleUpdateProtocol} style={{ width: '100%', marginTop: 16 }}>
-                    {t('protocol.save')}
-                </Button>
-            </Modal>
-
-            {/* Modal: Progresso Corporal (Medidas) */}
-            <Modal visible={showMeasureModal} onClose={() => setShowMeasureModal(false)} title={t('profile.measuresTitle')}>
-                <Text style={styles.modalIntroText}>{t('profile.measuresIntro')}</Text>
-                <View style={styles.measuresInputRow}>
-                    <View style={{ flex: 1 }}>
-                        <Input 
-                            label={t('profile.waist', { unit: units.lengthUnit })} 
-                            placeholder={t('common.example', { value: units.imperial ? 32 : 80 })} 
-                            value={measures.waist} 
-                            onChangeText={(val) => setMeasures({ ...measures, waist: val })}
-                            keyboardType="numeric"
-                        />
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Input 
-                            label={t('profile.hip', { unit: units.lengthUnit })} 
-                            placeholder={t('common.example', { value: units.imperial ? 38 : 95 })} 
-                            value={measures.hip} 
-                            onChangeText={(val) => setMeasures({ ...measures, hip: val })}
-                            keyboardType="numeric"
-                        />
-                    </View>
-                </View>
-
-                <Button onClick={handleSaveMeasures} style={{ width: '100%', marginTop: 16 }}>
-                    {t('profile.saveMeasures')}
-                </Button>
-            </Modal>
 
             {/* Modal: Lembretes */}
             <Modal visible={showReminderModal} onClose={() => setShowReminderModal(false)} title={t('profile.remindersTitle')}>
@@ -443,6 +327,38 @@ const NativeProfile = ({ user, setUser, onLogout, theme, setTheme }) => {
                         </TouchableOpacity>
                     </View>
                 </View>
+            </Modal>
+
+            {/* Modal: Peso e altura */}
+            <Modal visible={showBodyModal} onClose={() => setShowBodyModal(false)} title={t('profile.bodyData')}>
+                <Text style={styles.modalIntroText}>{t('profile.bodyDataIntro')}</Text>
+                <NumberStepper
+                    label={t('profile.heightLabel', { unit: units.lengthUnit })}
+                    value={bodyData.height}
+                    onChangeText={(height) => setBodyData((b) => ({ ...b, height }))}
+                    step={1}
+                    decimals={0}
+                    unit={units.lengthUnit}
+                    testID="profile-height-input"
+                />
+                <NumberStepper
+                    label={t('profile.startWeightLabel', { unit: units.weightUnit })}
+                    value={bodyData.startWeight}
+                    onChangeText={(startWeight) => setBodyData((b) => ({ ...b, startWeight }))}
+                    step={units.imperial ? 1 : 0.5}
+                    unit={units.weightUnit}
+                    testID="profile-start-weight-input"
+                />
+                <NumberStepper
+                    label={t('profile.goalWeightLabel', { unit: units.weightUnit })}
+                    value={bodyData.goalWeight}
+                    onChangeText={(goalWeight) => setBodyData((b) => ({ ...b, goalWeight }))}
+                    step={units.imperial ? 1 : 0.5}
+                    unit={units.weightUnit}
+                    testID="profile-goal-weight-input"
+                />
+                <Text style={styles.reminderInfoTip}>{t('profile.bodyDataTip')}</Text>
+                <Button onClick={saveBodyData} style={{ width: '100%', marginTop: 16 }} testID="profile-body-save">{t('profile.saveSettings')}</Button>
             </Modal>
 
             {/* Modal: Sistema de Medidas */}
@@ -557,6 +473,18 @@ const styles = StyleSheet.create({
     },
 
     // Goals Card
+    treatmentCard: { backgroundColor: '#EA580C', borderRadius: 32, padding: 18, marginBottom: 20, shadowColor: '#EA580C', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 14, elevation: 4 },
+    treatmentTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+    treatmentIcon: { width: 30, height: 30, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+    treatmentKicker: { flex: 1, fontSize: 10, fontFamily: 'Outfit_900Black', color: '#FFE3D1', textTransform: 'uppercase', letterSpacing: 0.5 },
+    treatmentName: { fontSize: 22, fontFamily: 'Outfit_900Black', color: '#FFFFFF' },
+    treatmentSub: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: 'rgba(255,255,255,0.85)', marginTop: 1 },
+    treatmentEdit: { backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 6, paddingHorizontal: 10 },
+    treatmentEditText: { fontSize: 11, fontFamily: 'Outfit_900Black', color: '#EA580C', textTransform: 'uppercase', letterSpacing: 0.5 },
+    goalLine: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+    goalLineDivider: { borderTopWidth: 1, borderTopColor: '#F8FAFC' },
+    goalDot: { width: 8, height: 8, borderRadius: 4 },
+    goalLineLabel: { flex: 1, minWidth: 0, fontSize: 13, fontFamily: 'Outfit_700Bold', color: '#334155' },
     goalsCard: {
         backgroundColor: '#FFFFFF',
         borderRadius: 32,
@@ -597,6 +525,7 @@ const styles = StyleSheet.create({
     goalControlRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        flexShrink: 0,
         backgroundColor: '#F8FAFC',
         borderRadius: 16,
         padding: 4,
@@ -615,7 +544,7 @@ const styles = StyleSheet.create({
         color: '#64748B',
     },
     goalValue: {
-        flex: 1,
+        width: 52,
         textAlign: 'center',
         fontSize: 14,
         fontFamily: 'Outfit_900Black',

@@ -23,7 +23,7 @@ Em setembro/2026 o antigo webapp (React + Vite + Tailwind) foi removido. O códi
 - `landing/`: **landing page de marketing** (a antiga FunLandingPage), em um projeto Vite separado. Use `npm run landing:dev` / `npm run landing:build`. Ela não leva ao app: os botões dizem "Em breve nas lojas" e depois viram os selos da App Store e da Google Play. O app fica em `app.mounjoy.com`.
 - `assets/`: imagens usadas pelo app. `assets/library/` guarda artes extras da capivara (abraço, surpresa etc.) que ainda não são usadas.
 
-**Convidado → conta:** quem faz o onboarding sem login tem os dados salvos só no aparelho (AsyncStorage, chave `mounjoy_guest_user`; no navegador vira localStorage). O Dashboard mostra o cartão "Salve seu progresso", que abre o cadastro. Quando a conta nova aparece sem perfil, `App.js` (NativeMain) sobe os dados do convidado para o Supabase e limpa o aparelho. Uma conta criada direto pelo login, sem dados de convidado, passa pelo onboarding.
+**Entrada e "Continuar":** a primeira tela (`NativeWelcome.jsx`) é o login/cadastro. Enquanto os provedores de login não estão configurados, o botão **Continuar** entra direto e guarda os dados só no aparelho (AsyncStorage, chave `mounjoy_guest_user`; no navegador vira localStorage). Sair (Perfil → Sair) mantém esses dados no aparelho; só "Apagar minha conta" os remove. Quem depois entra numa conta sem perfil leva os dados locais junto: `App.js` (NativeMain) sobe tudo para o Supabase e limpa o aparelho. Uma conta nova sem dados locais passa pelo onboarding.
 
 **Deploy (Vercel):** são dois projetos. O app usa `vercel.json` na raiz (`npm run build:web` → `dist/`, com as variáveis `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY`). A landing (`www.mounjoy.com`) usa Root Directory `landing` e não precisa de variáveis.
 
@@ -33,52 +33,55 @@ Em setembro/2026 o antigo webapp (React + Vite + Tailwind) foi removido. O códi
 
 ## 2. Detalhes das Telas Mobile
 
-### 2.1 Landing Page (`NativeLandingPage.jsx`)
-- **Objetivo**: Ponto de entrada do aplicativo.
-- **Funcionalidades**: Apresenta a marca com um visual limpo e moderno, oferecendo duas opções claras de rota: "Começar Configuração" (onboarding) e "Já tenho conta" (login).
+Reorganizado em outubro/2026 (o estado anterior está na tag git `app-pre-reorg-2026-10`). A navegação tem 4 abas e um botão central **+**:
+
+| Aba | Pergunta que responde | Arquivo |
+|---|---|---|
+| **Hoje** | "O que eu faço hoje?" | `NativeToday.jsx` |
+| **Diário** | "O que aconteceu no dia X?" | `NativeJournal.jsx` |
+| **+** | "Quero registrar algo" | `NativeLogCenter.jsx` |
+| **Progresso** | "Quanto já avancei?" | `NativeProgress.jsx` |
+| **Perfil** | "Meu tratamento e ajustes" | `NativeProfile.jsx` |
+
+### 2.1 Entrada (`NativeWelcome.jsx`)
+- Topo com a marca (selo, título GLP-1, capivara escalando) e, logo abaixo, o formulário de login/cadastro (Supabase).
+- Botão **Continuar**: acesso temporário sem login, com os dados no aparelho (ver 1.2). Substituiu a antiga landing interna e a tela de login separada; o conteúdo de marketing fica só no site (`landing/`).
 
 ### 2.2 Onboarding (`NativeOnboarding.jsx`)
-- **Objetivo**: Configuração guiada passo a passo (passos de 0 a 5) do perfil e protocolo do paciente.
-- **Funcionalidades**:
-  - Captura nome, peso inicial, altura e meta de peso.
-  - **Filtro de Medicamentos (Passo 4)**: Interface otimizada que filtra substâncias por via de administração (injetável, comprimido) e objetivo (perda de peso, diabetes), com sub-seleção de marcas.
-  - Integração de sliders interativos para peso e altura.
+- Configuração guiada (nome, unidades, peso/altura, meta, medicamento, dose e dia da aplicação). Sem mudanças nesta reorganização.
 
-### 2.3 Home/Dashboard (`NativeDashboard.jsx`)
-- **Objetivo**: Painel central diário com resumo de peso, aplicação e metas de consumo.
-- **Funcionalidades**:
-  - **Resumo de Progresso de Peso**: Exibição em duas colunas (Evolução de fotos com proporção fixa `320px` livre de distorções e Card de Peso com mini barras de proteína e água).
-  - **Banner de Ciclo de Medicação**: Alerta dinâmico de pico de efeito da dose ou redução de nível (Food Noise), sugerindo ações inteligentes.
-  - **Botão Físico 3D "Injetar"**: Botão personalizado com relevo tátil que simula uma aplicação quando pressionado.
-  - **Metas do Dia**: Carrossel horizontal com cards interativos de consumo (Água, Proteína, Fibra) com mascotinhos animados e botões de adição rápida.
+### 2.3 Central de registros (`NativeLogCenter.jsx`)
+- **Um único lugar para registrar qualquer coisa.** O botão **+** da barra de abas abre o menu: Peso, Aplicação (ou Comprimido), Como estou (sintomas + Food Noise + anotação), Refeição (abre a análise por foto), Foto de progresso e Medidas (cintura/quadril).
+- Qualquer tela chama `useLog().openLog(tipo, { date })`. Sem `date` o registro é "agora"; vindo do Diário, ele é arquivado no dia escolhido (no horário atual).
+- Também guarda o modal de **Configurar Protocolo** (medicamento, dose e dia da semana), antes duplicado na Home e no Perfil.
+- Medidas corporais são gravadas como uma entrada própria em `measurements` com `weight: 0`, para não virarem uma "pesagem" falsa no gráfico. `utils/journal.js` separa pesagens (`weightLogs`) de medidas (`bodyLogs`).
+- Food Noise só é salvo se a pessoa mexer no controle. Uma anotação sem sintomas nem Food Noise vira uma entrada de "Anotação" (`isMemoryOnly`).
 
-### 2.4 Diário (`NativeLogs.jsx`)
-- **Objetivo**: Registro de sintomas e efeitos colaterais diários.
-- **Funcionalidades**: Permite aos usuários marcar níveis de náusea, dor de cabeça, fadiga e registrar pensamentos em um campo de texto, salvando no histórico do dia selecionado.
+### 2.4 Hoje (`NativeToday.jsx`)
+De cima para baixo, só o que importa no dia:
+1. Data, saudação e semana do tratamento (o avatar abre o Perfil).
+2. **No máximo um aviso de contexto**: "Dia da sua dose" quando a dose semanal vence, ou "Cuidado com o Food Noise" a partir do 5º dia após a dose.
+3. **Próxima dose**: contagem regressiva (ou "Feito hoje ✓"), medicamento/dose (toque para trocar o protocolo), botão 3D para registrar, local sugerido e dica do ciclo. Vale também para comprimidos diários.
+4. **Metas de hoje**: água, proteína e fibra empilhadas num só cartão (antes era um carrossel horizontal que escondia 2 das 3 metas, e havia barras duplicadas no cartão de peso), com a capivara comemorando a cada + e confete ao bater a meta. Logo abaixo, "Escanear refeição".
+5. **Seu peso**: peso atual, variação desde o início, barra até a meta e ritmo semanal (toque abre o Progresso).
+6. Alertas (platô; proteína baixa só a partir das 14h) e dica do dia.
+7. Simulador de dias: só em desenvolvimento (`__DEV__`).
 
-### 2.5 Agenda/Calendário (`NativeCalendar.jsx`)
-- **Objetivo**: Visualização em calendário da jornada.
-- **Funcionalidades**:
-  - Exibe um calendário mensal interativo.
-  - Destaca os dias de dose aplicada e mapeia o local corporal utilizado para fácil alternância (evitando cicatrizes e lipodistrofia).
+### 2.5 Diário (`NativeJournal.jsx`)
+- Junta as antigas abas **Diário** e **Agenda**. Uma faixa da semana (expansível para o mês) escolhe o dia; os pontinhos coloridos mostram o que há em cada dia (dose, peso/medidas, sintomas/notas, refeição, foto), com legenda.
+- Abaixo: resumo do dia (água, proteína, fibra) e uma **linha do tempo** com tudo daquele dia, do mais recente ao mais antigo: aplicações, pesagens, medidas, check-ins, anotações, fotos (toque abre em tela cheia) e refeições (`meal_logs`, só para quem tem conta).
+- O botão **Registrar** abre a central de registros já apontando para o dia escolhido.
 
-### 2.6 Dados/Evolução (`NativeEvolution.jsx`)
-- **Objetivo**: Painel analítico de perda de peso e controle glicêmico.
-- **Funcionalidades**:
-  - **Gráfico de Linha**: Visualização gráfica bezier estilizada com os últimos registros de peso ou glicose.
-  - **Comparador Visual de Fotos**: Permite selecionar até 4 registros históricos diferentes para exibi-los lado a lado em cards de aspecto `3/4`, calculando a diferença exata de peso (ex: `-1.5kg`) entre as datas selecionadas.
-  - **Modal Fullscreen**: Visualização lado a lado em tela cheia com fundo ambientado (blur) e badge flutuante contendo o total de peso eliminado.
+### 2.6 Progresso (`NativeProgress.jsx`)
+- Números principais: peso atual, variação desde o início, meta (com quanto falta) e IMC.
+- Gráfico do peso. Com menos de 2 pesagens mostra um gráfico de **exemplo**, esmaecido e marcado como tal (antes os dados fictícios apareciam sem aviso).
+- **Fotos de evolução**: galeria (toque abre em tela cheia, com excluir) e o **comparador antes/depois** (`NativePhotoCompare.jsx`), que saiu da Agenda. Agora se escolhem as próprias fotos (2 a 4) e o peso de cada uma vem da pesagem mais próxima, em até 3 dias.
+- Medidas corporais (última cintura/quadril e variação desde a primeira) e as últimas aplicações, com a próxima dose.
 
 ### 2.7 Perfil (`NativeProfile.jsx`)
-- **Objetivo**: Ajustes de metas, protocolo e privacidade.
-- **Funcionalidades**:
-  - **Configurador de Protocolo**: Modal completo para trocar o medicamento (Ozempic, Wegovy, Mounjaro, Rybelsus) e a dosagem de forma simples.
-  - **Metas de Saúde**: Controles rápidos na tela para incrementar/decrementar as metas diárias de ingestão de proteínas, água e fibras.
-  - **Registro de Aplicação**: Modal com lista tátil destacando locais sugeridos e permitindo registrar a injeção manualmente.
-  - **Lembretes e Exclusão Segura**: Interruptor de notificações e fluxo duplo de segurança para eliminação definitiva de dados.
-  - **Foto de Perfil**: Integração com a câmera ou galeria do aparelho para atualizar a foto de avatar em tempo real.
-
----
+- Cartão **Meu tratamento** (medicamento, dose e dia), que abre o Configurar Protocolo.
+- Metas diárias (água, proteína, fibra, na mesma ordem e cor da tela Hoje), Preferências (unidades, lembretes) e Conta (sair, apagar).
+- Saíram daqui: o modal de protocolo duplicado e o de medidas (agora na central de registros).
 
 ## 3. Desafios de Gestos e Soluções Customizadas
 
@@ -191,15 +194,15 @@ Criada em 2026-08-21. Três partes:
   builder do `supabase-js` (`tests/helpers/supabase-fake.js`). Rodar com
   `npm run test:unit`.
 - **`tests/e2e/`** (Playwright, navegador real contra `npm run dev`) — 5
-  jornadas: onboarding como convidado, login com conta seedada, metas
-  diárias, registrar dose, e convidado virando conta (migração
-  localStorage → Supabase). Precisa de um **projeto Supabase de TESTE
+  jornadas: onboarding pelo "Continuar", login com conta seedada, metas
+  diárias, registrar dose, e dados do "Continuar" migrando para uma conta
+  nova (localStorage → Supabase). Precisa de um **projeto Supabase de TESTE
   separado** (nunca produção) — rodar `supabase/schema.sql` nele, colar
   `EXPO_PUBLIC_SUPABASE_URL`/`EXPO_PUBLIC_SUPABASE_ANON_KEY`/
   `SUPABASE_SERVICE_ROLE_KEY` em `.env.test.local` (gitignored), depois
   `npm run test:e2e:seed` e `npm run test:e2e`.
 - **`data-testid`** foi adicionado nos elementos-chave de Login, Onboarding,
-  App (nav + banner de convidado) e Dashboard, já que o app não usa router
+  App (abas + botão `tab-add-button`), central de registros (`log-menu-*`) e Hoje, já que o app não usa router
   (troca de tela é só `useState`, sem URL) e não tinha nenhum seletor
   estável antes.
 
@@ -447,8 +450,9 @@ item agora tem botões `−`/`+` que ajustam de 5 em 5 gramas
 
 Ajustado em 2026-08-25.
 
-- **Histórico**: nova seção "Refeições Registradas" no topo do
-  `NativeLogs.jsx` (Diário) — lista as refeições salvas em `meal_logs`
+- **Histórico**: as refeições salvas em `meal_logs` aparecem na linha do
+  tempo do Diário (`NativeJournal.jsx`, ver 2.5) — antes ficavam numa seção
+  própria do antigo `NativeLogs.jsx`. Lista as refeições salvas em `meal_logs`
   (data/hora, nomes dos itens, calorias e macros totais), via
   `userService.getMealLogs(uid)`. Só dados, sem foto (a foto nunca foi
   persistida, por decisão de escopo — 7.1).
@@ -636,3 +640,43 @@ impressão.
 - [ ] CLI `npm run bench:meals`
 - [ ] Primeira rodada + decisão registrada aqui
 - [ ] Migração da Edge Function (se o vencedor não for o modelo atual)
+
+---
+
+## 8. Nuvem e limites de uso (outubro/2026)
+
+### 8.1 Limites da análise de refeições
+
+A função `analyze-meal-photo` aceita chamadas sem login enquanto o app roda
+no modo "Continuar", então ela tem três travas, todas checadas antes de gastar
+cota do Gemini:
+
+| Quem | Limite padrão | Secret para mudar |
+|---|---|---|
+| Usuário logado (por conta) | 20 por dia | `MEAL_SCAN_DAILY_LIMIT` |
+| Sem login (por aparelho, via hash do IP) | 5 por dia | `MEAL_SCAN_ANON_DAILY_LIMIT` |
+| O app inteiro (soma de todos) | 300 por dia | `MEAL_SCAN_GLOBAL_DAILY_LIMIT` |
+| Intervalo mínimo entre duas análises | 5 s | `MEAL_SCAN_MIN_SECONDS` |
+
+Os padrões são os valores de produção. Para testar com mais folga, sem mexer
+no código: `npx supabase secrets set MEAL_SCAN_ANON_DAILY_LIMIT=100` (e depois
+voltar com `npx supabase secrets unset MEAL_SCAN_ANON_DAILY_LIMIT`), ou usar um
+projeto Supabase de teste com limites maiores. O IP nunca é guardado, só um
+hash. Tabelas `meal_scan_anon_usage` e `meal_scan_global_usage`, escritas só
+pela função (service role). Recomendado também: um teto de gasto/cota na
+própria chave do Gemini (Google AI Studio / Google Cloud).
+
+### 8.2 Sincronização dos dados (pronta, ainda inativa)
+
+Nada é gravado na nuvem no modo "Continuar". Para quem entra com conta,
+`userService.saveUserProfile` agora espelha as listas do app: insere registros
+novos, **atualiza** os editados e **apaga** os removidos (medidas, aplicações e
+"Como estou"; casados pela data/hora). Também salva as metas de calorias,
+gorduras e carboidratos, altura, peso inicial, meta de peso, dia da dose,
+lembretes, o consumo diário de calorias/gorduras/carboidratos e a fibra das
+refeições. Refeições da conta podem ser removidas pelo Diário.
+
+Pré-requisito antes de ativar o login: rodar
+`supabase/migrations/20261005_app_reorg.sql` no SQL editor do projeto (só
+acrescenta colunas/tabelas). Fotos de progresso continuam só no aparelho, por
+decisão (fase de testes).

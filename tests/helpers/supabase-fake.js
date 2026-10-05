@@ -19,6 +19,7 @@ export function createFakeSupabase(seed = {}) {
         ...Object.fromEntries(Object.entries(seed).map(([k, v]) => [k, [...v]])),
     };
 
+    let nextId = 0;
     const matchFilters = (row, filters) => filters.every(([col, val]) => row[col] === val);
 
     const makeBuilder = (table) => {
@@ -56,7 +57,8 @@ export function createFakeSupabase(seed = {}) {
                 }
                 case 'insert': {
                     const rowsIn = Array.isArray(state.payload) ? state.payload : [state.payload];
-                    store[table].push(...rowsIn.map((r) => ({ ...r })));
+                    // Like the identity columns in schema.sql, every inserted row gets an id.
+                    store[table].push(...rowsIn.map((r) => ({ id: r.id ?? `${table}-${++nextId}`, ...r })));
                     return { data: rowsIn, error: null };
                 }
                 case 'update': {

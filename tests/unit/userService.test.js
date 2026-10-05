@@ -73,6 +73,51 @@ describe('userService.saveUserProfile', () => {
         expect(fake._store.measurements.map((m) => m.weight)).toEqual([90, 89]);
     });
 
+    it('updates edited records and deletes removed ones (matched by date)', async () => {
+        fake._store.measurements.push(
+            { id: 'm1', user_id: UID, date: '2026-01-01T00:00:00.000Z', weight: 90, waist: 0, hip: 0 },
+            { id: 'm2', user_id: UID, date: '2026-01-08T00:00:00.000Z', weight: 89, waist: 0, hip: 0 },
+        );
+        fake._store.dose_history.push(
+            { id: 'd1', user_id: UID, date: '2026-01-02T00:00:00.000Z', dose: '5.0 mg', medication: 'mounjaro', site: 'abdomen-left' },
+        );
+
+        await userService.saveUserProfile(UID, {
+            name: 'Ana',
+            // weigh-in of the 8th removed; the 1st edited to 88.5
+            measurements: [{ date: '2026-01-01T00:00:00.000Z', weight: 88.5 }],
+            // dose edited in the Journal: new dose and site
+            doseHistory: [{ date: '2026-01-02T00:00:00.000Z', dose: '7.5 mg', medication: 'mounjaro', siteId: 'thigh-right' }],
+        });
+
+        expect(fake._store.measurements).toHaveLength(1);
+        expect(fake._store.measurements[0]).toMatchObject({ id: 'm1', weight: 88.5 });
+        expect(fake._store.dose_history).toHaveLength(1);
+        expect(fake._store.dose_history[0]).toMatchObject({ id: 'd1', dose: '7.5 mg', site: 'thigh-right' });
+    });
+
+    it('stores check-ins in the current format and the new profile fields', async () => {
+        await userService.saveUserProfile(UID, {
+            name: 'Ana',
+            height: '1.71',
+            goalWeight: '69.5',
+            injectionDay: 1,
+            settings: { calorieGoal: 1600, fatGoal: 55, carbsGoal: 140 },
+            sideEffectsLogs: [{ date: '2026-01-03T12:00:00.000Z', symptoms: ['nausea'], foodNoise: 4, trigger: 'doce', note: 'enjoo' }],
+            dailyIntakeHistory: { '2026-01-03': { water: 1, calories: 900, fat: 30, carbs: 80 } },
+        });
+
+        expect(fake._store.profiles[0]).toMatchObject({ height_m: 1.71, goal_weight: 69.5, injection_day: 1, calorie_goal: 1600, fat_goal: 55, carbs_goal: 140 });
+        expect(fake._store.symptoms_logs[0]).toMatchObject({ symptoms: ['nausea'], food_noise: 4, trigger: 'doce', notes: 'enjoo' });
+        expect(fake._store.daily_intake[0]).toMatchObject({ calories: 900, fat: 30, carbs: 80 });
+
+        const userObj = await new Promise((resolve) => userService.subscribeToUser(UID, resolve));
+        expect(userObj).toMatchObject({ height: '1.71', goalWeight: '69.5', injectionDay: 1 });
+        expect(userObj.settings).toMatchObject({ calorieGoal: 1600, fatGoal: 55, carbsGoal: 140 });
+        expect(userObj.sideEffectsLogs[0]).toMatchObject({ symptoms: ['nausea'], foodNoise: 4, trigger: 'doce', note: 'enjoo' });
+        expect(userObj.dailyIntakeHistory['2026-01-03']).toMatchObject({ calories: 900, fat: 30, carbs: 80 });
+    });
+
     it('upserts daily_intake keyed on (user_id, date) instead of duplicating rows', async () => {
         await userService.saveUserProfile(UID, {
             name: 'Ana',
