@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, LayoutAnimation } from 'react-native';
-import { BellOff, Syringe, Pill, Droplet, Beef, Scale, Settings } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, LayoutAnimation, Platform } from 'react-native';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import { BellOff, Syringe, Pill, Droplet, Beef, Scale, Settings, Clock } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button } from './NativeUI';
-import { weekdayName, orderedWeekdays } from '../../i18n';
-import { reminderSettingsOf, anyReminderEnabled, isValidTime, WATER_TIMES } from '../../utils/reminders';
+import { weekdayName, orderedWeekdays, formatDate, getFormatLocale } from '../../i18n';
+import { reminderSettingsOf, anyReminderEnabled, isValidTime, WATER_COUNTS } from '../../utils/reminders';
 import { usePermissionStatus, requestPermission, openNotificationSettings, notificationsSupported, syncReminders } from '../../services/NotificationService';
 import { getMedication } from './NativeLogCenter';
 
@@ -22,25 +23,74 @@ const Toggle = ({ value, onValueChange, testID }) => (
     />
 );
 
-const TimeField = ({ value, onChange, testID }) => {
+const pad = (n) => String(n).padStart(2, '0');
+const toDate = (hhmm) => {
+    const [h, m] = (isValidTime(hhmm) ? hhmm : '09:00').split(':').map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d;
+};
+const toHHMM = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+// 24 h or AM/PM, as the user's region writes times.
+const uses24h = () => !new Intl.DateTimeFormat(getFormatLocale(), { hour: 'numeric' }).resolvedOptions().hour12;
+
+/**
+ * The phone's own time picker: a dialog clock on Android, a wheel on iOS
+ * (opens under the field), the browser's time input on web. Stores "HH:MM".
+ */
+const TimeField = ({ value, onChange, label, testID }) => {
     const { t } = useTranslation();
-    const valid = isValidTime(value);
+    const [open, setOpen] = useState(false);
+    const shown = formatDate(toDate(value), { hour: '2-digit', minute: '2-digit' });
+
+    if (Platform.OS === 'web') {
+        return (
+            <View style={styles.timeField}>
+                <Text style={styles.timeLabel}>{label || t('reminders.time')}</Text>
+                {React.createElement('input', {
+                    type: 'time',
+                    value,
+                    onChange: (e) => e.target.value && onChange(e.target.value),
+                    'data-testid': testID,
+                    style: { border: 'none', background: 'transparent', fontSize: 16, fontFamily: 'Outfit_700Bold', color: '#0F172A', textAlign: 'right', outline: 'none' },
+                })}
+            </View>
+        );
+    }
+
+    const press = () => {
+        if (Platform.OS === 'android') {
+            DateTimePickerAndroid.open({
+                value: toDate(value),
+                mode: 'time',
+                is24Hour: uses24h(),
+                onChange: (event, date) => { if (event.type === 'set' && date) onChange(toHHMM(date)); },
+            });
+        } else {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setOpen((o) => !o);
+        }
+    };
+
     return (
         <View>
-            <View style={[styles.timeField, !valid && styles.timeFieldError]}>
-                <Text style={styles.timeLabel}>{t('reminders.time')}</Text>
-                <TextInput
-                    value={value}
-                    onChangeText={(v) => onChange(v.replace(/[^\d:]/g, '').slice(0, 5))}
-                    placeholder="09:00"
-                    placeholderTextColor="#CBD5E1"
-                    keyboardType="numbers-and-punctuation"
-                    style={styles.timeInput}
-                    maxLength={5}
-                    testID={testID}
+            <TouchableOpacity style={[styles.timeField, open && styles.timeFieldOpen]} onPress={press} activeOpacity={0.7} testID={testID}>
+                <Text style={styles.timeLabel}>{label || t('reminders.time')}</Text>
+                <View style={styles.timeValueRow}>
+                    <Clock size={15} color="#EA580C" />
+                    <Text style={styles.timeValue}>{shown}</Text>
+                </View>
+            </TouchableOpacity>
+            {Platform.OS === 'ios' && open && (
+                <DateTimePicker
+                    value={toDate(value)}
+                    mode="time"
+                    display="spinner"
+                    themeVariant="light"
+                    locale={getFormatLocale()}
+                    onChange={(event, date) => { if (date) onChange(toHHMM(date)); }}
                 />
-            </View>
-            {!valid && <Text style={styles.errorText}>{t('reminders.invalidTime')}</Text>}
+            )}
         </View>
     );
 };
@@ -73,10 +123,7 @@ export const RemindersModal = ({ visible, onClose, user, setUser }) => {
         setDraft((d) => ({ ...d, [kind]: { ...d[kind], ...values } }));
     };
 
-    const allValid = ['dose', 'protein', 'weight'].every((k) => !draft[k].enabled || isValidTime(draft[k].time));
-
     const save = async () => {
-        if (!allValid) return;
         const updated = {
             ...user,
             settings: {
@@ -127,9 +174,21 @@ export const RemindersModal = ({ visible, onClose, user, setUser }) => {
 
                 <Section
                     icon={Droplet} color="#3B82F6" bg="#EFF6FF"
-                    title={t('reminders.water')} sub={t('reminders.waterSub', { times: WATER_TIMES.join(', ') })}
+                    title={t('reminders.water')} sub={t('reminders.waterSub')}
                     enabled={draft.water.enabled} onToggle={(v) => patch('water', { enabled: v })} testID="reminder-water"
-                />
+                >
+                    <View>
+                        <Text style={styles.fieldLabel}>{t('reminders.timesPerDay')}</Text>
+                        <View style={styles.segment}>
+                            {WATER_COUNTS.map((n) => (
+                                <TouchableOpacity key={n} onPress={() => patch('water', { count: n })} style={[styles.segmentBtn, Number(draft.water.count) === n && styles.segmentBtnOn]} testID={`reminder-water-count-${n}`}>
+                                    <Text style={[styles.segmentText, Number(draft.water.count) === n && styles.segmentTextOn]}>{n}x</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                    <TimeField label={t('reminders.firstAt')} value={draft.water.start} onChange={(v) => patch('water', { start: v })} testID="reminder-water-start" />
+                </Section>
 
                 <Section
                     icon={Beef} color="#F97316" bg="#FFF7ED"
@@ -164,8 +223,7 @@ export const RemindersModal = ({ visible, onClose, user, setUser }) => {
                 </Section>
             </View>
 
-            <Text style={styles.limitNote}>{t('reminders.limitNote')}</Text>
-            <Button onClick={save} disabled={!allValid} style={{ width: '100%', marginTop: 12 }} testID="reminders-save">{t('reminders.save')}</Button>
+            <Button onClick={save} style={{ width: '100%', marginTop: 16 }} testID="reminders-save">{t('reminders.save')}</Button>
         </Modal>
     );
 };
@@ -173,7 +231,7 @@ export const RemindersModal = ({ visible, onClose, user, setUser }) => {
 const styles = StyleSheet.create({
     intro: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#64748B', textAlign: 'center', marginBottom: 16, lineHeight: 17 },
     webNote: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#2563EB', backgroundColor: '#EFF6FF', borderRadius: 14, padding: 12, marginBottom: 12, textAlign: 'center' },
-    limitNote: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', textAlign: 'center', marginTop: 14 },
+    fieldLabel: { fontSize: 11, fontFamily: 'Outfit_700Bold', color: '#64748B', marginBottom: 6 },
     denied: { backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A', borderRadius: 20, padding: 14, gap: 8, marginBottom: 16 },
     deniedHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     deniedTitle: { fontSize: 14, fontFamily: 'Outfit_900Black', color: '#92400E' },
@@ -187,10 +245,10 @@ const styles = StyleSheet.create({
     sectionTitle: { fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
     sectionSub: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#64748B', marginTop: 1, lineHeight: 15 },
     timeField: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
-    timeFieldError: { borderColor: '#FCA5A5' },
+    timeFieldOpen: { borderColor: '#FDBA74' },
     timeLabel: { fontSize: 12, fontFamily: 'Outfit_700Bold', color: '#64748B' },
-    timeInput: { fontSize: 16, fontFamily: 'Outfit_700Bold', color: '#0F172A', textAlign: 'right', minWidth: 70, padding: 0 },
-    errorText: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#DC2626', marginTop: 4 },
+    timeValueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    timeValue: { fontSize: 16, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
     segment: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 12, padding: 3 },
     segmentBtn: { flex: 1, paddingVertical: 8, borderRadius: 9, alignItems: 'center' },
     segmentBtnOn: { backgroundColor: '#FFFFFF' },

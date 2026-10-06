@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { planReminders, reminderSettingsOf, isValidTime, MAX_PER_DAY } from '../../src/utils/reminders';
+import { planReminders, reminderSettingsOf, isValidTime, waterTimes } from '../../src/utils/reminders';
 import { intakeKey } from '../../src/utils/journal';
 
 // Tuesday 6 Oct 2026, 07:00 local.
@@ -58,7 +58,7 @@ describe('planReminders — dose', () => {
 });
 
 describe('planReminders — water, protein, weight', () => {
-    const on = { dose: { enabled: false }, water: { enabled: true }, protein: { enabled: true, time: '18:00' }, weight: { enabled: true, time: '08:00', frequency: 'daily' } };
+    const on = { dose: { enabled: false }, water: { enabled: true, count: 4, start: '10:00' }, protein: { enabled: true, time: '18:00' }, weight: { enabled: true, time: '08:00', frequency: 'daily' } };
 
     it('drops today\'s water reminders once the goal is reached', () => {
         const user = baseUser({
@@ -86,12 +86,10 @@ describe('planReminders — water, protein, weight', () => {
         expect(plan.map((p) => p.date)).toEqual([day(2, 8)]);
     });
 
-    it(`never schedules more than ${MAX_PER_DAY} a day, keeping the most important`, () => {
+    it('schedules everything the user picked on a busy day', () => {
         const user = baseUser({ settings: { reminders: { ...on, dose: { enabled: true, time: '09:00' } } }, doseHistory: [{ date: day(-7).toISOString() }] });
-        const plan = planReminders(user, { now: NOW, intervalDays: 7 });
-        const today = plan.filter((p) => p.date.getDate() === 6);
-        expect(today).toHaveLength(MAX_PER_DAY);
-        expect(kinds(today)).toEqual(['weight', 'dose', 'water', 'protein']);
+        const today = planReminders(user, { now: NOW, intervalDays: 7 }).filter((p) => p.date.getDate() === 6);
+        expect(kinds(today)).toEqual(['weight', 'dose', 'water', 'water', 'water', 'protein', 'water']);
     });
 
     it('never schedules in the past', () => {
@@ -99,5 +97,18 @@ describe('planReminders — water, protein, weight', () => {
         const user = baseUser({ settings: { reminders: { ...on, protein: { enabled: false }, weight: { enabled: false } } } });
         const today = planReminders(user, { now: late }).filter((p) => p.date.getDate() === 6);
         expect(today.map((p) => p.date.getHours())).toEqual([19]);
+    });
+});
+
+describe('waterTimes', () => {
+    it('spreads the chosen number of reminders from the first time', () => {
+        expect(waterTimes('10:00', 1)).toEqual(['10:00']);
+        expect(waterTimes('08:00', 5)).toEqual(['08:00', '11:00', '14:00', '17:00', '20:00']);
+        expect(waterTimes('10:00', 4)).toEqual(['10:00', '13:00', '16:00', '19:00']);
+        expect(waterTimes('16:00', 3)).toEqual(['16:00', '18:30', '21:00']);
+    });
+
+    it('keeps at least an hour between reminders, even late in the day', () => {
+        expect(waterTimes('21:00', 3)).toEqual(['21:00', '22:00', '23:00']);
     });
 });

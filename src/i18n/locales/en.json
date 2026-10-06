@@ -358,7 +358,10 @@
     "goalReached": "Goal reached! 🎉",
     "editIntakeTitle": "Today's {{nutrient}}",
     "editIntakeLabel": "Amount consumed",
-    "editIntakeHint": "Daily goal: {{goal}}"
+    "editIntakeHint": "Daily goal: {{goal}}",
+    "photoTitle": "Photo of the day",
+    "photoSub": "Capture how you look today",
+    "photoDone": "Today's photo saved. Tap to add another"
   },
   "log": {
     "menuTitle": "What do you want to log?",
@@ -468,19 +471,17 @@
   "reminders": {
     "title": "Reminders",
     "menuSub": "Dose, water, protein and weigh-ins",
-    "intro": "Pick what you want to be reminded of. Each reminder goes away on its own once you have logged it.",
-    "limitNote": "At most 4 reminders a day.",
+    "intro": "*Reminders don't show up if it's already logged.",
     "deniedTitle": "Notifications are blocked",
     "deniedText": "Mounjoy notifications are turned off on your phone. Turn them on in Settings to get your reminders.",
     "openSettings": "Open Settings",
     "webNote": "Reminders arrive as notifications in the phone app.",
     "time": "Time",
-    "invalidTime": "Use the format 09:00",
     "dose": "Dose",
     "doseSubWeekly": "On your dose day, and the day after if not logged",
     "doseSubDaily": "Every day, until you log it",
     "water": "Hydration",
-    "waterSub": "At {{times}}, until you reach your goal",
+    "waterSub": "Until you reach the day's goal",
     "protein": "Protein",
     "proteinSub": "Once a day, if you haven't hit your goal",
     "weight": "Weigh-in",
@@ -520,7 +521,9 @@
         "title": "Time to weigh in ⚖️",
         "body": "Weigh yourself now and log it in Mounjoy to follow your progress."
       }
-    }
+    },
+    "timesPerDay": "Times a day",
+    "firstAt": "First reminder"
   },
   "supplements": {
     "title": "Supplements",

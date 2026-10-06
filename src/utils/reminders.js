@@ -7,16 +7,14 @@
 
 import { intakeKey, isSameDay, sortedDoses, weightLogs } from './journal';
 
-export const WATER_TIMES = ['10:00', '13:00', '16:00', '19:00'];
-// At most this many reminders on any day; lower-priority ones are dropped first.
-export const MAX_PER_DAY = 4;
-// iOS keeps at most 64 pending local notifications per app; we stay well below.
+// iOS keeps at most 64 pending local notifications per app: 3 days of at most
+// 8 a day (dose, weigh-in, protein, 5 × water) stays well below.
 const HORIZON_DAYS = 3;
-const PRIORITY = { dose: 0, weight: 1, protein: 2, water: 3 };
+export const WATER_COUNTS = [1, 2, 3, 4, 5];
 
 export const DEFAULT_REMINDERS = {
     dose: { enabled: true, time: '09:00' },
-    water: { enabled: false },
+    water: { enabled: false, count: 3, start: '10:00' },
     protein: { enabled: false, time: '18:00' },
     weight: { enabled: false, time: '08:00', frequency: 'weekly', day: 1 },
 };
@@ -46,6 +44,20 @@ const at = (day, time) => {
     return new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m, 0, 0);
 };
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const toMinutes = (time) => { const [h, m] = time.split(':').map(Number); return h * 60 + m; };
+const toTime = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+
+/**
+ * Times of the day's water reminders: `count` of them from `start`, spread
+ * up to 21:00 (every 1–3 h, on the quarter hour), never past 23:45.
+ */
+export const waterTimes = (start = '10:00', count = 3) => {
+    const first = toMinutes(isValidTime(start) ? start : '10:00');
+    const n = Math.min(5, Math.max(1, Number(count) || 1));
+    if (n === 1) return [toTime(first)];
+    const gap = Math.min(180, Math.max(60, Math.floor((21 * 60 - first) / (n - 1) / 15) * 15));
+    return Array.from({ length: n }, (_, i) => first + i * gap).filter((m) => m <= 23 * 60 + 45).map(toTime);
+};
 
 /**
  * @param user     the app's user record
@@ -90,23 +102,10 @@ export const planReminders = (user, { now = new Date(), intervalDays = 7, isOral
     if (r.water.enabled) {
         days.forEach((d) => {
             if ((intakeOf(d).water || 0) >= goals.water) return;
-            WATER_TIMES.forEach((time, n) => add('water', at(d, time), n));
+            waterTimes(r.water.start, r.water.count).forEach((time, n) => add('water', at(d, time), n));
         });
     }
 
-    // Daily cap: keep the most important ones.
-    const byDay = new Map();
-    plan.forEach((p) => {
-        const k = p.date.toDateString();
-        if (!byDay.has(k)) byDay.set(k, []);
-        byDay.get(k).push(p);
-    });
-    const kept = [];
-    byDay.forEach((list) => {
-        const rank = (p) => PRIORITY[p.kind === 'doseLate' ? 'dose' : p.kind];
-        list.sort((a, b) => rank(a) - rank(b) || a.date - b.date);
-        kept.push(...list.slice(0, MAX_PER_DAY));
-    });
     // `isOral` only changes the wording; kept on each item for the message.
-    return kept.sort((a, b) => a.date - b.date).map((p) => ({ ...p, isOral }));
+    return plan.sort((a, b) => a.date - b.date).map((p) => ({ ...p, isOral }));
 };

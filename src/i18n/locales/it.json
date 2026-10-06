@@ -358,7 +358,10 @@
     "goalReached": "Obiettivo raggiunto! 🎉",
     "editIntakeTitle": "{{nutrient}} di oggi",
     "editIntakeLabel": "Quantità consumata",
-    "editIntakeHint": "Obiettivo del giorno: {{goal}}"
+    "editIntakeHint": "Obiettivo del giorno: {{goal}}",
+    "photoTitle": "Foto del giorno",
+    "photoSub": "Registra come sei oggi",
+    "photoDone": "Foto di oggi salvata. Tocca per aggiungerne un’altra"
   },
   "log": {
     "menuTitle": "Cosa vuoi registrare?",
@@ -468,19 +471,17 @@
   "reminders": {
     "title": "Promemoria",
     "menuSub": "Dose, acqua, proteine e pesata",
-    "intro": "Scegli cosa ricordare. Ogni promemoria sparisce da solo quando hai già registrato.",
-    "limitNote": "Al massimo 4 promemoria al giorno.",
+    "intro": "*I promemoria non compaiono se c’è già una registrazione.",
     "deniedTitle": "Notifiche bloccate",
     "deniedText": "Le notifiche di Mounjoy sono disattivate sul tuo telefono. Attivale nelle Impostazioni per ricevere i promemoria.",
     "openSettings": "Apri impostazioni",
     "webNote": "I promemoria arrivano come notifiche nell’app sul telefono.",
     "time": "Orario",
-    "invalidTime": "Usa il formato 09:00",
     "dose": "Dose",
     "doseSubWeekly": "Il giorno della somministrazione e il giorno dopo, se non registrata",
     "doseSubDaily": "Ogni giorno, finché non la registri",
     "water": "Idratazione",
-    "waterSub": "Alle {{times}}, fino a raggiungere l’obiettivo",
+    "waterSub": "Fino a raggiungere l’obiettivo del giorno",
     "protein": "Proteine",
     "proteinSub": "Una volta al giorno, se non hai raggiunto l’obiettivo",
     "weight": "Pesata",
@@ -520,7 +521,9 @@
         "title": "È ora di pesarsi ⚖️",
         "body": "Pesati ora e registralo su Mounjoy."
       }
-    }
+    },
+    "timesPerDay": "Volte al giorno",
+    "firstAt": "Primo promemoria"
   },
   "supplements": {
     "title": "Integratori",

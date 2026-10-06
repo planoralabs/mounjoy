@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo, useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, LayoutAnimation, PanResponder } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Scale, Syringe, Pill, Camera, ImagePlus, Ruler, Smile, Info, AlertCircle, Trash2, RefreshCw } from 'lucide-react-native';
+import { Scale, Syringe, Pill, Camera, Images, ImagePlus, Ruler, Smile, Info, AlertCircle, Trash2, RefreshCw } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, Modal, NumberStepper } from './NativeUI';
 import NativeBodySelector from './NativeBodySelector';
@@ -169,19 +169,18 @@ const NativeLogCenter = ({ user, setUser, onScanMeal, children }) => {
         }
     };
 
-    const pickPhoto = async (date) => {
-        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    // source: 'camera' | 'library' (chosen in the "photoSource" sheet).
+    const pickPhoto = async (date, source = 'library') => {
+        const useCamera = source === 'camera';
+        const permission = useCamera
+            ? await ImagePicker.requestCameraPermissionsAsync()
+            : await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permission.granted === false) {
-            alert(t('dashboard.photoPermission'));
+            alert(useCamera ? t('mealScan.permissionCamera') : t('dashboard.photoPermission'));
             return;
         }
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            allowsEditing: true,
-            aspect: [3, 4],
-            quality: 0.7,
-            base64: true,
-        });
+        const options = { mediaTypes: ['images'], allowsEditing: true, aspect: [3, 4], quality: 0.7, base64: true };
+        const result = useCamera ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
         if (!result.canceled && result.assets?.[0]?.base64) {
             setPendingPhoto({ url: `data:${result.assets[0].mimeType || 'image/jpeg'};base64,${result.assets[0].base64}`, date: recordDateFor(date) });
             setActive('photo');
@@ -203,7 +202,7 @@ const NativeLogCenter = ({ user, setUser, onScanMeal, children }) => {
         const date = opts.date || null;
         const run = () => {
             setLogDate(date);
-            if (kind === 'photo') { setActive(null); pickPhoto(date); return; }
+            if (kind === 'photo') { setActive('photoSource'); return; }
             if (kind === 'meal') { setActive(null); onScanMeal && onScanMeal(date); return; }
             prepare(kind, opts.entry);
             setActive(kind);
@@ -673,6 +672,28 @@ const NativeLogCenter = ({ user, setUser, onScanMeal, children }) => {
             </Modal>
 
             {/* Progress photo: confirm before saving */}
+            {/* Photo: camera or gallery */}
+            <Modal visible={active === 'photoSource'} onClose={close} title={t('log.photo')}>
+                {dayBadge}
+                <View style={styles.sourceRow}>
+                    {[
+                        { source: 'camera', icon: Camera, label: t('mealScan.camera') },
+                        { source: 'library', icon: Images, label: t('mealScan.gallery') },
+                    ].map(({ source, icon: Icon, label }) => (
+                        <TouchableOpacity
+                            key={source}
+                            onPress={() => { setActive(null); pickPhoto(logDate, source); }}
+                            style={styles.sourceBtn}
+                            activeOpacity={0.85}
+                            testID={`photo-source-${source}`}
+                        >
+                            <View style={styles.sourceIcon}><Icon size={24} color="#10B981" /></View>
+                            <Text style={styles.sourceText}>{label}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </Modal>
+
             <Modal visible={active === 'photo'} onClose={() => { setPendingPhoto(null); close(); }} title={t('log.photoPreviewTitle')}>
                 {!!pendingPhoto && (
                     <>
@@ -684,7 +705,7 @@ const NativeLogCenter = ({ user, setUser, onScanMeal, children }) => {
                         </View>
                         <Text style={styles.introText}>{t('log.photoPreviewHint')}</Text>
                         <View style={styles.photoActions}>
-                            <TouchableOpacity onPress={() => pickPhoto(logDate)} style={styles.secondaryBtn} testID="photo-change-button">
+                            <TouchableOpacity onPress={() => openLog('photo', { date: logDate })} style={styles.secondaryBtn} testID="photo-change-button">
                                 <RefreshCw size={16} color="#64748B" />
                                 <Text style={styles.secondaryBtnText}>{t('log.photoChange')}</Text>
                             </TouchableOpacity>
@@ -730,6 +751,10 @@ const styles = StyleSheet.create({
     photoActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
     secondaryBtn: { flex: 1, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 20, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0' },
     secondaryBtnText: { fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#64748B' },
+    sourceRow: { flexDirection: 'row', gap: 12, marginTop: 4 },
+    sourceBtn: { flex: 1, alignItems: 'center', gap: 10, paddingVertical: 22, borderRadius: 24, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0' },
+    sourceIcon: { width: 52, height: 52, borderRadius: 18, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' },
+    sourceText: { fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
     deleteBox: { flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: '#FEF2F2', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#FEE2E2' },
     deleteText: { flex: 1, fontSize: 13, fontFamily: 'Outfit_600SemiBold', color: '#7F1D1D', lineHeight: 18 },
     cancelLink: { alignItems: 'center', paddingVertical: 14 },

@@ -358,7 +358,10 @@
     "goalReached": "Ziel erreicht! 🎉",
     "editIntakeTitle": "{{nutrient}} heute",
     "editIntakeLabel": "Verbrauchte Menge",
-    "editIntakeHint": "Tagesziel: {{goal}}"
+    "editIntakeHint": "Tagesziel: {{goal}}",
+    "photoTitle": "Foto des Tages",
+    "photoSub": "Halte fest, wie du heute aussiehst",
+    "photoDone": "Heutiges Foto gespeichert. Tippe für ein weiteres"
   },
   "log": {
     "menuTitle": "Was möchtest du eintragen?",
@@ -468,19 +471,17 @@
   "reminders": {
     "title": "Erinnerungen",
     "menuSub": "Dosis, Wasser, Protein und Wiegen",
-    "intro": "Wähle, woran du erinnert werden möchtest. Jede Erinnerung entfällt, sobald du den Eintrag gemacht hast.",
-    "limitNote": "Höchstens 4 Erinnerungen pro Tag.",
+    "intro": "*Erinnerungen erscheinen nicht, wenn schon ein Eintrag existiert.",
     "deniedTitle": "Mitteilungen blockiert",
     "deniedText": "Mitteilungen von Mounjoy sind auf deinem Handy ausgeschaltet. Aktiviere sie in den Einstellungen, um Erinnerungen zu erhalten.",
     "openSettings": "Einstellungen öffnen",
     "webNote": "Erinnerungen kommen als Mitteilungen in der Handy-App.",
     "time": "Uhrzeit",
-    "invalidTime": "Format 09:00 verwenden",
     "dose": "Dosis",
     "doseSubWeekly": "Am Anwendungstag und am Tag danach, falls nicht eingetragen",
     "doseSubDaily": "Jeden Tag, bis du sie einträgst",
     "water": "Trinken",
-    "waterSub": "Um {{times}}, bis das Ziel erreicht ist",
+    "waterSub": "Bis das Tagesziel erreicht ist",
     "protein": "Protein",
     "proteinSub": "Einmal täglich, wenn das Ziel noch nicht erreicht ist",
     "weight": "Wiegen",
@@ -520,7 +521,9 @@
         "title": "Zeit zum Wiegen ⚖️",
         "body": "Wieg dich jetzt und trag es in Mounjoy ein."
       }
-    }
+    },
+    "timesPerDay": "Mal am Tag",
+    "firstAt": "Erste Erinnerung"
   },
   "supplements": {
     "title": "Nahrungsergänzung",

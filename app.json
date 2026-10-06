@@ -51,7 +51,8 @@
         {
           "color": "#EA580C"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "locales": {
       "en": "./src/i18n/native/en.json",

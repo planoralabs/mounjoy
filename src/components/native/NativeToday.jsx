@@ -9,7 +9,7 @@ import { suggestNextInjection } from '../../services/InjectionService';
 import { unitsFor, formatDate, formatNumber } from '../../i18n';
 import { useLog, getMedication, doseIntervalDays } from './NativeLogCenter';
 import { SupplementsCard, SupplementsModal } from './NativeSupplements';
-import { intakeKey, isSameDay, daysBetween, latestWeight, startWeightOf, sortedDoses, weightLogs, photoUri } from '../../utils/journal';
+import { intakeKey, isSameDay, daysBetween, latestWeight, startWeightOf, sortedDoses, weightLogs, photoUri, sortedPhotos } from '../../utils/journal';
 
 const waterImg = require('../../../assets/water.png');
 const proteinImg = require('../../../assets/protein.png');
@@ -222,6 +222,7 @@ const NativeToday = ({ user, setUser, setActiveTab }) => {
     // Tapping a value lets the user type today's amount directly.
     const [editing, setEditing] = useState(null); // nutrient key
     const [showSupplements, setShowSupplements] = useState(false);
+    const todayPhoto = useMemo(() => sortedPhotos(user).filter((p) => p.date && isSameDay(p.date, today)).pop() || null, [user.photos, today]);
     const [editValue, setEditValue] = useState('');
     const decimalSep = formatNumber(1.5).includes(',') ? ',' : '.';
     const openEdit = (type) => {
@@ -414,6 +415,20 @@ const NativeToday = ({ user, setUser, setActiveTab }) => {
                 {/* Supplements: counted here, never in the goals above (whey excepted) */}
                 <SupplementsCard user={user} setUser={setUser} onConfigure={() => setShowSupplements(true)} />
 
+                {/* Today's progress photo */}
+                <TouchableOpacity onPress={() => openLog('photo')} style={styles.photoCard} activeOpacity={0.85} testID="today-photo-button">
+                    {todayPhoto ? (
+                        <Image source={{ uri: photoUri(todayPhoto) }} style={styles.photoThumb} />
+                    ) : (
+                        <View style={styles.photoIcon}><Camera size={20} color="#10B981" /></View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.photoTitle}>{t('today.photoTitle')}</Text>
+                        <Text style={styles.photoSub}>{todayPhoto ? t('today.photoDone') : t('today.photoSub')}</Text>
+                    </View>
+                    {todayPhoto ? <Check size={18} color="#10B981" strokeWidth={3} /> : <Plus size={18} color="#10B981" strokeWidth={3} />}
+                </TouchableOpacity>
+
                 {/* Weight */}
                 <TouchableOpacity activeOpacity={0.9} onPress={() => setActiveTab('progress')} style={styles.weightCard}>
                     <View style={styles.weightMascotBg}>
@@ -585,6 +600,11 @@ const styles = StyleSheet.create({
 
     // Goals
     goalsCard: { padding: 12, gap: 8 },
+    photoCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', borderRadius: 28, padding: 14, borderWidth: 1, borderColor: '#D1FAE5', marginBottom: 24 },
+    photoIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' },
+    photoThumb: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#F1F5F9' },
+    photoTitle: { fontSize: 15, fontFamily: 'Outfit_900Black', color: '#0F172A' },
+    photoSub: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#64748B', marginTop: 2 },
     nutrientRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 26, borderWidth: 1, borderColor: 'transparent', overflow: 'hidden' },
     nutrientIconBox: { width: 50, height: 50, borderRadius: 18, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' },
     nutrientIcon: { width: 40, height: 40 },

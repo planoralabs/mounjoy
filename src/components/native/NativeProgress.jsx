@@ -54,6 +54,7 @@ const NativeProgress = ({ user, setUser }) => {
     const { openLog } = useLog();
     const units = unitsFor(user);
     const [tooltip, setTooltip] = useState(null);
+    const [tooltipH, setTooltipH] = useState(84);
     const [viewerIndex, setViewerIndex] = useState(null);
     const [compareMode, setCompareMode] = useState(false);
     const [picked, setPicked] = useState([]); // photo.index values
@@ -84,27 +85,26 @@ const NativeProgress = ({ user, setUser }) => {
 
     const chartWidth = Math.max(width - 48, chartLogs.length * 65);
 
-    const getXForIndex = (index, total) => {
-        const w = chartWidth - 40;
-        const k = w / 298;
-        const pLeft = 64 * k;
-        const pRight = 58.5 * k;
-        if (total <= 1) return w / 2;
-        return pLeft + (index * (w - pLeft - pRight)) / (total - 1);
-    };
-    const getYForValue = (value) => {
-        const values = chartLogs.map((l) => l.weight);
-        const max = Math.max(...values);
+    // Where react-native-chart-kit draws each dot (LineChart renderDots, with
+    // its default paddingRight 64 / paddingTop 16), shifted by the chart's own
+    // style offset (marginLeft -48, marginVertical 8) inside the ScrollView.
+    const CHART_H = 220;
+    const plotWidth = chartWidth - 40;
+    const pointX = (index) => 64 + (index * (plotWidth - 64)) / Math.max(1, chartLogs.length) - 48;
+    const pointY = (kg) => {
+        const values = chartLogs.map((l) => units.weight(l.weight));
         const min = Math.min(...values);
-        if (max === min) return 98.5;
-        return 181 - ((value - min) / (max - min)) * 165;
+        const scaler = Math.max(...values) - min || 1;
+        return ((CHART_H - CHART_H * ((units.weight(kg) - min) / scaler)) / 4) * 3 + 16 + 8;
     };
+    const TOOLTIP_W = 168;
     const handlePointClick = (index) => {
         const log = chartLogs[index];
         if (!log) return;
         setTooltip({
-            x: getXForIndex(index, chartLogs.length),
-            y: getYForValue(log.weight),
+            index,
+            x: pointX(index),
+            y: pointY(log.weight),
             value: log.weight,
             date: formatDate(log.date, { day: 'numeric', month: 'long' }),
             bmi: heightM ? (log.weight / (heightM * heightM)).toFixed(1) : null,
@@ -150,7 +150,7 @@ const NativeProgress = ({ user, setUser }) => {
         { icon: Scale, color: '#EA580C', bg: '#FFF7ED', label: t('progress.current'), value: current ? units.formatWeight(current) : '--' },
         { icon: TrendingDown, color: '#10B981', bg: '#ECFDF5', label: t('progress.lost'), value: start && current ? units.formatWeightDiff(-lost) : '--' },
         { icon: Target, color: '#8B5CF6', bg: '#F5F3FF', label: t('progress.goal'), value: goal ? units.formatWeight(goal) : '--', sub: goal && current && current > goal ? t('progress.toGo', { value: units.formatWeight(current - goal) }) : null },
-        { icon: Activity, color: '#2563EB', bg: '#EFF6FF', label: t('evolution.bmi'), value: bmi ? formatNumber(bmi) : '--', sub: bmiBand ? t(`progress.${bmiBand.key}`) : null, subColor: bmiBand?.color, onInfo: () => setShowBmiInfo(true) },
+        { icon: Activity, color: '#2563EB', bg: '#EFF6FF', label: t('evolution.bmi'), value: bmi ? formatNumber(bmi) : '--', onInfo: () => setShowBmiInfo(true) },
     ];
 
     return (
@@ -175,7 +175,7 @@ const NativeProgress = ({ user, setUser }) => {
                                 <View style={[styles.statIcon, { backgroundColor: s.bg }]}><s.icon size={16} color={s.color} /></View>
                                 <Text style={styles.statLabel}>{s.label}</Text>
                                 <Text style={styles.statValue}>{s.value}</Text>
-                                {!!s.sub && <Text style={[styles.statSub, s.subColor && { color: s.subColor }]}>{s.sub}</Text>}
+                                {!!s.sub && <Text style={styles.statSub}>{s.sub}</Text>}
                             </Card>
                         );
                     })}
@@ -231,21 +231,34 @@ const NativeProgress = ({ user, setUser }) => {
                             {!isDemo && chartData.labels.map((_, index) => (
                                 <Pressable
                                     key={index}
-                                    style={{ position: 'absolute', left: getXForIndex(index, chartLogs.length) - 25 - 48, top: 8, width: 50, height: 200, zIndex: 15 }}
+                                    style={{ position: 'absolute', left: pointX(index) - 25, top: 8, width: 50, height: 200, zIndex: 15 }}
                                     onPress={() => handlePointClick(index)}
                                 />
                             ))}
-                            {tooltip && (
-                                <>
-                                    <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }} onPress={() => setTooltip(null)} />
-                                    <Pressable style={[styles.tooltip, { left: Math.max(10, Math.min(chartWidth - 40 - 160, tooltip.x - 113)), top: Math.max(10, tooltip.y - 80) }]}>
-                                        <TouchableOpacity style={styles.tooltipClose} onPress={() => setTooltip(null)}><X size={12} color="#94A3B8" /></TouchableOpacity>
-                                        <Text style={styles.tooltipDate}>{tooltip.date}</Text>
-                                        <Text style={styles.tooltipText}>{t('evolution.weightLabel')}: <Text style={styles.tooltipBold}>{units.formatWeight(tooltip.value)}</Text></Text>
-                                        {!!tooltip.bmi && <Text style={styles.tooltipText}>{t('evolution.bmi')}: <Text style={styles.tooltipBold}>{tooltip.bmi}</Text></Text>}
-                                    </Pressable>
-                                </>
-                            )}
+                            {tooltip && (() => {
+                                // Centered on the dot, above it unless it would leave the chart.
+                                const above = tooltip.y - tooltipH - 16 >= 0;
+                                const maxLeft = plotWidth - 48 + 20 - TOOLTIP_W - 4;
+                                const left = Math.max(4, Math.min(maxLeft, tooltip.x - TOOLTIP_W / 2));
+                                const top = above ? tooltip.y - tooltipH - 16 : tooltip.y + 16;
+                                const arrowLeft = Math.max(14, Math.min(TOOLTIP_W - 26, tooltip.x - left - 6));
+                                return (
+                                    <>
+                                        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }} onPress={() => setTooltip(null)} />
+                                        <View pointerEvents="none" style={[styles.pointRing, { left: tooltip.x - 10, top: tooltip.y - 10 }]} />
+                                        <Pressable
+                                            onLayout={(e) => setTooltipH(e.nativeEvent.layout.height)}
+                                            style={[styles.tooltip, { width: TOOLTIP_W, left, top }]}
+                                        >
+                                            <View style={[styles.tooltipArrow, above ? { bottom: -6, borderTopWidth: 0, borderLeftWidth: 0 } : { top: -6, borderBottomWidth: 0, borderRightWidth: 0 }, { left: arrowLeft }]} />
+                                            <TouchableOpacity style={styles.tooltipClose} onPress={() => setTooltip(null)}><X size={12} color="#94A3B8" /></TouchableOpacity>
+                                            <Text style={styles.tooltipDate}>{tooltip.date}</Text>
+                                            <Text style={styles.tooltipText}>{t('evolution.weightLabel')}: <Text style={styles.tooltipBold}>{units.formatWeight(tooltip.value)}</Text></Text>
+                                            {!!tooltip.bmi && <Text style={styles.tooltipText}>{t('evolution.bmi')}: <Text style={styles.tooltipBold}>{tooltip.bmi}</Text></Text>}
+                                        </Pressable>
+                                    </>
+                                );
+                            })()}
                         </ScrollView>
                     </View>
                 </View>
@@ -363,14 +376,12 @@ const NativeProgress = ({ user, setUser }) => {
                             const doseMed = getMedication({ medicationId: dose.medication });
                             return (
                                 <View key={`${dose.date}-${idx}`} style={styles.doseItem}>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.doseDate}>{formatDate(dose.date, { day: '2-digit', month: 'short' })}</Text>
+                                    <View style={{ flex: 1, minWidth: 0 }}>
+                                        <Text style={styles.doseMed} numberOfLines={1}>{doseMed?.name || '--'}</Text>
                                         <Text style={styles.doseSite}>{siteLabel(t, dose)}</Text>
                                     </View>
-                                    <View style={{ alignItems: 'flex-end' }}>
-                                        {!!doseMed && <Text style={styles.doseMed} numberOfLines={1}>{doseMed.name}</Text>}
-                                        <Text style={styles.doseVal}>{dose.dose}</Text>
-                                    </View>
+                                    <Text style={styles.doseDate}>{formatDate(dose.date, { day: '2-digit', month: 'short' })}</Text>
+                                    <Text style={styles.doseVal}>{dose.dose}</Text>
                                 </View>
                             );
                         }) : (
@@ -456,7 +467,9 @@ const styles = StyleSheet.create({
     demoBadge: { position: 'absolute', top: 120, alignSelf: 'center', zIndex: 20, backgroundColor: '#0F172A', borderRadius: 12, paddingVertical: 6, paddingHorizontal: 12 },
     demoBadgeText: { fontSize: 11, fontFamily: 'Outfit_900Black', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 1 },
 
-    tooltip: { position: 'absolute', backgroundColor: '#FFFFFF', borderRadius: 18, padding: 14, width: 160, borderWidth: 1, borderColor: '#E2E8F0', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 6, zIndex: 20 },
+    tooltip: { position: 'absolute', backgroundColor: '#FFFFFF', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 6, zIndex: 20 },
+    tooltipArrow: { position: 'absolute', width: 12, height: 12, backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderWidth: 1, transform: [{ rotate: '45deg' }] },
+    pointRing: { position: 'absolute', width: 20, height: 20, borderRadius: 10, borderWidth: 3, borderColor: 'rgba(234, 88, 12, 0.35)', zIndex: 12 },
     tooltipClose: { position: 'absolute', top: 8, right: 8, padding: 4 },
     tooltipDate: { fontSize: 12, fontFamily: 'Outfit_900Black', color: '#64748B', marginBottom: 6 },
     tooltipText: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#475569', lineHeight: 18 },
@@ -489,11 +502,11 @@ const styles = StyleSheet.create({
     measureValue: { fontSize: 20, fontFamily: 'Outfit_900Black', color: '#4C1D95', marginTop: 2 },
     measureDiff: { fontSize: 10, fontFamily: 'Outfit_700Bold', marginTop: 2 },
 
-    doseItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#F8FAFC', paddingBottom: 10 },
-    doseDate: { fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#334155' },
+    doseItem: { flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: '#F8FAFC', paddingBottom: 10 },
+    doseDate: { fontSize: 12, fontFamily: 'Outfit_700Bold', color: '#64748B' },
     doseSite: { fontSize: 10, fontFamily: 'Outfit_900Black', color: '#94A3B8', textTransform: 'uppercase', marginTop: 2 },
-    doseVal: { fontSize: 14, fontFamily: 'Outfit_900Black', color: '#EA580C' },
-    doseMed: { fontSize: 10, fontFamily: 'Outfit_700Bold', color: '#64748B', marginBottom: 1 },
+    doseVal: { minWidth: 58, textAlign: 'right', fontSize: 14, fontFamily: 'Outfit_900Black', color: '#EA580C' },
+    doseMed: { fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#334155' },
     statInfo: { position: 'absolute', top: 14, right: 14 },
     bmiIntro: { fontSize: 13, fontFamily: 'Outfit_600SemiBold', color: '#64748B', lineHeight: 19, marginBottom: 16 },
     bmiList: { gap: 8 },

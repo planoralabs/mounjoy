@@ -358,7 +358,10 @@
     "goalReached": "Objectif atteint ! 🎉",
     "editIntakeTitle": "{{nutrient}} du jour",
     "editIntakeLabel": "Quantité consommée",
-    "editIntakeHint": "Objectif du jour : {{goal}}"
+    "editIntakeHint": "Objectif du jour : {{goal}}",
+    "photoTitle": "Photo du jour",
+    "photoSub": "Immortalisez votre évolution aujourd’hui",
+    "photoDone": "Photo du jour enregistrée. Touchez pour en ajouter une autre"
   },
   "log": {
     "menuTitle": "Que voulez-vous noter ?",
@@ -468,19 +471,17 @@
   "reminders": {
     "title": "Rappels",
     "menuSub": "Dose, eau, protéines et pesée",
-    "intro": "Choisissez vos rappels. Chacun disparaît de lui-même une fois l’action enregistrée.",
-    "limitNote": "4 rappels par jour au maximum.",
+    "intro": "*Les rappels n’apparaissent pas si c’est déjà enregistré.",
     "deniedTitle": "Notifications bloquées",
     "deniedText": "Les notifications de Mounjoy sont désactivées sur votre téléphone. Activez-les dans les Réglages pour recevoir vos rappels.",
     "openSettings": "Ouvrir les réglages",
     "webNote": "Les rappels arrivent sous forme de notifications dans l’app mobile.",
     "time": "Heure",
-    "invalidTime": "Utilisez le format 09:00",
     "dose": "Dose",
     "doseSubWeekly": "Le jour de l’injection, et le lendemain si elle n’est pas enregistrée",
     "doseSubDaily": "Chaque jour, jusqu’à l’enregistrement",
     "water": "Hydratation",
-    "waterSub": "À {{times}}, jusqu’à atteindre l’objectif",
+    "waterSub": "Jusqu’à atteindre l’objectif du jour",
     "protein": "Protéines",
     "proteinSub": "Une fois par jour, si l’objectif n’est pas atteint",
     "weight": "Pesée",
@@ -520,7 +521,9 @@
         "title": "C’est l’heure de la pesée ⚖️",
         "body": "Pesez-vous maintenant et enregistrez-le dans Mounjoy."
       }
-    }
+    },
+    "timesPerDay": "Fois par jour",
+    "firstAt": "Premier rappel"
   },
   "supplements": {
     "title": "Compléments",

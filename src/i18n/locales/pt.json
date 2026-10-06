@@ -358,7 +358,10 @@
     "goalReached": "Meta alcançada! 🎉",
     "editIntakeTitle": "{{nutrient}} de hoje",
     "editIntakeLabel": "Quantidade consumida",
-    "editIntakeHint": "Meta do dia: {{goal}}"
+    "editIntakeHint": "Meta do dia: {{goal}}",
+    "photoTitle": "Foto do dia",
+    "photoSub": "Registre como você está hoje",
+    "photoDone": "Foto de hoje salva. Toque para adicionar outra"
   },
   "log": {
     "menuTitle": "O que você quer registrar?",
@@ -468,19 +471,17 @@
   "reminders": {
     "title": "Lembretes",
     "menuSub": "Dose, água, proteína e pesagem",
-    "intro": "Escolha o que quer lembrar. Cada lembrete some sozinho quando você já registrou.",
-    "limitNote": "No máximo 4 lembretes por dia.",
+    "intro": "*Os lembretes não aparecem se já houver registro.",
     "deniedTitle": "Notificações bloqueadas",
     "deniedText": "As notificações do Mounjoy estão desativadas no seu celular. Ative nas configurações para receber os lembretes.",
     "openSettings": "Abrir configurações",
     "webNote": "Os lembretes chegam como notificações no app do celular.",
     "time": "Horário",
-    "invalidTime": "Use o formato 09:00",
     "dose": "Dose",
     "doseSubWeekly": "No dia da aplicação e no dia seguinte, se não registrar",
     "doseSubDaily": "Todos os dias, até você registrar",
     "water": "Hidratação",
-    "waterSub": "Às {{times}}, até bater a meta",
+    "waterSub": "Até bater a meta do dia",
     "protein": "Proteína",
     "proteinSub": "Uma vez por dia, se a meta não foi batida",
     "weight": "Pesagem",
@@ -520,7 +521,9 @@
         "title": "Hora da pesagem ⚖️",
         "body": "Pese-se agora e registre no Mounjoy para acompanhar sua evolução."
       }
-    }
+    },
+    "timesPerDay": "Vezes ao dia",
+    "firstAt": "Primeiro lembrete"
   },
   "supplements": {
     "title": "Suplementos",
