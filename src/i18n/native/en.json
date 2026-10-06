@@ -1,7 +1,7 @@
 {
   "ios": {
     "CFBundleDisplayName": "Mounjoy",
-    "NSCameraUsageDescription": "Mounjoy uses your camera to photograph your meals so it can identify the foods.",
+    "NSCameraUsageDescription": "Mounjoy uses the camera to photograph your meals and progress and to scan food barcodes.",
     "NSPhotoLibraryUsageDescription": "Mounjoy uses your photos to add progress pictures and analyze meal photos."
   }
 }

@@ -52,7 +52,14 @@
           "color": "#EA580C"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "locales": {
       "en": "./src/i18n/native/en.json",

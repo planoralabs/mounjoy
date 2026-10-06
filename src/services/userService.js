@@ -51,8 +51,8 @@ const syncRows = async (uid, table, records, toFields) => {
     }
 };
 
-// Column / table missing: the database hasn't run the supplements & reminders
-// migration yet (supabase/migrations/20261006_reminders_supplements.sql).
+// Column / table missing: the database hasn't run a newer migration yet
+// (supabase/migrations/20261006_reminders_supplements.sql, 20261007_food_search.sql).
 const MISSING_SCHEMA = new Set(['PGRST204', 'PGRST205', '42703', '42P01']);
 const isMissingSchema = (error) => !!error && MISSING_SCHEMA.has(error.code);
 
@@ -63,7 +63,7 @@ const withNewerSchema = async (label, write) => {
         if (result?.error) throw result.error;
     } catch (error) {
         if (!isMissingSchema(error)) throw error;
-        console.warn(`Skipped ${label}: run the 20261006 Supabase migration.`);
+        console.warn(`Skipped ${label}: run the newer Supabase migrations.`);
     }
 };
 
@@ -129,6 +129,10 @@ export const userService = {
             await withNewerSchema('supplements and reminders', () => supabase.from('profiles').update({
                 supplements: Array.isArray(userData.supplements) ? userData.supplements : [],
                 reminder_settings: settings.reminders || {},
+            }).eq('id', uid));
+
+            await withNewerSchema('custom foods', () => supabase.from('profiles').update({
+                custom_foods: Array.isArray(userData.customFoods) ? userData.customFoods : [],
             }).eq('id', uid));
 
             // 2–4. Record tables mirror the app's lists exactly: new records
@@ -316,6 +320,7 @@ export const userService = {
                     sideEffectsLogs: formattedSideEffectsLogs,
                     dailyIntakeHistory: dailyIntakeHistory,
                     supplements: Array.isArray(profile.supplements) ? profile.supplements : [],
+                    customFoods: Array.isArray(profile.custom_foods) ? profile.custom_foods : [],
                     supplementLogs: (supplementRows || []).map((l) => ({ date: l.date, supplementId: l.supplement_id, name: l.name })),
                     settings: {
                         proteinGoal: parseFloat(profile.protein_goal) || 100,
@@ -411,42 +416,6 @@ export const userService = {
             throw error;
         }
         return data.items || [];
-    },
-
-    /**
-     * Best-effort lookup of a food item's macros per 100g by name. Returns
-     * null if nothing matches — food_items starts empty until seeded (see
-     * mobile_documentation.md 7.8), so callers must handle a null result.
-     */
-    findFoodItemByName: async (name) => {
-        const { data, error } = await supabase
-            .from('food_items')
-            .select('*')
-            .ilike('name_search', `%${name.toLowerCase().trim()}%`)
-            .limit(1)
-            .maybeSingle();
-
-        if (error) {
-            console.error('Error looking up food item:', error);
-            return null;
-        }
-        return data;
-    },
-
-    /** Manual search for the "add item" flow (returns up to 10 matches). */
-    searchFoodItems: async (query) => {
-        if (!query || query.trim().length < 2) return [];
-        const { data, error } = await supabase
-            .from('food_items')
-            .select('*')
-            .ilike('name_search', `%${query.toLowerCase().trim()}%`)
-            .limit(10);
-
-        if (error) {
-            console.error('Error searching food items:', error);
-            return [];
-        }
-        return data || [];
     },
 
     /** Persists a confirmed meal log (own table, independent of profiles). */

@@ -2,12 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, TouchableWithoutFeedback, Image, Platform, LayoutAnimation, UIManager, TextInput, Keyboard } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { Camera, Images, ArrowLeft, Plus, Minus, Trash2, AlertCircle, ChevronUp, CheckCircle2, Minimize2 } from 'lucide-react-native';
-import { Button, Input } from './NativeUI';
+import { Camera, Images, ArrowLeft, Plus, Minus, Trash2, AlertCircle, ChevronUp, CheckCircle2, Minimize2, Search, UtensilsCrossed } from 'lucide-react-native';
+import { Button } from './NativeUI';
+import { FoodSearchModal } from './NativeFoodSearch';
 import { userService } from '../../services/userService';
 import { useTranslation } from 'react-i18next';
 import i18n, { unitsFor, formatNumber, formatDate } from '../../i18n';
 import { intakeKey, recordDateFor, isSameDay } from '../../utils/journal';
+import { round1, nutritionFor, mealTotals } from '../../utils/nutrition';
+import { findFoodForScan } from '../../services/FoodService';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -17,21 +20,19 @@ const triggerLayoutAnimation = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 };
 
-const round1 = (n) => Math.round((n || 0) * 10) / 10;
-
 // Macro source, in order of trust: our own food_items table (authoritative
 // once seeded, see mobile_documentation.md 7.8) first; if no match, fall
 // back to the per-100g estimate Gemini already returned alongside the
 // identification (see 7.10) — only truly empty (manual items with no AI
 // estimate and no DB match) shows nutrition: null / "sem dados".
 const withNutrition = async (item) => {
-    const match = await userService.findFoodItemByName(item.name);
+    const match = await findFoodForScan(item.name, i18n.language).catch(() => null);
 
     // rate100g is kept on the item so grams can be edited later without
     // re-querying the DB or re-calling Gemini — recompute is just
     // rate100g * (grams / 100).
     const rate100g = match
-        ? { calories: match.calories_per_100g, protein: match.protein_per_100g, carbs: match.carbs_per_100g, fat: match.fat_per_100g, fiber: match.fiber_per_100g ?? item.fiberPer100g ?? 0 }
+        ? { ...match.rate100g, fiber: match.rate100g.fiber || item.fiberPer100g || 0 }
         : (item.caloriesPer100g > 0
             ? { calories: item.caloriesPer100g, protein: item.proteinPer100g || 0, carbs: item.carbsPer100g || 0, fat: item.fatPer100g || 0, fiber: item.fiberPer100g || 0 }
             : null);
@@ -47,30 +48,7 @@ const withNutrition = async (item) => {
     };
 };
 
-const nutritionFor = (rate100g, grams) => {
-    const factor = grams / 100;
-    return {
-        calories: Math.round(rate100g.calories * factor),
-        protein: round1(rate100g.protein * factor),
-        carbs: round1(rate100g.carbs * factor),
-        fat: round1(rate100g.fat * factor),
-        fiber: round1((rate100g.fiber || 0) * factor),
-    };
-};
-
 const nutritionForGrams = (item, grams) => (item.rate100g ? nutritionFor(item.rate100g, grams) : item.nutrition);
-
-export const mealTotals = (items) => items.reduce((acc, item) => {
-    const n = item.nutrition;
-    if (!n) return acc;
-    return {
-        calories: acc.calories + (n.calories || 0),
-        protein: acc.protein + (n.protein || 0),
-        carbs: acc.carbs + (n.carbs || 0),
-        fat: acc.fat + (n.fat || 0),
-        fiber: acc.fiber + (n.fiber || 0),
-    };
-}, { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
 
 // Typical wait for the analysis; the bar eases towards 92% over about this
 // long and only fills when the result actually arrives.
@@ -158,6 +136,12 @@ export const useMealScan = ({ user, setUser }) => {
 
     const setItems = (fn) => updateJob((prev) => ({ items: fn(prev.items) }));
 
+    // Typed meal: straight to the review list, empty, with no photo.
+    const startManual = () => {
+        setPickError(null);
+        setJob({ status: 'review', manual: true, photoUri: null, items: [], error: null, startedAt: Date.now() });
+    };
+
     const confirm = async () => {
         if (!job || job.items.length === 0) return;
         const current = userRef.current;
@@ -231,6 +215,8 @@ export const useMealScan = ({ user, setUser }) => {
         pickAndAnalyze,
         setItems,
         confirm,
+        startManual,
+        setUser,
     };
 };
 
@@ -243,7 +229,9 @@ export const MealScanBanner = ({ scan }) => {
     const failed = ready && (job.error || job.items.length === 0);
     return (
         <TouchableOpacity style={styles.banner} onPress={() => scan.open()} activeOpacity={0.9} testID="meal-scan-banner">
-            <Image source={{ uri: job.photoUri }} style={styles.bannerThumb} />
+            {job.photoUri
+                ? <Image source={{ uri: job.photoUri }} style={styles.bannerThumb} />
+                : <View style={[styles.bannerThumb, styles.bannerIcon]}><UtensilsCrossed size={20} color="#EA580C" /></View>}
             <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.bannerTitle} numberOfLines={1}>
                     {!ready ? t('mealScan.bannerAnalyzing') : failed ? t('mealScan.bannerFailed') : t('mealScan.bannerReady')}
@@ -292,9 +280,7 @@ const NativeMealScan = ({ user, scan }) => {
     // type ounces.
     const units = unitsFor(user);
     const { job, progress } = scan;
-    const [manualName, setManualName] = useState('');
-    const [manualGrams, setManualGrams] = useState('');
-    const [showManualForm, setShowManualForm] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
     const [totalWeightHint, setTotalWeightHint] = useState('');
     const [portionDrafts, setPortionDrafts] = useState({});
 
@@ -324,16 +310,14 @@ const NativeMealScan = ({ user, scan }) => {
         scan.setItems((prev) => prev.filter((item) => item.id !== id));
     };
 
-    const addManualItem = async () => {
-        const trimmedName = manualName.trim().slice(0, 100);
-        const grams = Math.min(5000, Math.max(0, Math.round(units.foodToGrams(parseFloat(manualGrams))) || 0));
-        if (!trimmedName || grams <= 0) return;
+    const addFood = (item) => {
         triggerLayoutAnimation();
-        const withMacros = await withNutrition({ name: trimmedName, category: 'other', estimatedGrams: grams, confidence: 1 });
-        scan.setItems((prev) => [...prev, { id: `manual-${Date.now()}`, ...withMacros, confirmedGrams: grams, source: 'manual' }]);
-        setManualName('');
-        setManualGrams('');
-        setShowManualForm(false);
+        scan.setItems((prev) => [...prev, item]);
+    };
+
+    const startManual = () => {
+        scan.startManual();
+        setShowSearch(true);
     };
 
     const totals = mealTotals(items);
@@ -346,7 +330,7 @@ const NativeMealScan = ({ user, scan }) => {
                     <ArrowLeft size={20} color="#EA580C" />
                 </TouchableOpacity>
                 <View style={{ alignItems: 'center' }}>
-                    <Text style={styles.headerTitle}>{t('mealScan.title')}</Text>
+                    <Text style={styles.headerTitle}>{job?.manual ? t('foodSearch.mealTitle') : t('mealScan.title')}</Text>
                     {!!scan.mealDate && (
                         <Text style={styles.headerDay}>{t('log.forDay', { day: formatDate(scan.mealDate, { day: 'numeric', month: 'long' }) })}</Text>
                     )}
@@ -392,6 +376,19 @@ const NativeMealScan = ({ user, scan }) => {
                                 <View style={styles.btnContent}><Images size={18} color="#334155" /><Text style={[styles.btnContentText, { color: '#334155' }]}>{t('mealScan.gallery')}</Text></View>
                             </Button>
                         </View>
+
+                        <View style={styles.orRow}>
+                            <View style={styles.orLine} />
+                            <Text style={styles.orText}>{t('welcome.or')}</Text>
+                            <View style={styles.orLine} />
+                        </View>
+                        <TouchableOpacity onPress={startManual} style={styles.typeBtn} activeOpacity={0.85} testID="meal-type-foods">
+                            <Search size={18} color="#EA580C" />
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.typeTitle}>{t('foodSearch.typeTitle')}</Text>
+                                <Text style={styles.typeSub}>{t('foodSearch.typeSub')}</Text>
+                            </View>
+                        </TouchableOpacity>
                     </View>
                 </TouchableWithoutFeedback>
             )}
@@ -412,15 +409,15 @@ const NativeMealScan = ({ user, scan }) => {
 
             {(status === 'review' || status === 'saving') && (
                 <ScrollView style={styles.reviewList} contentContainerStyle={{ paddingBottom: 24 }}>
-                    <Image source={{ uri: job.photoUri }} style={styles.reviewPhoto} />
+                    {!!job.photoUri && <Image source={{ uri: job.photoUri }} style={styles.reviewPhoto} />}
 
                     {!!job.error && <Text style={styles.errorText}><AlertCircle size={14} color="#EF4444" /> {job.error}</Text>}
 
                     {items.length > 0 && (
-                        <Text style={styles.sectionLabel}>{t('mealScan.itemsTitle', { count: items.length })}</Text>
+                        <Text style={styles.sectionLabel}>{t(job.manual ? 'foodSearch.itemsTitle' : 'mealScan.itemsTitle', { count: items.length })}</Text>
                     )}
                     {items.length === 0 && (
-                        <Text style={styles.emptyText}>{t('mealScan.noItems')}</Text>
+                        <Text style={styles.emptyText}>{job.manual ? t('foodSearch.emptyMeal') : t('mealScan.noItems')}</Text>
                     )}
 
                     {items.map((item) => (
@@ -465,21 +462,10 @@ const NativeMealScan = ({ user, scan }) => {
                         </View>
                     ))}
 
-                    {showManualForm ? (
-                        <View style={styles.manualForm}>
-                            <Input label={t('mealScan.itemName')} value={manualName} onChangeText={setManualName} placeholder={t('mealScan.itemNamePlaceholder')} />
-                            <Input label={t('mealScan.quantity', { unit: units.foodUnit })} value={manualGrams} onChangeText={setManualGrams} placeholder={units.imperial ? '3.5' : '100'} keyboardType="numeric" />
-                            <View style={styles.actionRow}>
-                                <Button variant="ghost" onClick={() => setShowManualForm(false)} style={styles.actionBtn}>{t('common.cancel')}</Button>
-                                <Button variant="primary" onClick={addManualItem} style={styles.actionBtn}>{t('mealScan.add')}</Button>
-                            </View>
-                        </View>
-                    ) : (
-                        <TouchableOpacity onPress={() => setShowManualForm(true)} style={styles.addManualBtn}>
-                            <Plus size={16} color="#EA580C" />
-                            <Text style={styles.addManualText}>{t('mealScan.addManual')}</Text>
-                        </TouchableOpacity>
-                    )}
+                    <TouchableOpacity onPress={() => setShowSearch(true)} style={styles.addManualBtn} testID="meal-add-food">
+                        <Search size={16} color="#EA580C" />
+                        <Text style={styles.addManualText}>{t('foodSearch.addFood')}</Text>
+                    </TouchableOpacity>
 
                     {hasUnmatchedItems && <Text style={styles.hintText}>{t('mealScan.unmatchedHint')}</Text>}
 
@@ -503,6 +489,7 @@ const NativeMealScan = ({ user, scan }) => {
                     </Button>
                 </ScrollView>
             )}
+            <FoodSearchModal visible={showSearch} onClose={() => setShowSearch(false)} onAdd={addFood} user={user} setUser={scan.setUser} />
         </SafeAreaView>
     );
 };
@@ -562,7 +549,6 @@ const styles = StyleSheet.create({
     chipLabel: { fontSize: 9, fontFamily: 'Outfit_900Black', textTransform: 'uppercase', letterSpacing: 0.3 },
     chipValue: { fontSize: 14, fontFamily: 'Outfit_900Black', color: '#0F172A', marginTop: 1 },
 
-    manualForm: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#F1F5F9' },
     addManualBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginBottom: 8 },
     addManualText: { fontSize: 13, fontFamily: 'Outfit_700Bold', color: '#EA580C' },
 
@@ -597,6 +583,13 @@ const styles = StyleSheet.create({
         elevation: 9,
     },
     bannerThumb: { width: 46, height: 46, borderRadius: 14, backgroundColor: '#F1F5F9' },
+    bannerIcon: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF7ED' },
+    orRow: { flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%', marginTop: 20 },
+    orLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
+    orText: { fontSize: 11, fontFamily: 'Outfit_700Bold', color: '#94A3B8', textTransform: 'uppercase' },
+    typeBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%', marginTop: 16, padding: 16, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#FED7AA' },
+    typeTitle: { fontSize: 15, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
+    typeSub: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#64748B', marginTop: 2 },
     bannerTitle: { fontSize: 13, fontFamily: 'Outfit_900Black', color: '#0F172A' },
     bannerSub: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#64748B', marginTop: 2 },
     bannerTrack: { height: 6, borderRadius: 3, backgroundColor: '#FFEDD5', overflow: 'hidden', marginTop: 6 },
