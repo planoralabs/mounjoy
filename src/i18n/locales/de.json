@@ -52,7 +52,7 @@
     "thigh-right": "Oberschenkel rechts",
     "arm-left": "Arm links",
     "arm-right": "Arm rechts",
-    "oral": "Oral",
+    "oral": "Tablette",
     "selectSite": "Stelle auswählen"
   },
   "sitesShort": {
@@ -303,9 +303,7 @@
     "waterGoal": "Wasser ({{unit}})",
     "fiberGoal": "Ballaststoffe (g)",
     "settingsTitle": "Einstellungen",
-    "reminders": "Erinnerungen",
-    "remindersSub": "Zeiten für Dosis-Erinnerungen",
-    "unitsIntro": "Wähle, wie Gewicht, Größe, Wasser und Portionen angezeigt werden. Deine Daten bleiben gleich.",
+    "unitsIntro": "Wähle, wie Gewicht, Größe, Wasser und Portionen angezeigt werden.",
     "accountTitle": "Konto",
     "logout": "Abmelden",
     "logoutSub": "Von diesem Gerät abmelden",
@@ -315,11 +313,6 @@
     "waist": "Taille ({{unit}})",
     "hip": "Hüfte ({{unit}})",
     "saveMeasures": "Maße speichern",
-    "remindersTitle": "Erinnerungen einrichten",
-    "notifications": "Benachrichtigungen",
-    "notificationsSub": "Hinweise auf diesem Gerät",
-    "preferredTime": "Bevorzugte Uhrzeit",
-    "reminderTip": "Zu dieser Uhrzeit erscheint das Banner an deinem Dosis-Tag.",
     "saveSettings": "Einstellungen speichern",
     "deleteWarningTitle": "🚨 Wichtiger Hinweis",
     "deleteLastChance": "⚠️ Letzte Chance",
@@ -334,11 +327,10 @@
     "everyDay": "Jeden Tag",
     "everyWeekday": "Jeden {{day}}",
     "weekly": "Wöchentlich",
-    "localSession": "Daten auf diesem Gerät gespeichert",
     "bodyData": "Gewicht und Größe",
     "bodyDataSub": "{{height}} · Ziel {{goal}}",
     "bodyDataEmpty": "Größe, Startgewicht und Ziel",
-    "bodyDataIntro": "Korrigiere die Angaben aus der Einrichtung.",
+    "bodyDataIntro": "Wähle deine richtige Größe und dein Startgewicht zu Beginn der Behandlung.",
     "heightLabel": "Größe ({{unit}})",
     "startWeightLabel": "Startgewicht ({{unit}})",
     "goalWeightLabel": "Zielgewicht ({{unit}})",
@@ -350,7 +342,9 @@
   "welcome": {
     "or": "oder",
     "continue": "Weiter",
-    "continueHint": "Vorübergehender Zugang, solange die Anmeldung nicht eingerichtet ist: Deine Daten bleiben nur auf diesem Gerät."
+    "continueHint": "Vorübergehender Zugang, solange die Anmeldung nicht eingerichtet ist: Deine Daten bleiben nur auf diesem Gerät.",
+    "demo": "Mit Testpatient starten",
+    "demoHint": "Nur in der Entwicklung: 2 Monate Mounjaro mit Wiegungen, Fotos und Anwendungen. Nichts wird gespeichert."
   },
   "today": {
     "subtitle": "Woche {{week}} mit {{medication}} 💪",
@@ -412,7 +406,8 @@
       "weight": "Gewicht/Maße",
       "checkin": "Symptome/Notizen",
       "meal": "Mahlzeit",
-      "photo": "Foto"
+      "photo": "Foto",
+      "supplements": "Ergänzung"
     },
     "entry": {
       "dose": "{{medication}} · {{dose}}",
@@ -423,7 +418,8 @@
       "photo": "Fortschrittsfoto",
       "meal": "Mahlzeit · {{kcal}} kcal",
       "photos_one": "{{count}} Fortschrittsfoto",
-      "photos_other": "{{count}} Fortschrittsfotos"
+      "photos_other": "{{count}} Fortschrittsfotos",
+      "supplements": "Nahrungsergänzung"
     },
     "deleteTitle": "Eintrag entfernen",
     "deleteText": "Den Eintrag vom {{date}} entfernen? Das lässt sich nicht rückgängig machen.",
@@ -450,12 +446,123 @@
     "compare": "Vorher-Nachher vergleichen",
     "compareNow": "Vergleich ansehen",
     "photosEmptyTitle": "Mach dein erstes Foto",
-    "photosEmptyText": "Ein Foto pro Woche, am selben Ort und im selben Licht, zeigt die Veränderung, die die Waage nicht zeigt.",
+    "photosEmptyText": "Deine gespeicherten Fotos zeigen deinen Fortschritt in jeder Phase.",
     "measuresTitle": "Körpermaße",
     "lastOn": "Zuletzt am {{date}}",
     "waist": "Taille",
     "hip": "Hüfte",
     "sinceFirst": "{{value}} seit der 1.",
-    "dosesTitle": "Dosen"
+    "dosesTitle": "Dosen",
+    "bmiInfoTitle": "BMI-Bereiche",
+    "bmiInfoIntro": "Der BMI setzt dein Gewicht ins Verhältnis zu deiner Größe. So siehst du, in welchem Bereich du heute liegst.",
+    "bmiYou": "Du",
+    "bmiUnder": "Untergewicht",
+    "bmiNormal": "Normalgewicht",
+    "bmiOver": "Übergewicht",
+    "bmiObese1": "Adipositas Grad I",
+    "bmiObese2": "Adipositas Grad II",
+    "bmiObese3": "Adipositas Grad III",
+    "bmiNote": "Der BMI ist ein allgemeiner Richtwert und berücksichtigt weder Muskelmasse noch Fettverteilung. Sprich mit deiner Ärztin oder deinem Arzt über deine Ziele.",
+    "bmiInfoA11y": "BMI-Bereiche anzeigen"
+  },
+  "reminders": {
+    "title": "Erinnerungen",
+    "menuSub": "Dosis, Wasser, Protein und Wiegen",
+    "intro": "Wähle, woran du erinnert werden möchtest. Jede Erinnerung entfällt, sobald du den Eintrag gemacht hast.",
+    "limitNote": "Höchstens 4 Erinnerungen pro Tag.",
+    "deniedTitle": "Mitteilungen blockiert",
+    "deniedText": "Mitteilungen von Mounjoy sind auf deinem Handy ausgeschaltet. Aktiviere sie in den Einstellungen, um Erinnerungen zu erhalten.",
+    "openSettings": "Einstellungen öffnen",
+    "webNote": "Erinnerungen kommen als Mitteilungen in der Handy-App.",
+    "time": "Uhrzeit",
+    "invalidTime": "Format 09:00 verwenden",
+    "dose": "Dosis",
+    "doseSubWeekly": "Am Anwendungstag und am Tag danach, falls nicht eingetragen",
+    "doseSubDaily": "Jeden Tag, bis du sie einträgst",
+    "water": "Trinken",
+    "waterSub": "Um {{times}}, bis das Ziel erreicht ist",
+    "protein": "Protein",
+    "proteinSub": "Einmal täglich, wenn das Ziel noch nicht erreicht ist",
+    "weight": "Wiegen",
+    "weightSub": "Entfällt, wenn du dich an dem Tag schon gewogen hast",
+    "daily": "Täglich",
+    "weekly": "Wöchentlich",
+    "weekday": "Wochentag",
+    "save": "Erinnerungen speichern",
+    "channels": {
+      "doses": "Dosen",
+      "weight": "Wiegen",
+      "nutrition": "Ernährung",
+      "hydration": "Trinken"
+    },
+    "notif": {
+      "dose": {
+        "title": "Heute ist {{medication}}-Tag 💉",
+        "body": "Zeit für deine Dosis von {{dose}}. Trag sie danach in Mounjoy ein."
+      },
+      "doseOral": {
+        "title": "Zeit für dein {{medication}} 💊",
+        "body": "Nüchtern einnehmen und in Mounjoy eintragen."
+      },
+      "doseLate": {
+        "title": "Deine Dosis ist noch nicht eingetragen",
+        "body": "Schon {{medication}} angewendet? Trag es ein, damit dein Verlauf stimmt."
+      },
+      "water": {
+        "title": "Zeit für ein Glas Wasser 💧",
+        "body": "Genug trinken hilft bei Übelkeit und Verdauung."
+      },
+      "protein": {
+        "title": "Wie steht es um dein Protein?",
+        "body": "Dir fehlt noch etwas bis zum Tagesziel. Protein hilft, deine Muskeln zu erhalten."
+      },
+      "weight": {
+        "title": "Zeit zum Wiegen ⚖️",
+        "body": "Wieg dich jetzt und trag es in Mounjoy ein."
+      }
+    }
+  },
+  "supplements": {
+    "title": "Nahrungsergänzung",
+    "menuSub": "Vitamine, Whey und mehr",
+    "intro": "Wähle aus der Liste oder füge dein Präparat unter „Andere“ hinzu.",
+    "disclaimer": "Lass dich von deiner Ärztin, deinem Arzt oder deiner Ernährungsberatung zur richtigen Anwendung beraten.",
+    "frequency": {
+      "daily": "Täglich",
+      "weekly": "Wöchentlich",
+      "monthly": "Monatlich"
+    },
+    "other": "Andere",
+    "otherPlaceholder": "Name des Präparats",
+    "add": "Hinzufügen",
+    "wheySub": "Jede Portion zählt zu den Tageszielen",
+    "perDose": "Pro Portion (siehe Etikett)",
+    "cardTitle": "Nahrungsergänzung",
+    "counter": "{{done}} von {{total}}",
+    "emptyTitle": "Nimmst du Vitamine oder Nahrungsergänzung?",
+    "emptyText": "Trag sie hier ein und hake sie bei der Einnahme ab.",
+    "configure": "Einrichten",
+    "takenOn": "Genommen {{date}}",
+    "wheyDoses_one": "{{count}} Portion heute",
+    "wheyDoses_other": "{{count}} Portionen heute",
+    "wheyAdds": "+{{protein}} g Protein pro Portion",
+    "journalTitle": "Nahrungsergänzung",
+    "names": {
+      "multivitamin": "Multivitamin",
+      "vitaminD": "Vitamin D",
+      "b12": "Vitamin B12",
+      "iron": "Eisen",
+      "calcium": "Calcium",
+      "magnesium": "Magnesium",
+      "omega3": "Omega-3",
+      "creatine": "Kreatin",
+      "collagen": "Kollagen",
+      "whey": "Whey-Protein"
+    },
+    "wheyNone": "Heute noch keine Portion",
+    "editTitle": "Nahrungsergänzung am {{date}}",
+    "editHint": "Passe an, was du an diesem Tag genommen hast.",
+    "done": "Fertig",
+    "deleteText": "Alle am {{date}} eingetragenen Nahrungsergänzungen löschen? Whey wird auch aus den Tageszielen entfernt."
   }
 }

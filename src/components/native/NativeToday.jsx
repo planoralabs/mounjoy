@@ -8,6 +8,7 @@ import { ReminderService } from '../../services/ReminderService';
 import { suggestNextInjection } from '../../services/InjectionService';
 import { unitsFor, formatDate, formatNumber } from '../../i18n';
 import { useLog, getMedication, doseIntervalDays } from './NativeLogCenter';
+import { SupplementsCard, SupplementsModal } from './NativeSupplements';
 import { intakeKey, isSameDay, daysBetween, latestWeight, startWeightOf, sortedDoses, weightLogs, photoUri } from '../../utils/journal';
 
 const waterImg = require('../../../assets/water.png');
@@ -220,6 +221,7 @@ const NativeToday = ({ user, setUser, setActiveTab }) => {
 
     // Tapping a value lets the user type today's amount directly.
     const [editing, setEditing] = useState(null); // nutrient key
+    const [showSupplements, setShowSupplements] = useState(false);
     const [editValue, setEditValue] = useState('');
     const decimalSep = formatNumber(1.5).includes(',') ? ',' : '.';
     const openEdit = (type) => {
@@ -409,6 +411,9 @@ const NativeToday = ({ user, setUser, setActiveTab }) => {
                     </TouchableOpacity>
                 </View>
 
+                {/* Supplements: counted here, never in the goals above (whey excepted) */}
+                <SupplementsCard user={user} setUser={setUser} onConfigure={() => setShowSupplements(true)} />
+
                 {/* Weight */}
                 <TouchableOpacity activeOpacity={0.9} onPress={() => setActiveTab('progress')} style={styles.weightCard}>
                     <View style={styles.weightMascotBg}>
@@ -517,6 +522,7 @@ const NativeToday = ({ user, setUser, setActiveTab }) => {
                     </>
                 )}
             </Modal>
+            <SupplementsModal visible={showSupplements} onClose={() => setShowSupplements(false)} user={user} setUser={setUser} />
         </SafeAreaView>
     );
 };

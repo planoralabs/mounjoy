@@ -123,6 +123,7 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
 
             {/* Guidance Info Modal */}
             <Modal visible={showInfo} onClose={() => setShowInfo(false)} title={t('bodySelector.guideTitle')}>
+                <View style={styles.infoContent}>
                     {/* Recommended Sites */}
                     <View style={styles.infoSection}>
                         <View style={styles.sectionHeader}>
@@ -179,9 +180,10 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                         ))}
                     </View>
 
-                    <Button onClick={() => setShowInfo(false)} style={{ width: '100%', marginTop: 8 }}>
+                    <Button onClick={() => setShowInfo(false)} style={{ width: '100%' }}>
                         {t('common.gotIt')}
                     </Button>
+                </View>
             </Modal>
         </View>
     );
@@ -298,9 +300,8 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
-    infoScroll: {
-        paddingBottom: 24,
-        gap: 16,
+    infoContent: {
+        gap: 20,
     },
     infoSection: {
         gap: 12,
@@ -346,7 +347,7 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         borderWidth: 1,
         borderColor: '#DBEAFE',
-        gap: 8,
+        gap: 10,
     },
     rotationDesc: {
         fontSize: 11,
@@ -356,13 +357,15 @@ const styles = StyleSheet.create({
     },
     rotationExampleBox: {
         backgroundColor: 'rgba(255, 255, 255, 0.6)',
-        padding: 8,
-        borderRadius: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 14,
         borderWidth: 1,
         borderColor: '#BFDBFE',
     },
     rotationExampleText: {
-        fontSize: 9,
+        fontSize: 10,
+        letterSpacing: 0.5,
         fontFamily: 'Outfit_900Black',
         color: '#1E40AF',
         textTransform: 'uppercase',
@@ -373,12 +376,13 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         borderWidth: 1,
         borderColor: '#FEF3C7',
-        gap: 8,
+        gap: 10,
     },
     careItem: {
         fontSize: 11,
         fontFamily: 'Outfit_600SemiBold',
         color: '#78350F',
+        lineHeight: 16,
     },
 });
 

@@ -8,6 +8,7 @@ import { unitsFor, formatDate, formatNumber, weekdayName, orderedWeekdays, getWe
 import { useLog, symptomEmoji, symptomKey, foodNoiseColor } from './NativeLogCenter';
 import NativePhotoViewer from './NativePhotoViewer';
 import { MOCK_MEDICATIONS } from '../../constants/medications';
+import { SUPPLEMENT_CATALOG, WHEY_ID } from '../../utils/supplements';
 import { entriesForDay, markersForDay, MARKER_COLORS, intakeKey, isSameDay, startOfDay, photoUri, noteOf } from '../../utils/journal';
 
 const emptyMascot = require('../../../assets/remember.png');
@@ -26,6 +27,7 @@ const ENTRY_STYLE = {
     photo: { color: MARKER_COLORS.photo, bg: '#ECFDF5' },
     photos: { color: MARKER_COLORS.photo, bg: '#ECFDF5' },
     meal: { color: MARKER_COLORS.meal, bg: '#FFFBEB' },
+    supplements: { color: MARKER_COLORS.supplements, bg: '#F0F9FF' },
 };
 
 const NativeJournal = ({ user }) => {
@@ -190,6 +192,20 @@ const NativeJournal = ({ user }) => {
                     {!!noteOf(log) && <Text style={styles.entryNote}>“{noteOf(log)}”</Text>}
                 </View>
             );
+        } else if (entry.type === 'supplements') {
+            Icon = Pill;
+            title = t('journal.entry.supplements');
+            // Catalog items follow the app language; custom ones keep the name typed.
+            const nameOf = (g) => (g.id === WHEY_ID || SUPPLEMENT_CATALOG.some((c) => c.id === g.id) ? t(`supplements.names.${g.id}`) : g.name);
+            body = (
+                <View style={styles.symptomRow}>
+                    {entry.data.map((g) => (
+                        <View key={g.id} style={[styles.symptomPill, { backgroundColor: '#F0F9FF' }]}>
+                            <Text style={[styles.symptomPillText, { color: '#0369A1' }]}>{nameOf(g)}{g.count > 1 ? ` ×${g.count}` : ''}</Text>
+                        </View>
+                    ))}
+                </View>
+            );
         } else if (entry.type === 'note') {
             Icon = PenLine;
             title = t('journal.entry.note');
@@ -280,12 +296,12 @@ const NativeJournal = ({ user }) => {
                     <View style={styles.entryHeader}>
                         <Text style={styles.entryTitle} numberOfLines={1}>{title}</Text>
                         {entry.type !== 'photos' && <Text style={styles.entryTime}>{time}</Text>}
-                        {['weight', 'measures', 'dose'].includes(entry.type) && (
+                        {['weight', 'measures', 'dose', 'supplements'].includes(entry.type) && (
                             <TouchableOpacity onPress={() => openLog(entry.type, { entry })} style={styles.entryAction} hitSlop={6} testID={`journal-edit-${entry.type}`}>
                                 <Pencil size={13} color="#64748B" />
                             </TouchableOpacity>
                         )}
-                        {(['weight', 'measures', 'dose', 'checkin', 'note'].includes(entry.type) || entry.type === 'meal') && (
+                        {['weight', 'measures', 'dose', 'checkin', 'note', 'meal', 'supplements'].includes(entry.type) && (
                             <TouchableOpacity onPress={() => openLog('delete', { entry })} style={styles.entryAction} hitSlop={6} testID={`journal-delete-${entry.type}`}>
                                 <Trash2 size={13} color="#EF4444" />
                             </TouchableOpacity>
@@ -353,7 +369,7 @@ const NativeJournal = ({ user }) => {
                     )}
 
                     <View style={styles.legendRow}>
-                        {['dose', 'weight', 'checkin', 'meal', 'photo'].map((k) => (
+                        {['dose', 'weight', 'checkin', 'meal', 'photo', 'supplements'].map((k) => (
                             <View key={k} style={styles.legendItem}>
                                 <View style={[styles.dot, { backgroundColor: MARKER_COLORS[k] }]} />
                                 <Text style={styles.legendText}>{t(`journal.legend.${k}`)}</Text>

@@ -6,6 +6,8 @@
  * vêm das traduções `sites.<id>` / `sitesShort.<id>` — ver siteLabel().
  */
 
+import { MOCK_MEDICATIONS } from '../constants/medications';
+
 export const SITES = [
     { id: 'abdomen-left', area: 'abdomen', side: 'left', icon: '📍' },
     { id: 'abdomen-right', area: 'abdomen', side: 'right', icon: '📍' },
@@ -58,7 +60,9 @@ export const getSiteById = (id) => SITES.find(s => s.id === id) || SITES[0];
 export const siteLabel = (t, dose) => {
     const id = dose?.siteId || dose?.site;
     if (SITE_IDS.has(id)) return t(`sites.${id}`);
-    if (dose?.area === 'oral' || id === 'oral') return t('sites.oral');
+    // Comprimidos não têm local: o rótulo vem da via da medicação registrada.
+    const med = MOCK_MEDICATIONS.find((m) => m.id === dose?.medication);
+    if (dose?.area === 'oral' || id === 'oral' || med?.route === 'oral') return t('sites.oral');
     const legacy = dose?.area || dose?.site;
     if (legacy && legacy !== 'not_recorded' && legacy !== 'Não registrado') return legacy;
     return t('common.notRecorded');

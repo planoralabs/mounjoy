@@ -6,8 +6,8 @@ import { Camera, Images, ArrowLeft, Plus, Minus, Trash2, AlertCircle, ChevronUp,
 import { Button, Input } from './NativeUI';
 import { userService } from '../../services/userService';
 import { useTranslation } from 'react-i18next';
-import i18n, { unitsFor, formatNumber } from '../../i18n';
-import { intakeKey } from '../../utils/journal';
+import i18n, { unitsFor, formatNumber, formatDate } from '../../i18n';
+import { intakeKey, recordDateFor, isSameDay } from '../../utils/journal';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -88,6 +88,8 @@ export const useMealScan = ({ user, setUser }) => {
     const [job, setJob] = useState(null); // { status: 'analyzing' | 'review' | 'saving', photoUri, items, error, startedAt }
     const [pickError, setPickError] = useState(null);
     const [progress, setProgress] = useState(0);
+    // Day the meal belongs to (opened from a past day in the Journal); null = today.
+    const [mealDate, setMealDate] = useState(null);
     const userRef = useRef(user);
     userRef.current = user;
 
@@ -160,9 +162,10 @@ export const useMealScan = ({ user, setUser }) => {
         if (!job || job.items.length === 0) return;
         const current = userRef.current;
         const totals = mealTotals(job.items);
+        const loggedAt = recordDateFor(mealDate);
         const meal = {
             id: `meal-${Date.now()}`,
-            logged_at: new Date().toISOString(),
+            logged_at: loggedAt,
             items: job.items.map((item) => ({
                 name: item.name, category: item.category, grams: item.confirmedGrams,
                 source: item.source, nutrition: item.nutrition,
@@ -179,12 +182,13 @@ export const useMealScan = ({ user, setUser }) => {
             // ("Continue") session keeps them in its own record.
             if (current.uid) {
                 await userService.saveMealLog(current.uid, {
+                    loggedAt,
                     items: meal.items,
                     totalCalories: meal.total_calories, totalProtein: meal.total_protein,
                     totalCarbs: meal.total_carbs, totalFat: meal.total_fat, totalFiber: meal.total_fiber,
                 });
             }
-            const key = intakeKey(new Date());
+            const key = intakeKey(loggedAt);
             const day = current.dailyIntakeHistory?.[key] || {};
             setUser({
                 ...current,
@@ -202,6 +206,7 @@ export const useMealScan = ({ user, setUser }) => {
                 },
             });
             setJob(null);
+            setMealDate(null);
             setVisible(false);
         } catch (e) {
             console.error('Failed to save meal log:', e);
@@ -214,9 +219,15 @@ export const useMealScan = ({ user, setUser }) => {
         job,
         progress,
         pickError,
-        open: () => setVisible(true),
+        mealDate,
+        // `date` = past day picked in the Journal. A scan already in progress
+        // keeps the day it was started for.
+        open: (date = null) => {
+            if (!job) setMealDate(date && !isSameDay(date, new Date()) ? date : null);
+            setVisible(true);
+        },
         minimize: () => setVisible(false),
-        discard: () => { setJob(null); setPickError(null); setVisible(false); },
+        discard: () => { setJob(null); setMealDate(null); setPickError(null); setVisible(false); },
         pickAndAnalyze,
         setItems,
         confirm,
@@ -231,7 +242,7 @@ export const MealScanBanner = ({ scan }) => {
     const ready = job.status !== 'analyzing';
     const failed = ready && (job.error || job.items.length === 0);
     return (
-        <TouchableOpacity style={styles.banner} onPress={scan.open} activeOpacity={0.9} testID="meal-scan-banner">
+        <TouchableOpacity style={styles.banner} onPress={() => scan.open()} activeOpacity={0.9} testID="meal-scan-banner">
             <Image source={{ uri: job.photoUri }} style={styles.bannerThumb} />
             <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.bannerTitle} numberOfLines={1}>
@@ -334,7 +345,12 @@ const NativeMealScan = ({ user, scan }) => {
                 <TouchableOpacity onPress={job ? scan.minimize : scan.discard} style={styles.headerBtn} testID="meal-scan-back">
                     <ArrowLeft size={20} color="#EA580C" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('mealScan.title')}</Text>
+                <View style={{ alignItems: 'center' }}>
+                    <Text style={styles.headerTitle}>{t('mealScan.title')}</Text>
+                    {!!scan.mealDate && (
+                        <Text style={styles.headerDay}>{t('log.forDay', { day: formatDate(scan.mealDate, { day: 'numeric', month: 'long' }) })}</Text>
+                    )}
+                </View>
                 {job ? (
                     <TouchableOpacity onPress={scan.discard} style={styles.headerBtn} testID="meal-scan-discard">
                         <Trash2 size={18} color="#EF4444" />
@@ -498,6 +514,7 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: Platform.OS === 'android' ? 24 : 12, paddingBottom: 8 },
     headerBtn: { width: 40, height: 40, borderRadius: 16, backgroundColor: '#FFF7ED', justifyContent: 'center', alignItems: 'center' },
     headerTitle: { fontSize: 16, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
+    headerDay: { fontSize: 11, fontFamily: 'Outfit_700Bold', color: '#EA580C', marginTop: 2 },
 
     centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
     placeholderIcon: { width: 80, height: 80, borderRadius: 24, backgroundColor: '#FFF7ED', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },

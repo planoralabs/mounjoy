@@ -8,8 +8,7 @@ import {
     SafeAreaView, 
     Platform, 
     Image, 
-    TextInput,
-    Switch
+    TextInput
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, Modal, Input, NumberStepper } from './NativeUI';
@@ -33,6 +32,8 @@ import { useTranslation } from 'react-i18next';
 import { unitsFor, weekdayName, formatNumber } from '../../i18n';
 import { startWeightOf, photoUri } from '../../utils/journal';
 import { useLog, getMedication } from './NativeLogCenter';
+import { RemindersModal } from './NativeReminders';
+import { SupplementsModal } from './NativeSupplements';
 
 const MenuItem = ({ icon: Icon, label, subLabel, onPress, color = '#64748B', testID }) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7} testID={testID}>
@@ -57,14 +58,10 @@ const NativeProfile = ({ user, setUser, onLogout, onDeleteAccount }) => {
     const [showBodyModal, setShowBodyModal] = useState(false);
     const [bodyData, setBodyData] = useState({ height: '', startWeight: '', goalWeight: '' });
     const [showReminderModal, setShowReminderModal] = useState(false);
+    const [showSupplementsModal, setShowSupplementsModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteStep, setDeleteStep] = useState(1);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    const [reminderSettings, setReminderSettings] = useState({
-        enabled: user.settings?.remindersEnabled ?? true,
-        time: user.settings?.reminderTime || '09:00'
-    });
 
     const handlePhotoPick = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -88,18 +85,6 @@ const NativeProfile = ({ user, setUser, onLogout, onDeleteAccount }) => {
                 photoURL: base64Url
             });
         }
-    };
-
-    const handleSaveReminders = () => {
-        setUser({
-            ...user,
-            settings: {
-                ...(user.settings || {}),
-                remindersEnabled: reminderSettings.enabled,
-                reminderTime: reminderSettings.time
-            }
-        });
-        setShowReminderModal(false);
     };
 
     const updateGoal = (key, value) => {
@@ -181,7 +166,7 @@ const NativeProfile = ({ user, setUser, onLogout, onDeleteAccount }) => {
                         </TouchableOpacity>
                     </View>
                     <Text style={styles.profileName}>{user.name || t('profile.defaultName')}</Text>
-                    <Text style={styles.profileMeta}>{user.email || t('profile.localSession')}</Text>
+                    {!!user.email && <Text style={styles.profileMeta}>{user.email}</Text>}
                 </View>
 
                 {/* Treatment */}
@@ -244,7 +229,8 @@ const NativeProfile = ({ user, setUser, onLogout, onDeleteAccount }) => {
                             testID="profile-body-data"
                         />
                         <MenuItem icon={Ruler} label={t('units.title')} subLabel={`${t(`units.${units.system}`)} · ${t(`units.${units.system}Hint`)}`} onPress={() => setShowUnitsModal(true)} color="#10B981" />
-                        <MenuItem icon={Bell} label={t('profile.reminders')} subLabel={t('profile.remindersSub')} onPress={() => setShowReminderModal(true)} color="#F59E0B" />
+                        <MenuItem icon={Bell} label={t('reminders.title')} subLabel={t('reminders.menuSub')} onPress={() => setShowReminderModal(true)} color="#F59E0B" testID="profile-reminders" />
+                        <MenuItem icon={Pill} label={t('supplements.title')} subLabel={t('supplements.menuSub')} onPress={() => setShowSupplementsModal(true)} color="#0EA5E9" testID="profile-supplements" />
                     </View>
                 </View>
 
@@ -264,39 +250,8 @@ const NativeProfile = ({ user, setUser, onLogout, onDeleteAccount }) => {
 
             </ScrollView>
 
-            {/* Modal: Lembretes */}
-            <Modal visible={showReminderModal} onClose={() => setShowReminderModal(false)} title={t('profile.remindersTitle')}>
-                <View style={styles.reminderToggleRow}>
-                    <View>
-                        <Text style={styles.reminderToggleTitle}>{t('profile.notifications')}</Text>
-                        <Text style={styles.reminderToggleSub}>{t('profile.notificationsSub')}</Text>
-                    </View>
-                    <Switch 
-                        value={reminderSettings.enabled}
-                        onValueChange={(val) => setReminderSettings({ ...reminderSettings, enabled: val })}
-                        // Brand orange on every platform (web defaults to teal).
-                        thumbColor={reminderSettings.enabled ? '#EA580C' : '#F8FAFC'}
-                        activeThumbColor="#EA580C"
-                        trackColor={{ false: '#E2E8F0', true: '#FED7AA' }}
-                        activeTrackColor="#FED7AA"
-                        ios_backgroundColor="#E2E8F0"
-                    />
-                </View>
-
-                <View style={{ marginTop: 16 }}>
-                    <Input 
-                        label={t('profile.preferredTime')}
-                        placeholder={t('common.example', { value: '09:00' })}
-                        value={reminderSettings.time}
-                        onChangeText={(val) => setReminderSettings({ ...reminderSettings, time: val })}
-                    />
-                    <Text style={styles.reminderInfoTip}>{t('profile.reminderTip')}</Text>
-                </View>
-
-                <Button onClick={handleSaveReminders} style={{ width: '100%', marginTop: 20 }}>
-                    {t('profile.saveSettings')}
-                </Button>
-            </Modal>
+            <RemindersModal visible={showReminderModal} onClose={() => setShowReminderModal(false)} user={user} setUser={setUser} />
+            <SupplementsModal visible={showSupplementsModal} onClose={() => setShowSupplementsModal(false)} user={user} setUser={setUser} />
 
 
 
@@ -694,25 +649,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
 
-    reminderToggleRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: '#F8FAFC',
-        padding: 16,
-        borderRadius: 20,
-    },
-    reminderToggleTitle: {
-        fontSize: 14,
-        fontFamily: 'Outfit_700Bold',
-        color: '#0F172A',
-    },
-    reminderToggleSub: {
-        fontSize: 10,
-        fontFamily: 'Outfit_600SemiBold',
-        color: '#94A3B8',
-        marginTop: 2,
-    },
     reminderInfoTip: {
         fontSize: 10,
         fontFamily: 'Outfit_600SemiBold',

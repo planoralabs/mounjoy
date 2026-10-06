@@ -51,6 +51,22 @@ const syncRows = async (uid, table, records, toFields) => {
     }
 };
 
+// Column / table missing: the database hasn't run the supplements & reminders
+// migration yet (supabase/migrations/20261006_reminders_supplements.sql).
+const MISSING_SCHEMA = new Set(['PGRST204', 'PGRST205', '42703', '42P01']);
+const isMissingSchema = (error) => !!error && MISSING_SCHEMA.has(error.code);
+
+/** Runs a write that needs the newer schema; skipped (with a warning) until it exists. */
+const withNewerSchema = async (label, write) => {
+    try {
+        const result = await write();
+        if (result?.error) throw result.error;
+    } catch (error) {
+        if (!isMissingSchema(error)) throw error;
+        console.warn(`Skipped ${label}: run the 20261006 Supabase migration.`);
+    }
+};
+
 /**
  * Service to handle user-related data operations in Supabase (PostgreSQL).
  */
@@ -110,6 +126,11 @@ export const userService = {
 
             if (profileError) throw profileError;
 
+            await withNewerSchema('supplements and reminders', () => supabase.from('profiles').update({
+                supplements: Array.isArray(userData.supplements) ? userData.supplements : [],
+                reminder_settings: settings.reminders || {},
+            }).eq('id', uid));
+
             // 2–4. Record tables mirror the app's lists exactly: new records
             // are inserted, edited ones updated and removed ones deleted.
             if (Array.isArray(userData.measurements)) {
@@ -136,6 +157,13 @@ export const userService = {
                     notes: s.note ?? s.notes ?? '',
                     is_memory_only: !!s.isMemoryOnly,
                 }));
+            }
+
+            if (Array.isArray(userData.supplementLogs)) {
+                await withNewerSchema('supplement logs', () => syncRows(uid, 'supplement_logs', userData.supplementLogs, (l) => ({
+                    supplement_id: l.supplementId,
+                    name: l.name || '',
+                })));
             }
 
             // 5. Daily intakes (one row per day)
@@ -216,6 +244,8 @@ export const userService = {
                 const { data: doses } = await supabase.from('dose_history').select('*').eq('user_id', uid).order('date', { ascending: false });
                 const { data: symptoms } = await supabase.from('symptoms_logs').select('*').eq('user_id', uid).order('date', { ascending: false });
                 const { data: dailyIntakes } = await supabase.from('daily_intake').select('*').eq('user_id', uid);
+                // Empty until the 20261006 migration creates the table.
+                const { data: supplementRows } = await supabase.from('supplement_logs').select('*').eq('user_id', uid).order('date', { ascending: false });
 
                 const formattedMeasurements = measurements?.map(m => ({
                     date: m.date,
@@ -285,6 +315,8 @@ export const userService = {
                     measurements: formattedMeasurements,
                     sideEffectsLogs: formattedSideEffectsLogs,
                     dailyIntakeHistory: dailyIntakeHistory,
+                    supplements: Array.isArray(profile.supplements) ? profile.supplements : [],
+                    supplementLogs: (supplementRows || []).map((l) => ({ date: l.date, supplementId: l.supplement_id, name: l.name })),
                     settings: {
                         proteinGoal: parseFloat(profile.protein_goal) || 100,
                         waterGoal: parseFloat(profile.water_goal) || 2.5,
@@ -294,7 +326,8 @@ export const userService = {
                         carbsGoal: parseFloat(profile.carbs_goal) || 150,
                         unitSystem: profile.unit_system || 'metric',
                         remindersEnabled: profile.reminders_enabled ?? true,
-                        reminderTime: profile.reminder_time || '09:00'
+                        reminderTime: profile.reminder_time || '09:00',
+                        ...(profile.reminder_settings && Object.keys(profile.reminder_settings).length ? { reminders: profile.reminder_settings } : {}),
                     }
                 };
 
@@ -420,6 +453,8 @@ export const userService = {
     saveMealLog: async (uid, meal) => {
         const { error } = await supabase.from('meal_logs').insert({
             user_id: uid,
+            // Meals logged for a past day (Journal); omitted = now (column default).
+            ...(meal.loggedAt ? { logged_at: meal.loggedAt } : {}),
             items: meal.items,
             total_calories: meal.totalCalories,
             total_protein: meal.totalProtein,

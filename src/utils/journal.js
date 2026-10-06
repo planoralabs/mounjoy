@@ -101,6 +101,18 @@ export const isCheckIn = (log) => !log.isMemoryOnly && ((log.symptoms?.length ||
 
 export const noteOf = (log) => log.note || log.notes || '';
 
+/** Supplement logs of a day grouped by supplement: [{ id, name, count, date (latest) }]. */
+export const supplementSummaryOn = (user, day) => {
+    const groups = new Map();
+    (user?.supplementLogs || []).filter((l) => isSameDay(l.date, day)).forEach((l) => {
+        const g = groups.get(l.supplementId) || { id: l.supplementId, name: l.name, count: 0, date: l.date };
+        g.count += 1;
+        if (new Date(l.date) > new Date(g.date)) g.date = l.date;
+        groups.set(l.supplementId, g);
+    });
+    return [...groups.values()];
+};
+
 /**
  * Everything recorded on a local day, newest first. `meals` comes from the
  * meal_logs table (only for signed-in users), the rest from the user record.
@@ -119,6 +131,12 @@ export const entriesForDay = (user, date, meals = []) => {
         entries.push({ type: isCheckIn(l) ? 'checkin' : 'note', date: l.date, data: l }));
     sortedPhotos(user).filter((p) => onDay(p.date)).forEach((p) => entries.push({ type: 'photo', date: p.date, data: p }));
     meals.filter((m) => onDay(m.logged_at)).forEach((m) => entries.push({ type: 'meal', date: m.logged_at, data: m }));
+    // Supplements: one entry for the day listing each one taken (whey ×2…).
+    const supplements = supplementSummaryOn(user, date);
+    if (supplements.length) {
+        const latest = supplements.map((g) => g.date).sort((a, b) => new Date(b) - new Date(a))[0];
+        entries.push({ type: 'supplements', date: latest, data: supplements });
+    }
 
     return entries.sort((a, b) => new Date(b.date) - new Date(a.date));
 };
@@ -126,7 +144,7 @@ export const entriesForDay = (user, date, meals = []) => {
 /** Which kinds of records exist on a day — drives the calendar dots. */
 export const markersForDay = (user, date, meals = []) => {
     const types = new Set(entriesForDay(user, date, meals).map((e) => (e.type === 'note' ? 'checkin' : e.type === 'measures' ? 'weight' : e.type)));
-    return ['dose', 'weight', 'checkin', 'meal', 'photo'].filter((t) => types.has(t));
+    return ['dose', 'weight', 'checkin', 'meal', 'photo', 'supplements'].filter((t) => types.has(t));
 };
 
 export const MARKER_COLORS = {
@@ -135,4 +153,5 @@ export const MARKER_COLORS = {
     checkin: '#EF4444',
     meal: '#F59E0B',
     photo: '#10B981',
+    supplements: '#0EA5E9',
 };

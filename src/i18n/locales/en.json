@@ -52,7 +52,7 @@
     "thigh-right": "Right Thigh",
     "arm-left": "Left Arm",
     "arm-right": "Right Arm",
-    "oral": "Oral",
+    "oral": "Pill",
     "selectSite": "Select a site"
   },
   "sitesShort": {
@@ -303,9 +303,7 @@
     "waterGoal": "Water ({{unit}})",
     "fiberGoal": "Fiber (g)",
     "settingsTitle": "Preferences",
-    "reminders": "Reminders",
-    "remindersSub": "Dose reminder times",
-    "unitsIntro": "Choose how weight, height, water and portions are shown. Your data is kept the same.",
+    "unitsIntro": "Choose how weight, height, water and portions are shown.",
     "accountTitle": "Account",
     "logout": "Log Out",
     "logoutSub": "Disconnect from this device",
@@ -315,11 +313,6 @@
     "waist": "Waist ({{unit}})",
     "hip": "Hips ({{unit}})",
     "saveMeasures": "Save Measurements",
-    "remindersTitle": "Configure Reminders",
-    "notifications": "Notifications",
-    "notificationsSub": "Alerts on this device",
-    "preferredTime": "Preferred Time",
-    "reminderTip": "This is when the banner will appear on your dose day.",
     "saveSettings": "Save Settings",
     "deleteWarningTitle": "🚨 Important Notice",
     "deleteLastChance": "⚠️ Last Chance",
@@ -334,11 +327,10 @@
     "everyDay": "Every day",
     "everyWeekday": "Every {{day}}",
     "weekly": "Weekly",
-    "localSession": "Data saved on this device",
     "bodyData": "Weight and height",
     "bodyDataSub": "{{height}} · goal {{goal}}",
     "bodyDataEmpty": "Height, starting weight and goal",
-    "bodyDataIntro": "Fix the details you entered when you signed up.",
+    "bodyDataIntro": "Select your correct height and the starting weight of your treatment.",
     "heightLabel": "Height ({{unit}})",
     "startWeightLabel": "Starting weight ({{unit}})",
     "goalWeightLabel": "Goal weight ({{unit}})",
@@ -350,7 +342,9 @@
   "welcome": {
     "or": "or",
     "continue": "Continue",
-    "continueHint": "Temporary access while sign-in isn't set up: your data stays on this device only."
+    "continueHint": "Temporary access while sign-in isn't set up: your data stays on this device only.",
+    "demo": "Try the test patient",
+    "demoHint": "Development only: 2 months on Mounjaro with weigh-ins, photos and applications. Nothing is saved."
   },
   "today": {
     "subtitle": "Week {{week}} of {{medication}} 💪",
@@ -412,7 +406,8 @@
       "weight": "Weight/measures",
       "checkin": "Symptoms/notes",
       "meal": "Meal",
-      "photo": "Photo"
+      "photo": "Photo",
+      "supplements": "Supplements"
     },
     "entry": {
       "dose": "{{medication}} · {{dose}}",
@@ -423,7 +418,8 @@
       "photo": "Progress photo",
       "meal": "Meal · {{kcal}} kcal",
       "photos_one": "{{count}} progress photo",
-      "photos_other": "{{count}} progress photos"
+      "photos_other": "{{count}} progress photos",
+      "supplements": "Supplements"
     },
     "deleteTitle": "Remove entry",
     "deleteText": "Remove the entry from {{date}}? This can't be undone.",
@@ -450,12 +446,123 @@
     "compare": "Compare before & after",
     "compareNow": "See comparison",
     "photosEmptyTitle": "Take your first photo",
-    "photosEmptyText": "One photo a week, same spot and same light, shows the change the scale doesn't.",
+    "photosEmptyText": "Your saved photos show your progress at every stage.",
     "measuresTitle": "Body measurements",
     "lastOn": "Last on {{date}}",
     "waist": "Waist",
     "hip": "Hips",
     "sinceFirst": "{{value}} since the first",
-    "dosesTitle": "Doses"
+    "dosesTitle": "Doses",
+    "bmiInfoTitle": "BMI ranges",
+    "bmiInfoIntro": "BMI relates your weight to your height. See which range you are in today.",
+    "bmiYou": "You",
+    "bmiUnder": "Underweight",
+    "bmiNormal": "Healthy weight",
+    "bmiOver": "Overweight",
+    "bmiObese1": "Obesity class I",
+    "bmiObese2": "Obesity class II",
+    "bmiObese3": "Obesity class III",
+    "bmiNote": "BMI is a general reference and doesn't account for muscle mass or fat distribution. Talk to your doctor about your goals.",
+    "bmiInfoA11y": "See BMI ranges"
+  },
+  "reminders": {
+    "title": "Reminders",
+    "menuSub": "Dose, water, protein and weigh-ins",
+    "intro": "Pick what you want to be reminded of. Each reminder goes away on its own once you have logged it.",
+    "limitNote": "At most 4 reminders a day.",
+    "deniedTitle": "Notifications are blocked",
+    "deniedText": "Mounjoy notifications are turned off on your phone. Turn them on in Settings to get your reminders.",
+    "openSettings": "Open Settings",
+    "webNote": "Reminders arrive as notifications in the phone app.",
+    "time": "Time",
+    "invalidTime": "Use the format 09:00",
+    "dose": "Dose",
+    "doseSubWeekly": "On your dose day, and the day after if not logged",
+    "doseSubDaily": "Every day, until you log it",
+    "water": "Hydration",
+    "waterSub": "At {{times}}, until you reach your goal",
+    "protein": "Protein",
+    "proteinSub": "Once a day, if you haven't hit your goal",
+    "weight": "Weigh-in",
+    "weightSub": "Skipped if you already weighed in that day",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "weekday": "Day of the week",
+    "save": "Save reminders",
+    "channels": {
+      "doses": "Doses",
+      "weight": "Weigh-ins",
+      "nutrition": "Nutrition",
+      "hydration": "Hydration"
+    },
+    "notif": {
+      "dose": {
+        "title": "It's {{medication}} day 💉",
+        "body": "Time for your {{dose}} dose. Log it in Mounjoy after you take it."
+      },
+      "doseOral": {
+        "title": "Time for your {{medication}} 💊",
+        "body": "Take it on an empty stomach and log it in Mounjoy."
+      },
+      "doseLate": {
+        "title": "Your dose isn't logged yet",
+        "body": "Already took your {{medication}}? Log it to keep your history up to date."
+      },
+      "water": {
+        "title": "Time for a glass of water 💧",
+        "body": "Staying hydrated helps with nausea and digestion."
+      },
+      "protein": {
+        "title": "How's your protein today?",
+        "body": "You're still short of today's goal. Protein helps preserve your muscles."
+      },
+      "weight": {
+        "title": "Time to weigh in ⚖️",
+        "body": "Weigh yourself now and log it in Mounjoy to follow your progress."
+      }
+    }
+  },
+  "supplements": {
+    "title": "Supplements",
+    "menuSub": "Vitamins, whey and more",
+    "intro": "Choose from the list below, or add your own under \"Other\".",
+    "disclaimer": "See your doctor or dietitian for the right recommendation and use.",
+    "frequency": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "other": "Other",
+    "otherPlaceholder": "Supplement name",
+    "add": "Add",
+    "wheySub": "Each serving counts toward the day's goals",
+    "perDose": "Per serving (see the label)",
+    "cardTitle": "Supplements",
+    "counter": "{{done}} of {{total}}",
+    "emptyTitle": "Taking vitamins or supplements?",
+    "emptyText": "Add them here and check them off when you take them.",
+    "configure": "Set up",
+    "takenOn": "Taken {{date}}",
+    "wheyDoses_one": "{{count}} serving today",
+    "wheyDoses_other": "{{count}} servings today",
+    "wheyAdds": "+{{protein}} g protein per serving",
+    "journalTitle": "Supplements",
+    "names": {
+      "multivitamin": "Multivitamin",
+      "vitaminD": "Vitamin D",
+      "b12": "Vitamin B12",
+      "iron": "Iron",
+      "calcium": "Calcium",
+      "magnesium": "Magnesium",
+      "omega3": "Omega-3",
+      "creatine": "Creatine",
+      "collagen": "Collagen",
+      "whey": "Whey protein"
+    },
+    "wheyNone": "No servings today",
+    "editTitle": "Supplements on {{date}}",
+    "editHint": "Adjust what you took on this day.",
+    "done": "Done",
+    "deleteText": "Delete all supplements logged on {{date}}? Whey is also taken out of that day's goals."
   }
 }

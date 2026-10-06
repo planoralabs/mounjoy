@@ -10,6 +10,8 @@ import { useFonts, Outfit_400Regular, Outfit_600SemiBold, Outfit_700Bold, Outfit
 import { userService } from './src/services/userService';
 
 import NativeWelcome from './src/components/native/NativeWelcome';
+import { buildDemoUser } from './src/utils/demoUser';
+import { useReminderSync } from './src/services/NotificationService';
 import NativeOnboarding from './src/components/native/NativeOnboarding';
 import NativeToday from './src/components/native/NativeToday';
 import NativeJournal from './src/components/native/NativeJournal';
@@ -67,6 +69,8 @@ const NativeMain = () => {
     const [view, setView] = useState('welcome'); // 'welcome' | 'onboarding' | 'app'
     const [localUser, setLocalUserState] = useState(null);
     const [localLoaded, setLocalLoaded] = useState(false);
+    // Dev-only test patient (Welcome screen): kept in memory, never saved.
+    const [demoUser, setDemoUser] = useState(null);
     const migratingRef = useRef(false);
 
     const setLocalUser = (data) => {
@@ -109,26 +113,38 @@ const NativeMain = () => {
         if (currentUser) setView('app');
     }, [currentUser]);
 
-    const user = currentUser ? (userData || localUser) : localUser;
+    const user = demoUser || (currentUser ? (userData || localUser) : localUser);
     // Signed in, profile fetched, nothing in the cloud and nothing to migrate:
     // a brand-new account that still needs onboarding.
     const needsOnboarding = !!currentUser && profileReady && !userData && !localUser;
 
     const setUser = (newData) => {
         const updatedData = typeof newData === 'function' ? newData(user) : newData;
-        if (currentUser) {
+        if (demoUser) {
+            setDemoUser(updatedData);
+        } else if (currentUser) {
             userService.saveUserProfile(currentUser.uid, updatedData);
         } else {
             setLocalUser(updatedData);
         }
     };
 
+    // Local reminders follow the record (never for the in-memory test patient).
+    useReminderSync(user, !demoUser);
+
     // Meal photo analysis keeps running while its screen is minimized.
     const mealScan = useMealScan({ user, setUser });
 
     const handleContinue = () => setView(localUser ? 'app' : 'onboarding');
 
+    const handleDemo = () => {
+        setDemoUser(buildDemoUser());
+        setActiveTab('today');
+        setView('app');
+    };
+
     const handleLogout = async () => {
+        setDemoUser(null);
         // Leaving the local session keeps its data on the device, so
         // "Continue" picks it back up. Only deleting the account erases it.
         if (currentUser) await logout();
@@ -137,7 +153,9 @@ const NativeMain = () => {
     };
 
     const handleDeleteAccount = async () => {
-        if (currentUser) {
+        if (demoUser) {
+            setDemoUser(null);
+        } else if (currentUser) {
             await logout();
         } else {
             setLocalUser(null);
@@ -188,7 +206,7 @@ const NativeMain = () => {
     }
 
     if (view === 'welcome' && !currentUser) {
-        return <NativeWelcome onContinue={handleContinue} />;
+        return <NativeWelcome onContinue={handleContinue} onDemo={__DEV__ ? handleDemo : undefined} />;
     }
 
     if ((view === 'onboarding' && !currentUser) || needsOnboarding) {

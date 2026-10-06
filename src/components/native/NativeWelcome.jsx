@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity, Image, Dimensions } from 'react-native';
-import { Heart, ArrowRight } from 'lucide-react-native';
+import { Heart, ArrowRight, FlaskConical } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Button, Input } from './NativeUI';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,7 +12,7 @@ const scaladeImg = require('../../../assets/scalade.png');
 // First screen of the app: brand hero + sign in / create account. Everyone
 // signs in here before onboarding. Until auth providers are configured,
 // "Continue" goes straight in with the data kept on this device.
-const NativeWelcome = ({ onContinue }) => {
+const NativeWelcome = ({ onContinue, onDemo }) => {
     const { t } = useTranslation();
     const { login, signup } = useAuth();
     const [isSignup, setIsSignup] = useState(false);
@@ -125,6 +125,16 @@ const NativeWelcome = ({ onContinue }) => {
                         <ArrowRight size={18} color="#EA580C" />
                     </TouchableOpacity>
                     <Text style={styles.continueHint}>{t('welcome.continueHint')}</Text>
+
+                    {!!onDemo && (
+                        <>
+                            <TouchableOpacity onPress={onDemo} style={styles.demoBtn} activeOpacity={0.85} testID="welcome-demo-button">
+                                <FlaskConical size={16} color="#475569" />
+                                <Text style={styles.demoText}>{t('welcome.demo')}</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.continueHint}>{t('welcome.demoHint')}</Text>
+                        </>
+                    )}
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -164,4 +174,6 @@ const styles = StyleSheet.create({
     continueBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, borderRadius: 20, backgroundColor: '#FFF7ED', borderWidth: 2, borderColor: '#FED7AA' },
     continueText: { fontSize: 16, fontFamily: 'Outfit_700Bold', color: '#EA580C' },
     continueHint: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', textAlign: 'center', marginTop: 10, lineHeight: 15 },
+    demoBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 20, marginTop: 20, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#CBD5E1' },
+    demoText: { fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#475569' },
 });

@@ -44,7 +44,14 @@
           }
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "color": "#EA580C"
+        }
+      ]
     ],
     "locales": {
       "en": "./src/i18n/native/en.json",

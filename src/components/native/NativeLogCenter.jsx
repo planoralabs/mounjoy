@@ -10,6 +10,8 @@ import { suggestNextInjection, getSiteById } from '../../services/InjectionServi
 import { userService } from '../../services/userService';
 import { unitsFor, formatDate, formatNumber, weekdayName, orderedWeekdays } from '../../i18n';
 import { recordDateFor, latestWeight, sortedDoses, isSameDay, daysBetween, intakeKey } from '../../utils/journal';
+import { removeSupplementsOn } from '../../utils/supplements';
+import { SupplementsDayEditor } from './NativeSupplements';
 
 // One place to record anything. Every screen (and the + button in the tab
 // bar) calls openLog(kind, { date }) instead of owning its own copy of the
@@ -202,7 +204,7 @@ const NativeLogCenter = ({ user, setUser, onScanMeal, children }) => {
         const run = () => {
             setLogDate(date);
             if (kind === 'photo') { setActive(null); pickPhoto(date); return; }
-            if (kind === 'meal') { setActive(null); onScanMeal && onScanMeal(); return; }
+            if (kind === 'meal') { setActive(null); onScanMeal && onScanMeal(date); return; }
             prepare(kind, opts.entry);
             setActive(kind);
         };
@@ -354,6 +356,8 @@ const NativeLogCenter = ({ user, setUser, onScanMeal, children }) => {
             setUser({ ...user, sideEffectsLogs: (user.sideEffectsLogs || []).filter((l) => !sameDate(l)) });
         } else if (entry.type === 'photo') {
             setUser({ ...user, photos: (user.photos || []).filter((_, i) => i !== entry.data.index) });
+        } else if (entry.type === 'supplements') {
+            setUser(removeSupplementsOn(user, entry.date));
         } else if (entry.type === 'meal') {
             // A saved meal added its nutrients to that day's intake; take them back out.
             const m = entry.data;
@@ -397,7 +401,7 @@ const NativeLogCenter = ({ user, setUser, onScanMeal, children }) => {
         { kind: 'dose', icon: isOral ? Pill : Syringe, color: '#2563EB', bg: '#EFF6FF', label: isOral ? t('log.doseOral') : t('log.dose'), sub: medication ? `${medication.name} · ${user.currentDose}` : t('log.doseSub') },
         { kind: 'checkin', icon: Smile, color: '#EF4444', bg: '#FEF2F2', label: t('log.checkIn'), sub: t('log.checkInSub') },
         // A meal photo is analysed "now"; it only makes sense for today.
-        ...(logDay ? [] : [{ kind: 'meal', icon: Camera, color: '#F59E0B', bg: '#FFFBEB', label: t('log.meal'), sub: t('log.mealSub') }]),
+        { kind: 'meal', icon: Camera, color: '#F59E0B', bg: '#FFFBEB', label: t('log.meal'), sub: t('log.mealSub') },
         { kind: 'photo', icon: ImagePlus, color: '#10B981', bg: '#ECFDF5', label: t('log.photo'), sub: t('log.photoSub') },
         { kind: 'measures', icon: Ruler, color: '#8B5CF6', bg: '#F5F3FF', label: t('log.measures'), sub: t('log.measuresSub') },
     ];
@@ -691,11 +695,15 @@ const NativeLogCenter = ({ user, setUser, onScanMeal, children }) => {
             </Modal>
 
             {/* Delete a Journal entry */}
+            <SupplementsDayEditor visible={active === 'supplements'} onClose={close} user={user} setUser={setUser} day={target?.date} />
+
             <Modal visible={active === 'delete'} onClose={close} title={t('journal.deleteTitle')}>
                 <View style={styles.deleteBox}>
                     <Trash2 size={22} color="#EF4444" />
                     <Text style={styles.deleteText}>
-                        {target ? t('journal.deleteText', { date: formatDate(target.date, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) }) : ''}
+                        {!target ? '' : target.type === 'supplements'
+                            ? t('supplements.deleteText', { date: formatDate(target.date, { day: 'numeric', month: 'long' }) })
+                            : t('journal.deleteText', { date: formatDate(target.date, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) })}
                     </Text>
                 </View>
                 <Button onClick={deleteEntry} style={[styles.fullBtn, { backgroundColor: '#EF4444', shadowColor: '#EF4444' }]} testID="delete-confirm-button">{t('journal.deleteConfirm')}</Button>
