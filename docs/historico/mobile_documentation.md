@@ -1,5 +1,12 @@
 # Mounjoy Mobile - Documentação de Transição e Telas
 
+> **Documento histórico.** Registro das decisões de agosto a outubro/2026.
+> Várias partes estão desatualizadas: o bug do Vite da seção 5 não existe mais
+> (o app é só Expo), a base de alimentos já foi carregada, e o Diário e o
+> Progresso mudaram. O estado atual está em [`../README.md`](../README.md).
+> Consulte aqui o *porquê* das decisões, principalmente a seção 7 (análise de
+> refeições) e o plano de benchmark (7.13).
+
 Este documento serve como referência técnica detalhada sobre a transição do Mounjoy da versão Web (React + Vite + TailwindCSS) para a versão Mobile (React Native + Expo Go), documentando a arquitetura geral, estratégias de design, componentes e a implementação específica de cada tela.
 
 ---
