@@ -614,7 +614,7 @@ const NativeLogCenter = ({ user, setUser, onScanMeal, children }) => {
                 )}
 
                 <View style={styles.foodNoiseHeader}>
-                    <Text style={styles.subLabelInline}>Food Noise</Text>
+                    <Text style={styles.subLabelInline}>{t('logs.foodNoise')}</Text>
                     <TouchableOpacity onPress={() => setShowFoodNoiseInfo((v) => !v)} hitSlop={8}>
                         <Info size={16} color="#94A3B8" />
                     </TouchableOpacity>
@@ -817,7 +817,8 @@ const styles = StyleSheet.create({
     infoBox: { backgroundColor: '#F8FAFC', borderRadius: 16, padding: 12, gap: 6, marginBottom: 12, borderWidth: 1, borderColor: '#E2E8F0' },
     infoText: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#475569', lineHeight: 15 },
     infoStrong: { fontFamily: 'Outfit_700Bold', color: '#0F172A' },
-    sliderContainer: { width: '100%' },
+    // Room on the left so the thumb isn't clipped at 0
+    sliderContainer: { width: '100%', paddingLeft: 12 },
     sliderRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 4 },
     sliderTrackWrapper: { flex: 1, height: 24, position: 'relative', justifyContent: 'center' },
     sliderTrackBg: { height: 8, backgroundColor: '#F1F5F9', borderRadius: 4 },

@@ -7,7 +7,7 @@ import { formatDate, formatNumber } from '../../i18n';
 import { isSameDay, recordDateFor, supplementSummaryOn } from '../../utils/journal';
 import {
     SUPPLEMENT_CATALOG, WHEY_ID, DEFAULT_WHEY_NUTRIENTS, FREQUENCIES,
-    supplementName, trackedSupplements, wheyOf, logsOn, lastTakenInPeriod, progressOn, toggleTaken, changeWhey, changeSupplement,
+    supplementName, trackedSupplements, dueSupplementsOn, withFrequency, wheyOf, logsOn, lastTakenInPeriod, toggleTaken, changeWhey, changeSupplement,
 } from '../../utils/supplements';
 
 // Supplements: the user picks what they take (Profile, or from the Today card)
@@ -27,6 +27,43 @@ const FrequencyPicker = ({ value, onChange }) => {
                     <Text style={[styles.freqText, value === f && styles.freqTextActive]}>{t(`supplements.frequency.${f}`)}</Text>
                 </TouchableOpacity>
             ))}
+        </View>
+    );
+};
+
+// Any Sunday: the weekday buttons start there, like Date#getDay().
+const SUNDAY = new Date(2026, 9, 4);
+const weekdayDate = (i) => new Date(SUNDAY.getFullYear(), SUNDAY.getMonth(), SUNDAY.getDate() + i);
+
+/** Weekly → which weekday, monthly → which day of the month it shows up on Today. */
+const SchedulePicker = ({ item, name, onChange }) => {
+    const { t } = useTranslation();
+    if (item.frequency === 'daily' || item.day == null) return null;
+    const weekly = item.frequency === 'weekly';
+    const stepDay = (delta) => onChange(((item.day - 1 + delta + 31) % 31) + 1);
+    return (
+        <View style={{ gap: 6 }}>
+            <Text style={styles.scheduleHint}>{t(weekly ? 'supplements.askWeekday' : 'supplements.askMonthDay', { name })}</Text>
+            {weekly ? (
+                <View style={styles.freqRow}>
+                    {[0, 1, 2, 3, 4, 5, 6].map((d) => (
+                        <TouchableOpacity key={d} onPress={() => onChange(d)} style={[styles.freqBtn, item.day === d && styles.freqBtnActive]} testID={`supplement-weekday-${item.id}-${d}`}>
+                            <Text style={[styles.freqText, item.day === d && styles.freqTextActive]}>{formatDate(weekdayDate(d), { weekday: 'narrow' })}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            ) : (
+                <View style={styles.monthRow}>
+                    <TouchableOpacity onPress={() => stepDay(-1)} style={styles.stepBtn} testID={`supplement-monthday-minus-${item.id}`}>
+                        <Minus size={16} color="#64748B" />
+                    </TouchableOpacity>
+                    <Text style={styles.monthDay}>{item.day}</Text>
+                    <TouchableOpacity onPress={() => stepDay(1)} style={[styles.stepBtn, styles.stepBtnBlue]} testID={`supplement-monthday-plus-${item.id}`}>
+                        <Plus size={16} color="#FFFFFF" strokeWidth={3} />
+                    </TouchableOpacity>
+                </View>
+            )}
+            {!weekly && item.day > 28 && <Text style={styles.scheduleNote}>{t('supplements.shortMonthNote')}</Text>}
         </View>
     );
 };
@@ -54,9 +91,10 @@ export const SupplementsModal = ({ visible, onClose, user, setUser }) => {
     const find = (id) => draft.find((s) => s.id === id);
     const toggle = (item) => {
         animate();
-        setDraft((d) => (d.some((s) => s.id === item.id) ? d.filter((s) => s.id !== item.id) : [...d, { id: item.id, frequency: item.frequency || 'daily' }]));
+        setDraft((d) => (d.some((s) => s.id === item.id) ? d.filter((s) => s.id !== item.id) : [...d, withFrequency({ id: item.id }, item.frequency || 'daily')]));
     };
-    const setFrequency = (id, frequency) => setDraft((d) => d.map((s) => (s.id === id ? { ...s, frequency } : s)));
+    const setFrequency = (id, frequency) => { animate(); setDraft((d) => d.map((s) => (s.id === id ? withFrequency(s, frequency) : s))); };
+    const setDay = (id, day) => setDraft((d) => d.map((s) => (s.id === id ? { ...s, day } : s)));
     const addOther = () => {
         const name = otherName.trim();
         if (!name) return;
@@ -86,6 +124,7 @@ export const SupplementsModal = ({ visible, onClose, user, setUser }) => {
                     )}
                 </TouchableOpacity>
                 {active && <FrequencyPicker value={active.frequency} onChange={(f) => setFrequency(item.id, f)} />}
+                {active && <SchedulePicker item={active} name={label} onChange={(day) => setDay(item.id, day)} />}
             </View>
         );
     };
@@ -221,7 +260,8 @@ export const SupplementsCard = ({ user, setUser, onConfigure }) => {
         );
     }
 
-    const { done, total } = progressOn(user, now);
+    // Weekly/monthly ones only show on their set day
+    const due = dueSupplementsOn(user, now);
     const wheyToday = logsOn(user, now, WHEY_ID).length;
     const animate = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
@@ -230,19 +270,16 @@ export const SupplementsCard = ({ user, setUser, onConfigure }) => {
             <View style={styles.cardHeader}>
                 <View style={styles.cardIcon}><Pill size={18} color="#0EA5E9" /></View>
                 <Text style={styles.cardTitle}>{t('supplements.cardTitle')}</Text>
-                {total > 0 && (
-                    <View style={[styles.counter, done === total && styles.counterDone]}>
-                        <Text style={[styles.counterText, done === total && styles.counterTextDone]}>{t('supplements.counter', { done, total })}</Text>
-                    </View>
-                )}
                 <TouchableOpacity onPress={onConfigure} hitSlop={8} testID="supplements-configure">
                     <Settings2 size={18} color="#94A3B8" />
                 </TouchableOpacity>
             </View>
 
-            {tracked.length > 0 && (
+            {tracked.length > 0 && !due.length && !whey && <Text style={styles.noneToday}>{t('supplements.noneToday')}</Text>}
+
+            {due.length > 0 && (
                 <View style={styles.chips}>
-                    {tracked.map((s) => {
+                    {due.map((s) => {
                         const last = lastTakenInPeriod(user, s, now);
                         const earlier = last && !isSameDay(last, now);
                         return (
@@ -300,6 +337,10 @@ const styles = StyleSheet.create({
     freqBtnActive: { backgroundColor: '#0EA5E9' },
     freqText: { fontSize: 11, fontFamily: 'Outfit_700Bold', color: '#64748B' },
     freqTextActive: { color: '#FFFFFF' },
+    scheduleHint: { fontSize: 11, fontFamily: 'Outfit_700Bold', color: '#0369A1' },
+    scheduleNote: { fontSize: 10, fontFamily: 'Outfit_600SemiBold', color: '#64748B' },
+    monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+    monthDay: { minWidth: 28, textAlign: 'center', fontSize: 18, fontFamily: 'Outfit_900Black', color: '#0F172A' },
     fieldTitle: { fontSize: 10, fontFamily: 'Outfit_900Black', color: '#0369A1', textTransform: 'uppercase', letterSpacing: 0.5 },
     nutrientGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     nutrientField: { width: '47%', flexGrow: 1, backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E0F2FE', paddingVertical: 8, paddingHorizontal: 10 },
@@ -318,10 +359,7 @@ const styles = StyleSheet.create({
     cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     cardIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: '#F0F9FF', alignItems: 'center', justifyContent: 'center' },
     cardTitle: { flex: 1, fontSize: 15, fontFamily: 'Outfit_900Black', color: '#0F172A' },
-    counter: { backgroundColor: '#F1F5F9', borderRadius: 10, paddingVertical: 4, paddingHorizontal: 8 },
-    counterDone: { backgroundColor: '#DCFCE7' },
-    counterText: { fontSize: 11, fontFamily: 'Outfit_900Black', color: '#475569' },
-    counterTextDone: { color: '#15803D' },
+    noneToday: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8' },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC', paddingVertical: 8, paddingHorizontal: 10, maxWidth: '100%' },
     chipOn: { borderColor: '#BAE6FD', backgroundColor: '#F0F9FF' },

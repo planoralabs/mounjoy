@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Dimensions, Platform, Image, Pressable } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { X, Plus, Check, Columns2, Syringe, Pill, Ruler, Scale, Target, Activity, TrendingDown, Info } from 'lucide-react-native';
+import { X, Plus, Check, Columns2, Syringe, Pill, Ruler, Scale, Target, Activity, TrendingDown, Info, Flame } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { unitsFor, formatDate, formatNumber } from '../../i18n';
 import { siteLabel } from '../../services/InjectionService';
@@ -10,6 +10,7 @@ import { useLog, getMedication, doseIntervalDays } from './NativeLogCenter';
 import { Modal } from './NativeUI';
 import NativePhotoViewer from './NativePhotoViewer';
 import NativePhotoCompare from './NativePhotoCompare';
+import { MeasuresChart, NutrientsChart } from './NativeProgressCharts';
 import { weightLogs, bodyLogs, latestWeight, startWeightOf, sortedDoses, sortedPhotos, weightNear, photoUri } from '../../utils/journal';
 
 const { width } = Dimensions.get('window');
@@ -17,10 +18,12 @@ const { width } = Dimensions.get('window');
 const compactActions = width < 360;
 const mascotMirrorImg = require('../../../assets/mascotmirror.png');
 
-// Progress = "how far have I come": weight trend, photos (with the before &
-// after comparator), body measures and the dose history, in that order.
+// Progress = "how far have I come": the evolution chart (weight, waist / hip,
+// daily nutrients), photos (with the before & after comparator) and the dose
+// history, in that order.
 
 const DEMO_POINTS = [105.5, 102.0, 98.5, 95.0];
+const CHART_TABS = ['weight', 'measures', 'nutrients'];
 
 // WHO adult BMI ranges; `max` is exclusive.
 const BMI_BANDS = [
@@ -59,6 +62,7 @@ const NativeProgress = ({ user, setUser }) => {
     const [compareMode, setCompareMode] = useState(false);
     const [picked, setPicked] = useState([]); // photo.index values
     const [showCompare, setShowCompare] = useState(false);
+    const [chartTab, setChartTab] = useState('weight');
 
     // ---- Weight ----------------------------------------------------------
     const realLogs = useMemo(() => weightLogs(user), [user.measurements]);
@@ -131,15 +135,6 @@ const NativeProgress = ({ user, setUser }) => {
     // ---- Body measures -------------------------------------------------------
     const body = useMemo(() => bodyLogs(user), [user.measurements]);
     const lastBody = body[body.length - 1];
-    const firstWaist = body.find((m) => m.waist > 0)?.waist;
-    const firstHip = body.find((m) => m.hip > 0)?.hip;
-    const lastWaist = [...body].reverse().find((m) => m.waist > 0)?.waist;
-    const lastHip = [...body].reverse().find((m) => m.hip > 0)?.hip;
-    const fmtLen = (cm) => `${formatNumber(units.length(cm))} ${units.lengthUnit}`;
-    const fmtLenDiff = (cm) => {
-        const v = units.length(cm);
-        return `${v > 0 ? '+' : ''}${formatNumber(v)} ${units.lengthUnit}`;
-    };
 
     // ---- Doses -------------------------------------------------------------
     const medication = getMedication(user);
@@ -181,8 +176,40 @@ const NativeProgress = ({ user, setUser }) => {
                     })}
                 </View>
 
-                {/* Weight chart */}
+                {/* Evolution chart: weight, body measures or daily nutrients */}
                 <View style={styles.card}>
+                    <View style={styles.chartTabs}>
+                        {CHART_TABS.map((tab) => (
+                            <TouchableOpacity
+                                key={tab}
+                                onPress={() => { setTooltip(null); setChartTab(tab); }}
+                                style={[styles.chartTab, chartTab === tab && styles.chartTabOn]}
+                                testID={`progress-tab-${tab}`}
+                            >
+                                <Text style={[styles.chartTabText, chartTab === tab && styles.chartTabTextOn]}>{t(`progress.tab.${tab}`)}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                    {chartTab === 'measures' && (
+                        <>
+                            <SectionHeader
+                                icon={Ruler} color="#8B5CF6" bg="#F5F3FF"
+                                title={t('progress.measuresTitle')}
+                                subtitle={lastBody ? t('progress.lastOn', { date: formatDate(lastBody.date, { day: '2-digit', month: 'short' }) }) : t('profile.measuresIntro')}
+                                actionLabel={t('progress.log')}
+                                onAction={() => openLog('measures')}
+                                testID="progress-measures-button"
+                            />
+                            <MeasuresChart user={user} onLog={() => openLog('measures')} />
+                        </>
+                    )}
+                    {chartTab === 'nutrients' && (
+                        <>
+                            <SectionHeader icon={Flame} color="#EF4444" bg="#FEF2F2" title={t('progress.nutrientsTitle')} subtitle={t('progress.nutrientsSub')} />
+                            <NutrientsChart user={user} />
+                        </>
+                    )}
+                    {chartTab === 'weight' && (<>
                     <SectionHeader
                         icon={Scale} color="#EA580C" bg="#FFF7ED"
                         title={t('progress.weightTitle')}
@@ -261,6 +288,7 @@ const NativeProgress = ({ user, setUser }) => {
                             })()}
                         </ScrollView>
                     </View>
+                    </>)}
                 </View>
 
                 {/* Photos */}
@@ -288,8 +316,8 @@ const NativeProgress = ({ user, setUser }) => {
                                         >
                                             <Image source={{ uri: photoUri(photo) }} style={styles.thumbImg} />
                                             <View style={styles.thumbFooter}>
-                                                <Text style={styles.thumbText}>{photo.date ? formatDate(photo.date, { day: '2-digit', month: 'short' }) : ''}</Text>
-                                                {!!w && <Text style={styles.thumbText}>{units.formatWeight(w)}</Text>}
+                                                <Text style={styles.thumbDate}>{photo.date ? formatDate(photo.date, { day: '2-digit', month: 'short' }) : ''}</Text>
+                                                {!!w && <Text style={styles.thumbWeight}>{units.formatWeight(w)}</Text>}
                                             </View>
                                             {compareMode && (
                                                 <View style={[styles.pickBadge, order >= 0 && styles.pickBadgeOn]}>
@@ -330,35 +358,6 @@ const NativeProgress = ({ user, setUser }) => {
                             </View>
                         </TouchableOpacity>
                     )}
-                </View>
-
-                {/* Body measures */}
-                <View style={styles.card}>
-                    <SectionHeader
-                        icon={Ruler} color="#8B5CF6" bg="#F5F3FF"
-                        title={t('progress.measuresTitle')}
-                        subtitle={lastBody ? t('progress.lastOn', { date: formatDate(lastBody.date, { day: '2-digit', month: 'short' }) }) : t('profile.measuresIntro')}
-                        actionLabel={t('progress.log')}
-                        onAction={() => openLog('measures')}
-                    />
-                    {lastBody ? (
-                        <View style={styles.measureRow}>
-                            {[
-                                { label: t('progress.waist'), last: lastWaist, first: firstWaist },
-                                { label: t('progress.hip'), last: lastHip, first: firstHip },
-                            ].map((m) => (
-                                <View key={m.label} style={styles.measureBox}>
-                                    <Text style={styles.measureLabel}>{m.label}</Text>
-                                    <Text style={styles.measureValue}>{m.last ? fmtLen(m.last) : '--'}</Text>
-                                    {!!m.last && !!m.first && m.last !== m.first && (
-                                        <Text style={[styles.measureDiff, { color: m.last < m.first ? '#10B981' : '#EF4444' }]}>
-                                            {t('progress.sinceFirst', { value: fmtLenDiff(m.last - m.first) })}
-                                        </Text>
-                                    )}
-                                </View>
-                            ))}
-                        </View>
-                    ) : null}
                 </View>
 
                 {/* Doses */}
@@ -464,7 +463,7 @@ const styles = StyleSheet.create({
     sectionSub: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', marginTop: 1 },
     sectionAction: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF7ED', borderRadius: 12, paddingVertical: 7, paddingHorizontal: 10, borderWidth: 1, borderColor: '#FFEDD5' },
     sectionActionText: { fontSize: 11, fontFamily: 'Outfit_900Black', color: '#EA580C' },
-    demoBadge: { position: 'absolute', top: 120, alignSelf: 'center', zIndex: 20, backgroundColor: '#0F172A', borderRadius: 12, paddingVertical: 6, paddingHorizontal: 12 },
+    demoBadge: { position: 'absolute', top: 170, alignSelf: 'center', zIndex: 20, backgroundColor: '#0F172A', borderRadius: 12, paddingVertical: 6, paddingHorizontal: 12 },
     demoBadgeText: { fontSize: 11, fontFamily: 'Outfit_900Black', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 1 },
 
     tooltip: { position: 'absolute', backgroundColor: '#FFFFFF', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 6, zIndex: 20 },
@@ -479,8 +478,9 @@ const styles = StyleSheet.create({
     thumb: { width: 104, height: 140, borderRadius: 20, overflow: 'hidden', backgroundColor: '#F1F5F9', borderWidth: 2, borderColor: 'transparent' },
     thumbPicked: { borderColor: '#EA580C' },
     thumbImg: { width: '100%', height: '100%' },
-    thumbFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.45)', paddingVertical: 4, paddingHorizontal: 6 },
-    thumbText: { fontSize: 9, fontFamily: 'Outfit_900Black', color: '#FFFFFF', textTransform: 'uppercase' },
+    thumbFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(15,23,42,0.72)', paddingVertical: 6, paddingHorizontal: 6, alignItems: 'center' },
+    thumbDate: { fontSize: 10, fontFamily: 'Outfit_700Bold', color: 'rgba(255,255,255,0.85)', textAlign: 'center' },
+    thumbWeight: { fontSize: 13, fontFamily: 'Outfit_900Black', color: '#FFFFFF', textAlign: 'center', marginTop: 1 },
     pickBadge: { position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' },
     pickBadgeOn: { backgroundColor: '#EA580C' },
     pickBadgeText: { fontSize: 11, fontFamily: 'Outfit_900Black', color: '#FFFFFF' },
@@ -496,11 +496,11 @@ const styles = StyleSheet.create({
     photoEmptyTitle: { fontSize: 14, fontFamily: 'Outfit_900Black', color: '#334155' },
     photoEmptyText: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', marginTop: 2, lineHeight: 15 },
 
-    measureRow: { flexDirection: 'row', gap: 12 },
-    measureBox: { flex: 1, backgroundColor: '#F5F3FF', borderRadius: 20, padding: 14 },
-    measureLabel: { fontSize: 9, fontFamily: 'Outfit_900Black', color: '#8B5CF6', textTransform: 'uppercase', letterSpacing: 1 },
-    measureValue: { fontSize: 20, fontFamily: 'Outfit_900Black', color: '#4C1D95', marginTop: 2 },
-    measureDiff: { fontSize: 10, fontFamily: 'Outfit_700Bold', marginTop: 2 },
+    chartTabs: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 16, padding: 4, marginBottom: 16 },
+    chartTab: { flex: 1, paddingVertical: 8, borderRadius: 12, alignItems: 'center' },
+    chartTabOn: { backgroundColor: '#EA580C', shadowColor: '#EA580C', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 2 },
+    chartTabText: { fontSize: 12, fontFamily: 'Outfit_700Bold', color: '#94A3B8' },
+    chartTabTextOn: { color: '#FFFFFF', fontFamily: 'Outfit_900Black' },
 
     doseItem: { flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: '#F8FAFC', paddingBottom: 10 },
     doseDate: { fontSize: 12, fontFamily: 'Outfit_700Bold', color: '#64748B' },

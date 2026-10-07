@@ -136,10 +136,10 @@
     "finish": "Finalizar"
   },
   "dashboard": {
-    "greeting": "Oi, {{name}}! 🎈",
-    "greetingNoName": "Oi! 🎈",
+    "greeting": "Oi, {{name}}!",
+    "greetingNoName": "Oi!",
     "protocolFallback": "Protocolo",
-    "foodNoiseTagline": "Cuidado com o Food Noise 🎈",
+    "foodNoiseTagline": "Cuidado com o ruído alimentar 🎈",
     "foodNoiseTitle": "Mantenha o foco!",
     "foodNoiseDesc": "Sua dose está baixando. Priorize as proteínas agora!",
     "doseDayTagline": "Dia de Brilhar 💉",
@@ -166,7 +166,7 @@
     "cycle": {
       "noDose": "Nenhuma dose registrada ainda.",
       "peak": "Fase de Pico: Priorize refeições leves.",
-      "low": "Nível Baixo: O Food Noise pode aumentar. Mantenha o foco!",
+      "low": "Nível Baixo: O ruído alimentar pode aumentar. Mantenha o foco!",
       "stable": "Nível Estável: Aproveite para focar em treinos de força."
     },
     "plateauTitle": "Alerta de Platô",
@@ -221,6 +221,7 @@
     "symptomsTitle": "Sintomas do Dia",
     "triggerLabel": "Identificar Gatilho",
     "triggerPlaceholder": "Ex: Doce, gordura, cheiro forte...",
+    "foodNoise": "Ruído alimentar",
     "quiet": "Silencioso",
     "moderate": "Moderado",
     "high": "Alto",
@@ -245,6 +246,10 @@
   },
   "mealScan": {
     "title": "Analisar Refeição",
+    "chooseTitle": "Como você quer registrar?",
+    "chooseSub": "Escolha como adicionar os alimentos desta refeição.",
+    "photoOption": "Foto do prato",
+    "photoOptionSub": "Tire uma foto ou escolha da galeria e identificamos os alimentos",
     "idleTitle": "Tire uma foto do seu prato",
     "idleSubtitle": "Identificamos os alimentos e estimamos as porções automaticamente.",
     "weightHintLabel": "Peso aproximado do prato (opcional)",
@@ -342,7 +347,7 @@
     "demoHint": "Somente em desenvolvimento: 2 meses de Mounjaro com pesagens, fotos e aplicações. Nada é salvo."
   },
   "today": {
-    "subtitle": "{{week}}ª semana de {{medication}} 💪",
+    "subtitle": "{{week}}ª semana de {{medication}}",
     "doseDone": "Feito hoje! ✓",
     "goalsTitle": "Metas de hoje",
     "editGoals": "Ajustar metas",
@@ -356,7 +361,13 @@
     "editIntakeHint": "Meta do dia: {{goal}}",
     "photoTitle": "Foto do dia",
     "photoSub": "Registre como você está hoje",
-    "photoDone": "Foto de hoje salva. Toque para adicionar outra"
+    "photoDone": "Foto de hoje salva. Toque para adicionar outra",
+    "measuresFirstTitle": "Registre suas medidas",
+    "measuresFirstSub": "Cintura e quadril mostram a evolução além da balança",
+    "measuresDueTitle": "Hora de medir cintura e quadril",
+    "measuresDueSub_one": "Última medida há {{count}} dia",
+    "measuresDueSub_other": "Última medida há {{count}} dias",
+    "measuresLater": "Lembrar depois"
   },
   "log": {
     "menuTitle": "O que você quer registrar?",
@@ -368,10 +379,10 @@
     "doseOral": "Comprimido",
     "doseSub": "Sua dose e o local",
     "checkIn": "Como estou",
-    "checkInSub": "Sintomas, Food Noise e notas",
-    "checkInTitle": "Como você está?",
+    "checkInSub": "Sintomas, ruído alimentar e notas",
+    "checkInTitle": "Como você se sente?",
     "meal": "Refeição",
-    "mealSub": "Foto do prato com análise",
+    "mealSub": "Por foto do prato ou digitando os alimentos",
     "photo": "Foto de progresso",
     "photoSub": "Para o antes e depois",
     "measures": "Medidas",
@@ -390,6 +401,8 @@
   "journal": {
     "title": "Diário",
     "subtitle": "Tudo o que aconteceu, dia a dia",
+    "nutrientsShow": "Ver todos os nutrientes",
+    "nutrientsHide": "Ocultar nutrientes",
     "goToday": "Hoje",
     "month": "Mês",
     "week": "Semana",
@@ -461,7 +474,22 @@
     "bmiObese2": "Obesidade grau II",
     "bmiObese3": "Obesidade grau III",
     "bmiNote": "O IMC é uma referência geral e não considera massa muscular nem distribuição de gordura. Converse com seu médico sobre suas metas.",
-    "bmiInfoA11y": "Ver faixas de IMC"
+    "bmiInfoA11y": "Ver faixas de IMC",
+    "tab": {
+      "weight": "Peso",
+      "measures": "Medidas",
+      "nutrients": "Nutrientes"
+    },
+    "measuresEmpty": "Registre cintura e quadril em 2 dias diferentes para ver o gráfico. Toque para registrar.",
+    "nutrientsTitle": "Nutrientes por dia",
+    "nutrientsSub": "Toque numa barra para ver o dia",
+    "nutrientsEmpty": "Nenhum registro neste período.",
+    "goalLine": "meta {{value}}",
+    "nutrientAvg": "Média {{value}}",
+    "nutrientMet_one": "meta batida em {{count}} de {{total}} dias",
+    "nutrientMet_other": "meta batida em {{count}} de {{total}} dias",
+    "nutrientWithin_one": "dentro da meta em {{count}} de {{total}} dias",
+    "nutrientWithin_other": "dentro da meta em {{count}} de {{total}} dias"
   },
   "reminders": {
     "title": "Lembretes",
@@ -536,7 +564,10 @@
     "wheySub": "Cada dose soma nas metas do dia",
     "perDose": "Por dose (veja o rótulo)",
     "cardTitle": "Suplementos",
-    "counter": "{{done}} de {{total}}",
+    "askWeekday": "Em que dia da semana você usa {{name}}?",
+    "askMonthDay": "Em que dia do mês você usa {{name}}?",
+    "shortMonthNote": "Em meses mais curtos, aparece no último dia.",
+    "noneToday": "Nenhum suplemento previsto para hoje.",
     "emptyTitle": "Usa vitaminas ou suplementos?",
     "emptyText": "Registre aqui e marque quando tomar.",
     "configure": "Configurar",
@@ -573,7 +604,7 @@
     "myFood": "Meu alimento",
     "noResults": "Nada encontrado para \"{{query}}\".",
     "create": "Criar alimento",
-    "credits": "Fontes: TACO (NEPA/Unicamp), USDA FoodData Central e Open Food Facts",
+    "credits": "Dados nutricionais obtidos via TACO (NEPA/Unicamp), USDA FoodData Central e Open Food Facts",
     "searchFailed": "Não foi possível buscar agora. Verifique sua conexão.",
     "scanHint": "Aponte a câmera para o código de barras da embalagem",
     "looking": "Buscando produto...",

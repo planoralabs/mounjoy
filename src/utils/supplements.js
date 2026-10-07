@@ -1,6 +1,7 @@
 // Supplements the user takes, and what they marked as taken.
 //
-// user.supplements    = [{ id, name?, custom?, frequency, nutrients? }]
+// user.supplements    = [{ id, name?, custom?, frequency, day?, nutrients? }]
+//                       day: weekly → weekday (0 = Sunday), monthly → day of the month (1–31)
 // user.supplementLogs = [{ date, supplementId, name }]
 //
 // Vitamins and the like are only counted (Today card, Journal). Whey carries
@@ -27,10 +28,37 @@ export const DEFAULT_WHEY_NUTRIENTS = { protein: 24, calories: 120, carbs: 3, fa
 export const FREQUENCIES = ['daily', 'weekly', 'monthly'];
 const PERIOD_DAYS = { daily: 1, weekly: 7, monthly: 30 };
 
+const isScheduled = (s) => s.frequency !== 'daily' && s.day != null;
+
+/** The day a weekly/monthly supplement starts on when picked on `date` (its weekday or day of the month). */
+export const defaultScheduleDay = (frequency, date = new Date()) =>
+    (frequency === 'weekly' ? date.getDay() : frequency === 'monthly' ? date.getDate() : undefined);
+
+/** `s` with a new frequency, set to the weekday/day of the month of `date`. */
+export const withFrequency = (s, frequency, date = new Date()) => {
+    const { day, ...rest } = s;
+    const next = defaultScheduleDay(frequency, date);
+    return next === undefined ? { ...rest, frequency } : { ...rest, frequency, day: next };
+};
+
+/**
+ * Whether `s` goes on Today's list on `day`. Daily ones always do; weekly and
+ * monthly ones only on their set day (a short month uses its last day for 29–31).
+ * Older entries without a set day show every day, as before.
+ */
+export const isDueOn = (s, day = new Date()) => {
+    if (!isScheduled(s)) return true;
+    const d = new Date(day);
+    if (s.frequency === 'weekly') return d.getDay() === s.day;
+    const lastOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    return d.getDate() === Math.min(s.day, lastOfMonth);
+};
+
 export const supplementName = (t, s) => (s.custom ? s.name : t(`supplements.names.${s.id}`));
 
 /** Countable supplements (everything but whey). */
 export const trackedSupplements = (user) => (user?.supplements || []).filter((s) => s.id !== WHEY_ID);
+export const dueSupplementsOn = (user, day = new Date()) => trackedSupplements(user).filter((s) => isDueOn(s, day));
 export const wheyOf = (user) => (user?.supplements || []).find((s) => s.id === WHEY_ID) || null;
 
 /** The logs minus one entry: the first one of `id` on `day`. */
@@ -43,10 +71,14 @@ const withoutOne = (user, id, day) => {
 export const logsOn = (user, day, id) =>
     (user?.supplementLogs || []).filter((l) => l.supplementId === id && isSameDay(l.date, day));
 
-/** Most recent log of `id` within its period ending on `day` (daily → that day, weekly → last 7 days…). */
+/**
+ * Most recent log of `id` within its period ending on `day` (daily → that day,
+ * weekly → last 7 days…). Supplements set to a day only count that day.
+ */
 export const lastTakenInPeriod = (user, supplement, day = new Date()) => {
     const end = startOfDay(day).getTime() + 24 * 60 * 60 * 1000;
-    const start = end - PERIOD_DAYS[supplement.frequency || 'daily'] * 24 * 60 * 60 * 1000;
+    const days = isScheduled(supplement) ? 1 : PERIOD_DAYS[supplement.frequency || 'daily'];
+    const start = end - days * 24 * 60 * 60 * 1000;
     return (user?.supplementLogs || [])
         .filter((l) => l.supplementId === supplement.id)
         .map((l) => new Date(l.date))
@@ -55,7 +87,7 @@ export const lastTakenInPeriod = (user, supplement, day = new Date()) => {
 };
 
 export const progressOn = (user, day = new Date()) => {
-    const list = trackedSupplements(user);
+    const list = dueSupplementsOn(user, day);
     return { done: list.filter((s) => lastTakenInPeriod(user, s, day)).length, total: list.length };
 };
 

@@ -38,66 +38,106 @@ const AdjustableGridImage = ({ uri, id, adjustment, onAdjustmentChange, onActive
         scale.setValue(coverScale * activeScale);
     }, [adjustment, coverScale]);
 
-    const startDist = useRef(0);
-    const startScale = useRef(1);
-    const isPinching = useRef(false);
+    // Drag and pinch are one gesture: the fingers' midpoint moves the photo and
+    // their spread zooms it, around that midpoint, so both work at once. When a
+    // finger is added or lifted the gesture restarts from where the photo is.
+    const boxRef = useRef(null);
+    const center = useRef({ x: 0, y: 0 }); // the box's center, in page coordinates
+    const base = useRef(null); // { count, fx, fy, dist, x, y, scale } at the last (re)start
+    const onAdjustRef = useRef(onAdjustmentChange);
+    onAdjustRef.current = onAdjustmentChange;
+
+    const measureBox = () => boxRef.current?.measure?.((x, y, w, h, pageX, pageY) => {
+        if (w && h) center.current = { x: pageX + w / 2, y: pageY + h / 2 };
+    });
+
+    const apply = (x, y, s) => {
+        valRef.current = { x, y, scale: s };
+        pan.setValue({ x, y });
+        scale.setValue(coverRef.current * s);
+    };
+
+    const commit = () => onAdjustRef.current(id, { ...valRef.current });
+
+    // Keeps the photo point under (fx0, fy0) at the scale s0 under (fx, fy) at s.
+    const follow = (b, fx, fy, s) => {
+        const k = s / b.scale;
+        apply(fx - k * (b.fx - b.x), fy - k * (b.fy - b.y), s);
+    };
+
+    const touchState = (touches) => {
+        const pts = touches.slice(0, 2);
+        const fx = pts.reduce((sum, t) => sum + t.pageX, 0) / pts.length - center.current.x;
+        const fy = pts.reduce((sum, t) => sum + t.pageY, 0) / pts.length - center.current.y;
+        const dist = pts.length === 2 ? Math.hypot(pts[0].pageX - pts[1].pageX, pts[0].pageY - pts[1].pageY) : 0;
+        return { count: pts.length, fx, fy, dist };
+    };
+
+    const restart = (touches) => {
+        const s = touchState(touches);
+        base.current = { ...s, ...valRef.current };
+    };
 
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: () => true,
+            onPanResponderTerminationRequest: () => false,
             onPanResponderGrant: (evt) => {
                 onActiveStart && onActiveStart();
-                isPinching.current = false;
-                const { touches } = evt.nativeEvent;
-                if (touches.length === 2) {
-                    isPinching.current = true;
-                    startDist.current = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
-                    startScale.current = valRef.current.scale;
-                } else {
-                    startDist.current = 0;
-                    pan.setOffset({ x: valRef.current.x, y: valRef.current.y });
-                    pan.setValue({ x: 0, y: 0 });
-                }
+                measureBox();
+                restart(evt.nativeEvent.touches);
             },
-            onPanResponderMove: (evt, gesture) => {
+            onPanResponderMove: (evt) => {
                 const { touches } = evt.nativeEvent;
-                if (touches.length === 2) {
-                    isPinching.current = true;
-                    const dist = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
-                    if (startDist.current === 0) {
-                        startDist.current = dist;
-                        startScale.current = valRef.current.scale;
-                    } else {
-                        // Amplified so small pinches still zoom noticeably.
-                        const next = Math.max(0.3, Math.min(6, startScale.current * (1 + ((dist / startDist.current) - 1) * 1.8)));
-                        scale.setValue(coverRef.current * next);
-                        valRef.current.scale = next;
-                    }
-                } else if (touches.length === 1 && !isPinching.current) {
-                    startDist.current = 0;
-                    pan.setValue({ x: gesture.dx, y: gesture.dy });
-                }
+                if (!touches.length) return;
+                const now = touchState(touches);
+                if (!base.current || now.count !== base.current.count) { restart(touches); return; }
+                const b = base.current;
+                // Amplified so small pinches still zoom noticeably.
+                const s = now.count === 2 && b.dist > 0
+                    ? Math.max(0.3, Math.min(6, b.scale * (1 + ((now.dist / b.dist) - 1) * 1.8)))
+                    : b.scale;
+                follow(b, now.fx, now.fy, s);
             },
             onPanResponderRelease: () => {
                 onActiveEnd && onActiveEnd();
-                startDist.current = 0;
-                pan.flattenOffset();
-                onAdjustmentChange(id, { x: pan.x._value, y: pan.y._value, scale: valRef.current.scale });
-                isPinching.current = false;
+                base.current = null;
+                commit();
             },
             onPanResponderTerminate: () => {
                 onActiveEnd && onActiveEnd();
-                startDist.current = 0;
-                isPinching.current = false;
+                base.current = null;
+                commit();
             },
         })
     ).current;
 
+    // Web: mouse wheel / trackpad pinch zooms around the pointer (drag still pans).
+    useEffect(() => {
+        const node = boxRef.current;
+        if (Platform.OS !== 'web' || !node?.addEventListener) return undefined;
+        let timer;
+        const onWheel = (e) => {
+            e.preventDefault();
+            const rect = node.getBoundingClientRect();
+            const fx = e.clientX - (rect.left + rect.width / 2);
+            const fy = e.clientY - (rect.top + rect.height / 2);
+            const v = valRef.current;
+            const s = Math.max(0.3, Math.min(6, v.scale * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015))));
+            follow({ fx, fy, x: v.x, y: v.y, scale: v.scale }, fx, fy, s);
+            clearTimeout(timer);
+            timer = setTimeout(commit, 200);
+        };
+        node.addEventListener('wheel', onWheel, { passive: false });
+        return () => { node.removeEventListener('wheel', onWheel); clearTimeout(timer); };
+    }, []);
+
     return (
         <View
+            ref={boxRef}
             style={{ flex: 1, overflow: 'hidden', backgroundColor: '#090D16' }}
-            onLayout={(e) => setContainerSize({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}
+            onLayout={(e) => { setContainerSize({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height }); measureBox(); }}
             {...panResponder.panHandlers}
         >
             <Animated.Image

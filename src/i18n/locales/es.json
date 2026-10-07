@@ -136,8 +136,8 @@
     "finish": "Finalizar"
   },
   "dashboard": {
-    "greeting": "¡Hola, {{name}}! 🎈",
-    "greetingNoName": "¡Hola! 🎈",
+    "greeting": "¡Hola, {{name}}!",
+    "greetingNoName": "¡Hola!",
     "protocolFallback": "tu protocolo",
     "foodNoiseTagline": "Cuidado con el Food Noise 🎈",
     "foodNoiseTitle": "¡Mantén el foco!",
@@ -221,6 +221,7 @@
     "symptomsTitle": "Síntomas del día",
     "triggerLabel": "Identificar desencadenante",
     "triggerPlaceholder": "Ej.: dulces, grasa, olor fuerte...",
+    "foodNoise": "Food Noise",
     "quiet": "Silencioso",
     "moderate": "Moderado",
     "high": "Alto",
@@ -245,6 +246,10 @@
   },
   "mealScan": {
     "title": "Analizar comida",
+    "chooseTitle": "¿Cómo quieres registrarla?",
+    "chooseSub": "Elige cómo añadir los alimentos de esta comida.",
+    "photoOption": "Foto del plato",
+    "photoOptionSub": "Toma una foto o elige una de la galería e identificamos los alimentos",
     "idleTitle": "Haz una foto de tu plato",
     "idleSubtitle": "Identificamos los alimentos y estimamos las porciones automáticamente.",
     "weightHintLabel": "Peso aproximado del plato (opcional)",
@@ -342,7 +347,7 @@
     "demoHint": "Solo en desarrollo: 2 meses de Mounjaro con pesajes, fotos y aplicaciones. No se guarda nada."
   },
   "today": {
-    "subtitle": "Semana {{week}} de {{medication}} 💪",
+    "subtitle": "Semana {{week}} de {{medication}}",
     "doseDone": "¡Hecho hoy! ✓",
     "goalsTitle": "Metas de hoy",
     "editGoals": "Ajustar metas",
@@ -356,7 +361,13 @@
     "editIntakeHint": "Meta del día: {{goal}}",
     "photoTitle": "Foto del día",
     "photoSub": "Registra cómo estás hoy",
-    "photoDone": "Foto de hoy guardada. Toca para agregar otra"
+    "photoDone": "Foto de hoy guardada. Toca para agregar otra",
+    "measuresFirstTitle": "Registra tus medidas",
+    "measuresFirstSub": "Cintura y cadera muestran la evolución más allá de la báscula",
+    "measuresDueTitle": "Hora de medir cintura y cadera",
+    "measuresDueSub_one": "Última medida hace {{count}} día",
+    "measuresDueSub_other": "Última medida hace {{count}} días",
+    "measuresLater": "Recordar después"
   },
   "log": {
     "menuTitle": "¿Qué quieres registrar?",
@@ -371,7 +382,7 @@
     "checkInSub": "Síntomas, food noise y notas",
     "checkInTitle": "¿Cómo te sientes?",
     "meal": "Comida",
-    "mealSub": "Foto del plato con análisis",
+    "mealSub": "Con una foto del plato o escribiendo los alimentos",
     "photo": "Foto de progreso",
     "photoSub": "Para tu antes y después",
     "measures": "Medidas",
@@ -390,6 +401,8 @@
   "journal": {
     "title": "Diario",
     "subtitle": "Todo lo que pasó, día a día",
+    "nutrientsShow": "Ver todos los nutrientes",
+    "nutrientsHide": "Ocultar nutrientes",
     "goToday": "Hoy",
     "month": "Mes",
     "week": "Semana",
@@ -461,7 +474,22 @@
     "bmiObese2": "Obesidad grado II",
     "bmiObese3": "Obesidad grado III",
     "bmiNote": "El IMC es una referencia general y no considera la masa muscular ni la distribución de la grasa. Habla con tu médico sobre tus metas.",
-    "bmiInfoA11y": "Ver rangos de IMC"
+    "bmiInfoA11y": "Ver rangos de IMC",
+    "tab": {
+      "weight": "Peso",
+      "measures": "Medidas",
+      "nutrients": "Nutrientes"
+    },
+    "measuresEmpty": "Registra cintura y cadera en 2 días distintos para ver el gráfico. Toca para registrar.",
+    "nutrientsTitle": "Nutrientes por día",
+    "nutrientsSub": "Toca una barra para ver el día",
+    "nutrientsEmpty": "Ningún registro en este período.",
+    "goalLine": "meta {{value}}",
+    "nutrientAvg": "Media {{value}}",
+    "nutrientMet_one": "meta cumplida en {{count}} de {{total}} días",
+    "nutrientMet_other": "meta cumplida en {{count}} de {{total}} días",
+    "nutrientWithin_one": "dentro de la meta en {{count}} de {{total}} días",
+    "nutrientWithin_other": "dentro de la meta en {{count}} de {{total}} días"
   },
   "reminders": {
     "title": "Recordatorios",
@@ -536,7 +564,10 @@
     "wheySub": "Cada porción suma a las metas del día",
     "perDose": "Por porción (mira la etiqueta)",
     "cardTitle": "Suplementos",
-    "counter": "{{done}} de {{total}}",
+    "askWeekday": "¿Qué día de la semana tomas {{name}}?",
+    "askMonthDay": "¿Qué día del mes tomas {{name}}?",
+    "shortMonthNote": "En meses más cortos, aparece el último día.",
+    "noneToday": "Ningún suplemento previsto para hoy.",
     "emptyTitle": "¿Tomas vitaminas o suplementos?",
     "emptyText": "Regístralos aquí y márcalos al tomarlos.",
     "configure": "Configurar",

@@ -136,8 +136,8 @@
     "finish": "Fine"
   },
   "dashboard": {
-    "greeting": "Ciao, {{name}}! 🎈",
-    "greetingNoName": "Ciao! 🎈",
+    "greeting": "Ciao, {{name}}!",
+    "greetingNoName": "Ciao!",
     "protocolFallback": "protocollo",
     "foodNoiseTagline": "Attenzione al Food Noise 🎈",
     "foodNoiseTitle": "Resta concentrato!",
@@ -221,6 +221,7 @@
     "symptomsTitle": "Sintomi di oggi",
     "triggerLabel": "Identifica il fattore scatenante",
     "triggerPlaceholder": "Es.: dolci, grassi, odore forte...",
+    "foodNoise": "Food Noise",
     "quiet": "Silenzioso",
     "moderate": "Moderato",
     "high": "Alto",
@@ -245,6 +246,10 @@
   },
   "mealScan": {
     "title": "Analizza pasto",
+    "chooseTitle": "Come vuoi registrarlo?",
+    "chooseSub": "Scegli come aggiungere gli alimenti di questo pasto.",
+    "photoOption": "Foto del piatto",
+    "photoOptionSub": "Scatta una foto o scegline una dalla galleria e riconosciamo gli alimenti",
     "idleTitle": "Fotografa il tuo piatto",
     "idleSubtitle": "Riconosciamo gli alimenti e stimiamo le porzioni automaticamente.",
     "weightHintLabel": "Peso approssimativo del piatto (facoltativo)",
@@ -342,7 +347,7 @@
     "demoHint": "Solo in sviluppo: 2 mesi di Mounjaro con pesate, foto e somministrazioni. Non viene salvato nulla."
   },
   "today": {
-    "subtitle": "Settimana {{week}} di {{medication}} 💪",
+    "subtitle": "Settimana {{week}} di {{medication}}",
     "doseDone": "Fatto oggi! ✓",
     "goalsTitle": "Obiettivi di oggi",
     "editGoals": "Modifica",
@@ -356,7 +361,13 @@
     "editIntakeHint": "Obiettivo del giorno: {{goal}}",
     "photoTitle": "Foto del giorno",
     "photoSub": "Registra come sei oggi",
-    "photoDone": "Foto di oggi salvata. Tocca per aggiungerne un’altra"
+    "photoDone": "Foto di oggi salvata. Tocca per aggiungerne un’altra",
+    "measuresFirstTitle": "Registra le tue misure",
+    "measuresFirstSub": "Vita e fianchi mostrano i progressi oltre la bilancia",
+    "measuresDueTitle": "È ora di misurare vita e fianchi",
+    "measuresDueSub_one": "Ultima misura {{count}} giorno fa",
+    "measuresDueSub_other": "Ultima misura {{count}} giorni fa",
+    "measuresLater": "Ricordamelo dopo"
   },
   "log": {
     "menuTitle": "Cosa vuoi registrare?",
@@ -371,7 +382,7 @@
     "checkInSub": "Sintomi, food noise e note",
     "checkInTitle": "Come ti senti?",
     "meal": "Pasto",
-    "mealSub": "Foto del piatto con analisi",
+    "mealSub": "Con una foto del piatto o digitando gli alimenti",
     "photo": "Foto dei progressi",
     "photoSub": "Per il tuo prima e dopo",
     "measures": "Misure",
@@ -390,6 +401,8 @@
   "journal": {
     "title": "Diario",
     "subtitle": "Tutto quello che è successo, giorno per giorno",
+    "nutrientsShow": "Vedi tutti i nutrienti",
+    "nutrientsHide": "Nascondi nutrienti",
     "goToday": "Oggi",
     "month": "Mese",
     "week": "Settimana",
@@ -461,7 +474,22 @@
     "bmiObese2": "Obesità di grado II",
     "bmiObese3": "Obesità di grado III",
     "bmiNote": "L'IMC è un riferimento generale e non considera la massa muscolare né la distribuzione del grasso. Parla con il tuo medico dei tuoi obiettivi.",
-    "bmiInfoA11y": "Vedi le fasce di IMC"
+    "bmiInfoA11y": "Vedi le fasce di IMC",
+    "tab": {
+      "weight": "Peso",
+      "measures": "Misure",
+      "nutrients": "Nutrienti"
+    },
+    "measuresEmpty": "Registra vita e fianchi in 2 giorni diversi per vedere il grafico. Tocca per registrare.",
+    "nutrientsTitle": "Nutrienti al giorno",
+    "nutrientsSub": "Tocca una barra per vedere il giorno",
+    "nutrientsEmpty": "Nessuna registrazione in questo periodo.",
+    "goalLine": "obiettivo {{value}}",
+    "nutrientAvg": "Media {{value}}",
+    "nutrientMet_one": "obiettivo raggiunto in {{count}} giorno su {{total}}",
+    "nutrientMet_other": "obiettivo raggiunto in {{count}} giorni su {{total}}",
+    "nutrientWithin_one": "entro l'obiettivo in {{count}} giorno su {{total}}",
+    "nutrientWithin_other": "entro l'obiettivo in {{count}} giorni su {{total}}"
   },
   "reminders": {
     "title": "Promemoria",
@@ -536,7 +564,10 @@
     "wheySub": "Ogni porzione conta negli obiettivi del giorno",
     "perDose": "Per porzione (vedi l’etichetta)",
     "cardTitle": "Integratori",
-    "counter": "{{done}} di {{total}}",
+    "askWeekday": "In che giorno della settimana prendi {{name}}?",
+    "askMonthDay": "In che giorno del mese prendi {{name}}?",
+    "shortMonthNote": "Nei mesi più corti, compare l'ultimo giorno.",
+    "noneToday": "Nessun integratore previsto per oggi.",
     "emptyTitle": "Prendi vitamine o integratori?",
     "emptyText": "Aggiungili qui e spuntali quando li prendi.",
     "configure": "Configura",

@@ -136,8 +136,8 @@
     "finish": "Fertig"
   },
   "dashboard": {
-    "greeting": "Hallo {{name}}! 🎈",
-    "greetingNoName": "Hallo! 🎈",
+    "greeting": "Hallo {{name}}!",
+    "greetingNoName": "Hallo!",
     "protocolFallback": "deinem Protokoll",
     "foodNoiseTagline": "Achtung, Food Noise 🎈",
     "foodNoiseTitle": "Bleib fokussiert!",
@@ -221,6 +221,7 @@
     "symptomsTitle": "Symptome heute",
     "triggerLabel": "Auslöser erkennen",
     "triggerPlaceholder": "z. B. Süßes, Fettiges, starker Geruch...",
+    "foodNoise": "Food Noise",
     "quiet": "Ruhig",
     "moderate": "Mäßig",
     "high": "Hoch",
@@ -245,6 +246,10 @@
   },
   "mealScan": {
     "title": "Mahlzeit analysieren",
+    "chooseTitle": "Wie möchtest du sie erfassen?",
+    "chooseSub": "Wähle, wie du die Lebensmittel dieser Mahlzeit hinzufügst.",
+    "photoOption": "Foto vom Teller",
+    "photoOptionSub": "Mach ein Foto oder wähle eins aus der Galerie und wir erkennen die Lebensmittel",
     "idleTitle": "Fotografiere deinen Teller",
     "idleSubtitle": "Wir erkennen die Lebensmittel und schätzen die Portionen automatisch.",
     "weightHintLabel": "Ungefähres Tellergewicht (optional)",
@@ -342,7 +347,7 @@
     "demoHint": "Nur in der Entwicklung: 2 Monate Mounjaro mit Wiegungen, Fotos und Anwendungen. Nichts wird gespeichert."
   },
   "today": {
-    "subtitle": "Woche {{week}} mit {{medication}} 💪",
+    "subtitle": "Woche {{week}} mit {{medication}}",
     "doseDone": "Heute erledigt! ✓",
     "goalsTitle": "Ziele für heute",
     "editGoals": "Ziele anpassen",
@@ -356,7 +361,13 @@
     "editIntakeHint": "Tagesziel: {{goal}}",
     "photoTitle": "Foto des Tages",
     "photoSub": "Halte fest, wie du heute aussiehst",
-    "photoDone": "Heutiges Foto gespeichert. Tippe für ein weiteres"
+    "photoDone": "Heutiges Foto gespeichert. Tippe für ein weiteres",
+    "measuresFirstTitle": "Erfasse deine Maße",
+    "measuresFirstSub": "Taille und Hüfte zeigen Fortschritte jenseits der Waage",
+    "measuresDueTitle": "Zeit, Taille und Hüfte zu messen",
+    "measuresDueSub_one": "Zuletzt vor {{count}} Tag gemessen",
+    "measuresDueSub_other": "Zuletzt vor {{count}} Tagen gemessen",
+    "measuresLater": "Später erinnern"
   },
   "log": {
     "menuTitle": "Was möchtest du eintragen?",
@@ -369,9 +380,9 @@
     "doseSub": "Deine Dosis und die Stelle",
     "checkIn": "Wie es mir geht",
     "checkInSub": "Symptome, Food Noise und Notizen",
-    "checkInTitle": "Wie geht es dir?",
+    "checkInTitle": "Wie fühlst du dich?",
     "meal": "Mahlzeit",
-    "mealSub": "Foto vom Teller mit Analyse",
+    "mealSub": "Per Foto vom Teller oder durch Eintippen der Lebensmittel",
     "photo": "Fortschrittsfoto",
     "photoSub": "Für dein Vorher-Nachher",
     "measures": "Maße",
@@ -390,6 +401,8 @@
   "journal": {
     "title": "Tagebuch",
     "subtitle": "Alles, was passiert ist, Tag für Tag",
+    "nutrientsShow": "Alle Nährstoffe anzeigen",
+    "nutrientsHide": "Nährstoffe ausblenden",
     "goToday": "Heute",
     "month": "Monat",
     "week": "Woche",
@@ -461,7 +474,22 @@
     "bmiObese2": "Adipositas Grad II",
     "bmiObese3": "Adipositas Grad III",
     "bmiNote": "Der BMI ist ein allgemeiner Richtwert und berücksichtigt weder Muskelmasse noch Fettverteilung. Sprich mit deiner Ärztin oder deinem Arzt über deine Ziele.",
-    "bmiInfoA11y": "BMI-Bereiche anzeigen"
+    "bmiInfoA11y": "BMI-Bereiche anzeigen",
+    "tab": {
+      "weight": "Gewicht",
+      "measures": "Maße",
+      "nutrients": "Nährstoffe"
+    },
+    "measuresEmpty": "Erfasse Taille und Hüfte an 2 verschiedenen Tagen, um das Diagramm zu sehen. Tippen zum Erfassen.",
+    "nutrientsTitle": "Nährstoffe pro Tag",
+    "nutrientsSub": "Tippe auf einen Balken, um den Tag zu sehen",
+    "nutrientsEmpty": "Keine Einträge in diesem Zeitraum.",
+    "goalLine": "Ziel {{value}}",
+    "nutrientAvg": "Schnitt {{value}}",
+    "nutrientMet_one": "Ziel an {{count}} von {{total}} Tagen erreicht",
+    "nutrientMet_other": "Ziel an {{count}} von {{total}} Tagen erreicht",
+    "nutrientWithin_one": "im Ziel an {{count}} von {{total}} Tagen",
+    "nutrientWithin_other": "im Ziel an {{count}} von {{total}} Tagen"
   },
   "reminders": {
     "title": "Erinnerungen",
@@ -536,7 +564,10 @@
     "wheySub": "Jede Portion zählt zu den Tageszielen",
     "perDose": "Pro Portion (siehe Etikett)",
     "cardTitle": "Nahrungsergänzung",
-    "counter": "{{done}} von {{total}}",
+    "askWeekday": "An welchem Wochentag nimmst du {{name}}?",
+    "askMonthDay": "An welchem Tag im Monat nimmst du {{name}}?",
+    "shortMonthNote": "In kürzeren Monaten erscheint es am letzten Tag.",
+    "noneToday": "Heute sind keine Nahrungsergänzungen geplant.",
     "emptyTitle": "Nimmst du Vitamine oder Nahrungsergänzung?",
     "emptyText": "Trag sie hier ein und hake sie bei der Einnahme ab.",
     "configure": "Einrichten",

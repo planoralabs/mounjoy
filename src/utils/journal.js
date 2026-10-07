@@ -51,6 +51,19 @@ export const weightLogs = (user) =>
 export const bodyLogs = (user) =>
     (user?.measurements || []).filter((m) => parseFloat(m.waist) > 0 || parseFloat(m.hip) > 0).sort(byDateAsc);
 
+// Waist and hip change slowly: Today suggests measuring every two weeks.
+export const MEASURES_EVERY_DAYS = 14;
+
+/**
+ * Whether Today should suggest measuring waist and hip: never measured
+ * ('first') or the last time was MEASURES_EVERY_DAYS or more ago ('due').
+ */
+export const measuresDue = (user, now = new Date()) => {
+    const logs = bodyLogs(user);
+    if (!logs.length) return 'first';
+    return daysBetween(logs[logs.length - 1].date, now) >= MEASURES_EVERY_DAYS ? 'due' : null;
+};
+
 /** Most recent weigh-in (by date, not by insertion order). */
 export const latestWeight = (user) => {
     const logs = weightLogs(user);

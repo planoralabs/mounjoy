@@ -12,7 +12,6 @@ import { searchFoods, loadRecentFoods, rememberFood, lookupBarcode, customFoodTo
 // foods or a barcode (Open Food Facts), pick the amount eaten and add the item
 // to the meal being reviewed. Nutrients are computed from the per-100 g values.
 
-const SOURCE_LABEL = { taco: 'TACO', usda: 'USDA', openfoodfacts: 'Open Food Facts', custom: null };
 const barcodeSupported = Platform.OS === 'ios' || Platform.OS === 'android';
 
 const parseNum = (v) => {
@@ -36,7 +35,8 @@ const MacroLine = ({ n }) => {
 
 const FoodRow = ({ food, sub, onPress, testID }) => {
     const { t } = useTranslation();
-    const source = food.source === 'custom' ? t('foodSearch.myFood') : SOURCE_LABEL[food.source];
+    // Sources are credited once, on the meal screen; only the user's own foods are tagged here.
+    const source = food.source === 'custom' ? t('foodSearch.myFood') : null;
     return (
         <TouchableOpacity onPress={onPress} style={styles.foodRow} activeOpacity={0.7} testID={testID}>
             <View style={{ flex: 1, minWidth: 0 }}>
@@ -221,9 +221,7 @@ export const FoodSearchModal = ({ visible, onClose, onAdd, user, setUser }) => {
                     <TouchableOpacity onPress={() => openCreate(query.trim())} style={styles.createRow} testID="food-create-button">
                         <PencilLine size={16} color="#EA580C" />
                         <Text style={styles.createText}>{t('foodSearch.create')}</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.credits}>{t('foodSearch.credits')}</Text>
-                </View>
+                    </TouchableOpacity>                </View>
             )}
 
             {(step === 'scan' || step === 'lookup') && (
@@ -320,7 +318,6 @@ const styles = StyleSheet.create({
     error: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#DC2626' },
     createRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#FED7AA' },
     createText: { fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#EA580C' },
-    credits: { fontSize: 10, fontFamily: 'Outfit_600SemiBold', color: '#CBD5E1', textAlign: 'center' },
     cameraFrame: { width: '100%', aspectRatio: 4 / 3, borderRadius: 24, overflow: 'hidden', backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center' },
     scanGuide: { position: 'absolute', left: '12%', right: '12%', top: '35%', bottom: '35%', borderWidth: 2, borderColor: 'rgba(255,255,255,0.85)', borderRadius: 14 },
     hint: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#64748B', textAlign: 'center' },

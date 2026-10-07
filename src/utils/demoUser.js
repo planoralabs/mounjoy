@@ -3,7 +3,7 @@ import { intakeKey } from './journal';
 
 // Development-only test patient: about two months on low-dose Mounjaro, with
 // weigh-ins and photos every 3 days, weekly applications, body measures,
-// check-ins, daily intake and supplements. Lives only in memory (see App.js) — it is never
+// check-ins, daily intake, supplements and a week of meals. Lives only in memory (see App.js) — it is never
 // written to the device or to Supabase.
 
 const DAYS = 60;
@@ -24,6 +24,52 @@ const seededRandom = (seed) => () => {
 
 const round1 = (n) => Math.round(n * 10) / 10;
 
+// Foods for the sample meals, per 100 g (TACO 4th ed., rounded).
+const FOODS = {
+    bread: { name: 'Pão francês', category: 'carb', per100: { calories: 300, protein: 8, carbs: 58.6, fat: 3.1, fiber: 2.3 } },
+    egg: { name: 'Ovo de galinha cozido', category: 'protein', per100: { calories: 146, protein: 13.3, carbs: 0.6, fat: 9.5, fiber: 0 } },
+    papaya: { name: 'Mamão papaia', category: 'fruit', per100: { calories: 40, protein: 0.5, carbs: 10.4, fat: 0.1, fiber: 1 } },
+    yogurt: { name: 'Iogurte natural', category: 'dairy', per100: { calories: 51, protein: 4.1, carbs: 1.9, fat: 3, fiber: 0 } },
+    oats: { name: 'Aveia em flocos', category: 'carb', per100: { calories: 394, protein: 13.9, carbs: 66.6, fat: 8.5, fiber: 9.1 } },
+    banana: { name: 'Banana prata', category: 'fruit', per100: { calories: 98, protein: 1.3, carbs: 26, fat: 0.1, fiber: 2 } },
+    rice: { name: 'Arroz branco cozido', category: 'carb', per100: { calories: 128, protein: 2.5, carbs: 28.1, fat: 0.2, fiber: 1.6 } },
+    beans: { name: 'Feijão carioca cozido', category: 'protein', per100: { calories: 76, protein: 4.8, carbs: 13.6, fat: 0.5, fiber: 8.5 } },
+    chicken: { name: 'Peito de frango grelhado', category: 'protein', per100: { calories: 159, protein: 32, carbs: 0, fat: 2.5, fiber: 0 } },
+    tilapia: { name: 'Filé de tilápia grelhado', category: 'protein', per100: { calories: 128, protein: 26.2, carbs: 0, fat: 2.7, fiber: 0 } },
+    lettuce: { name: 'Alface', category: 'vegetable', per100: { calories: 11, protein: 1.3, carbs: 1.7, fat: 0.2, fiber: 1.8 } },
+    tomato: { name: 'Tomate', category: 'vegetable', per100: { calories: 15, protein: 1.1, carbs: 3.1, fat: 0.2, fiber: 1.2 } },
+    sweetPotato: { name: 'Batata-doce cozida', category: 'carb', per100: { calories: 77, protein: 0.6, carbs: 18.4, fat: 0.1, fiber: 2.2 } },
+    broccoli: { name: 'Brócolis cozido', category: 'vegetable', per100: { calories: 25, protein: 2.1, carbs: 4.4, fat: 0.5, fiber: 3.4 } },
+};
+
+// [hour, [food, grams]…]: breakfast, lunch, snack and dinner, alternating day to day.
+const MEAL_PLANS = [
+    [[8, [['bread', 50], ['egg', 100], ['papaya', 150]]], [8, [['yogurt', 170], ['oats', 30], ['banana', 80]]]],
+    [[12, [['rice', 100], ['beans', 100], ['chicken', 120], ['lettuce', 30], ['tomato', 50]]], [13, [['rice', 90], ['beans', 80], ['tilapia', 130], ['broccoli', 80]]]],
+    [[16, [['yogurt', 170], ['banana', 80]]], [16, [['papaya', 200], ['oats', 20]]]],
+    [[20, [['sweetPotato', 120], ['chicken', 110], ['broccoli', 80]]], [20, [['egg', 100], ['tomato', 60], ['bread', 50]]]],
+];
+const MEAL_DAYS = 7; // the last week (and today) get meals
+
+const buildMeal = (date, items, id) => {
+    const list = items.map(([key, grams]) => {
+        const f = FOODS[key];
+        const nutrition = Object.fromEntries(Object.entries(f.per100).map(([k, v]) => [k, round1((v * grams) / 100)]));
+        return { name: f.name, category: f.category, grams, source: 'taco', nutrition };
+    });
+    const sum = (k) => list.reduce((s, i) => s + i.nutrition[k], 0);
+    return {
+        id,
+        logged_at: date.toISOString(),
+        items: list,
+        total_calories: Math.round(sum('calories')),
+        total_protein: round1(sum('protein')),
+        total_carbs: round1(sum('carbs')),
+        total_fat: round1(sum('fat')),
+        total_fiber: round1(sum('fiber')),
+    };
+};
+
 export const buildDemoUser = (now = new Date()) => {
     const rand = seededRandom(42);
     const jitter = (amp) => (rand() - 0.5) * 2 * amp;
@@ -37,8 +83,9 @@ export const buildDemoUser = (now = new Date()) => {
     const weighDays = days.filter((i) => i % 3 === 0);
     const weights = weighDays.map((i) => ({ date: dayAt(i, 7).toISOString(), weight: i === 0 ? startWeight : round1(trend(i) + jitter(0.4)) }));
 
-    // Waist and hip every two weeks.
-    const bodies = days.filter((i) => i % 14 === 0).map((i) => ({
+    // Waist and hip every two weeks; the last one 16 days ago, so Today shows
+    // the "time to measure" reminder.
+    const bodies = days.filter((i) => i % 14 === 2 && i <= DAYS - 16).map((i) => ({
         date: dayAt(i, 7).toISOString(),
         waist: round1(112 - (i / DAYS) * 7 + jitter(0.5)),
         hip: round1(121 - (i / DAYS) * 5 + jitter(0.5)),
@@ -91,7 +138,7 @@ export const buildDemoUser = (now = new Date()) => {
     const supplements = [
         { id: 'multivitamin', frequency: 'daily' },
         { id: 'creatine', frequency: 'daily' },
-        { id: 'vitaminD', frequency: 'weekly' },
+        { id: 'vitaminD', frequency: 'weekly', day: dayAt(3).getDay() },
         { id: 'whey', frequency: 'daily', nutrients: { protein: 24, calories: 120, carbs: 3, fat: 2 } },
     ];
     const supplementLogs = [];
@@ -103,6 +150,33 @@ export const buildDemoUser = (now = new Date()) => {
         if (!today && i % 7 === 3) log('vitaminD', 'Vitamina D', 9);
         if (!today && rand() > 0.3) log('whey', 'Whey protein', 16);
     });
+
+    // Sample meals for the last week; those days' intake is what they add up
+    // to, plus that day's whey.
+    const meals = [];
+    days.filter((i) => i >= DAYS - MEAL_DAYS).forEach((i) => {
+        const dayMeals = MEAL_PLANS
+            .map((options, k) => {
+                const [hour, items] = options[(i + k) % options.length];
+                return buildMeal(dayAt(i, hour), items, `demo-meal-${i}-${k}`);
+            })
+            .filter((m) => new Date(m.logged_at) <= now);
+        if (!dayMeals.length) return;
+        meals.push(...dayMeals);
+        const key = intakeKey(dayAt(i, 12));
+        const wheyDoses = supplementLogs.filter((l) => l.supplementId === 'whey' && intakeKey(new Date(l.date)) === key).length;
+        const whey = supplements.find((s) => s.id === 'whey').nutrients;
+        const total = (k, mealKey) => dayMeals.reduce((s, m) => s + m[mealKey], 0) + wheyDoses * (whey[k] || 0);
+        dailyIntakeHistory[key] = {
+            ...dailyIntakeHistory[key],
+            protein: round1(total('protein', 'total_protein')),
+            carbs: round1(total('carbs', 'total_carbs')),
+            fat: round1(total('fat', 'total_fat')),
+            fiber: round1(total('fiber', 'total_fiber')),
+            calories: Math.round(total('calories', 'total_calories')),
+        };
+    });
+    meals.reverse(); // newest first, like the meal_logs query
 
     const latest = weights[weights.length - 1].weight;
     return {
@@ -128,6 +202,7 @@ export const buildDemoUser = (now = new Date()) => {
         dailyIntakeHistory,
         supplements,
         supplementLogs,
+        meals,
         settings: { proteinGoal: 100, waterGoal: 2.5, fiberGoal: 25, calorieGoal: 1800, fatGoal: 60, carbsGoal: 150, unitSystem: 'metric' },
     };
 };

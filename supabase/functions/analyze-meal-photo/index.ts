@@ -4,7 +4,7 @@
 // GEMINI_API_KEY secret never reaches the client bundle), and returns a
 // structured list of detected food items with estimated grams. The image
 // itself is never persisted anywhere — it only exists in memory for the
-// duration of this request. See mobile_documentation.md section 7 for the
+// duration of this request. See docs/historico/mobile_documentation.md section 7 for the
 // full feature design.
 //
 // Deploy: supabase functions deploy analyze-meal-photo
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
   try {
     // Auth is optional while the app runs without login ("Continue"): signed-in
     // callers are limited per account, everyone else per device (IP hash), and
-    // everybody together by a global daily cap. See mobile_documentation.md 7.9.
+    // everybody together by a global daily cap. See docs/historico/mobile_documentation.md 7.9.
     const authHeader = req.headers.get("Authorization");
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
         confidence: typeof item.confidence === "number" ? Math.max(0, Math.min(1, item.confidence)) : 0.5,
         // AI-estimated macros per 100g — a fallback source, used until the
         // item is found in our own food_items table (more authoritative
-        // once seeded). See mobile_documentation.md 7.10.
+        // once seeded). See docs/historico/mobile_documentation.md 7.10.
         caloriesPer100g: positiveNumber(item.caloriesPer100g),
         proteinPer100g: positiveNumber(item.proteinPer100g),
         carbsPer100g: positiveNumber(item.carbsPer100g),

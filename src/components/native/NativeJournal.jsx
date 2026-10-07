@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, Image, LayoutAnimation, Dimensions } from 'react-native';
-import { ChevronLeft, ChevronRight, Plus, Syringe, Pill, Scale, Ruler, Smile, PenLine, Image as ImageIcon, UtensilsCrossed, CalendarDays, CalendarRange, Pencil, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Plus, Syringe, Pill, Scale, Ruler, Smile, PenLine, Image as ImageIcon, UtensilsCrossed, CalendarDays, CalendarRange, CalendarCheck, Pencil, Trash2 } from 'lucide-react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { userService } from '../../services/userService';
 import { siteLabel } from '../../services/InjectionService';
@@ -9,6 +10,7 @@ import { useLog, symptomEmoji, symptomKey, foodNoiseColor } from './NativeLogCen
 import NativePhotoViewer from './NativePhotoViewer';
 import { MOCK_MEDICATIONS } from '../../constants/medications';
 import { SUPPLEMENT_CATALOG, WHEY_ID } from '../../utils/supplements';
+import { nutrientGoal } from '../../utils/nutrition';
 import { entriesForDay, markersForDay, MARKER_COLORS, intakeKey, isSameDay, startOfDay, photoUri, noteOf } from '../../utils/journal';
 
 const emptyMascot = require('../../../assets/remember.png');
@@ -30,6 +32,24 @@ const ENTRY_STYLE = {
     supplements: { color: MARKER_COLORS.supplements, bg: '#F0F9FF' },
 };
 
+// How much of the day's goal was reached (full ring = goal met).
+const GoalRing = ({ pct, color, size = 38, stroke = 4 }) => {
+    const r = (size - stroke) / 2;
+    const c = 2 * Math.PI * r;
+    const done = Math.max(0, Math.min(1, pct));
+    return (
+        <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+            <Svg width={size} height={size} style={{ position: 'absolute' }}>
+                <Circle cx={size / 2} cy={size / 2} r={r} stroke="#F1F5F9" strokeWidth={stroke} fill="none" />
+                {done > 0 && (
+                    <Circle cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={stroke} fill="none" strokeLinecap="round" strokeDasharray={`${c * done} ${c}`} rotation={-90} origin={`${size / 2}, ${size / 2}`} />
+                )}
+            </Svg>
+            <Text style={[styles.ringText, pct >= 1 && { color }]}>{Math.round(pct * 100)}%</Text>
+        </View>
+    );
+};
+
 const NativeJournal = ({ user }) => {
     const { t } = useTranslation();
     const { openLog } = useLog();
@@ -43,6 +63,7 @@ const NativeJournal = ({ user }) => {
     const [meals, setMeals] = useState([]);
     const [viewer, setViewer] = useState(null); // { photos, index }
     const [openMeals, setOpenMeals] = useState({}); // meal id → item list expanded
+    const [showNutrients, setShowNutrients] = useState(false);
     // Photo grid cells get pixel sizes from the measured width: percentage
     // widths + aspectRatio render inconsistently on iOS / Android.
     // Until measured: screen minus page padding (48), timeline rail (48) and card padding + border (30).
@@ -185,7 +206,7 @@ const NativeJournal = ({ user }) => {
                     {log.foodNoise !== undefined && (
                         <View style={styles.noiseRow}>
                             <View style={[styles.noiseDot, { backgroundColor: foodNoiseColor(log.foodNoise) }]} />
-                            <Text style={styles.entryText}>Food Noise: <Text style={styles.entryStrong}>{log.foodNoise}/10</Text></Text>
+                            <Text style={styles.entryText}>{t('logs.foodNoise')}: <Text style={styles.entryStrong}>{log.foodNoise}/10</Text></Text>
                         </View>
                     )}
                     {!!log.trigger && <Text style={styles.entryText}>{t('calendar.trigger', { trigger: log.trigger })}</Text>}
@@ -251,11 +272,11 @@ const NativeJournal = ({ user }) => {
                         style={styles.mealSummaryRow}
                         testID="journal-meal-toggle"
                     >
-                        <Text style={styles.entryText} numberOfLines={expanded ? undefined : 1}>
+                        <Text style={[styles.entryText, { flex: 1, minWidth: 0 }]} numberOfLines={expanded ? undefined : 1}>
                             <Text style={styles.entryStrong}>{t('mealScan.itemsCount', { count: mealItems.length })}</Text>
                             {mealItems.length ? ` · ${mealItems.map((i) => i.name).join(', ')}` : ''}
                         </Text>
-                        <Text style={styles.mealToggle}>{expanded ? '▲' : '▼'}</Text>
+                        <View style={styles.mealToggleBtn}><Text style={styles.mealToggleIcon}>{expanded ? '▲' : '▼'}</Text></View>
                     </TouchableOpacity>
                     <View style={styles.mealChips}>
                         {[
@@ -313,6 +334,18 @@ const NativeJournal = ({ user }) => {
         );
     };
 
+    // Every nutrient of the day against its goal (opened under the summary)
+    const goals = user.settings || {};
+    const details = [
+        { key: 'calories', value: intake.calories, goal: goals.calorieGoal, unit: 'kcal', digits: 0, color: '#EF4444' },
+        { key: 'protein', value: intake.protein, goal: goals.proteinGoal, unit: 'g', color: '#F97316' },
+        { key: 'carbs', value: intake.carbs, goal: goals.carbsGoal, unit: 'g', color: '#8B5CF6' },
+        { key: 'fat', value: intake.fat, goal: goals.fatGoal, unit: 'g', color: '#EAB308' },
+        { key: 'fiber', value: intake.fiber, goal: goals.fiberGoal, unit: 'g', color: '#10B981' },
+        { key: 'water', value: intake.water, goal: goals.waterGoal, color: '#3B82F6' },
+    ];
+    const formatDetail = (d, v) => (d.key === 'water' ? units.formatVolume(v) : `${formatNumber(v, d.digits ?? 1)} ${d.unit}`);
+
     const summary = [
         { key: 'water', label: t('nutrients.water'), value: intake.water ? units.formatVolume(intake.water) : null, color: '#3B82F6' },
         { key: 'protein', label: t('nutrients.protein'), value: intake.protein ? `${formatNumber(intake.protein)} g` : null, color: '#F97316' },
@@ -328,11 +361,6 @@ const NativeJournal = ({ user }) => {
                         <Text style={styles.title}>{t('journal.title')}</Text>
                         <Text style={styles.subtitle}>{t('journal.subtitle')}</Text>
                     </View>
-                    {!isToday && (
-                        <TouchableOpacity onPress={() => selectDay(today)} style={styles.todayBtn}>
-                            <Text style={styles.todayBtnText}>{t('journal.goToday')}</Text>
-                        </TouchableOpacity>
-                    )}
                 </View>
 
                 {/* Calendar */}
@@ -368,6 +396,14 @@ const NativeJournal = ({ user }) => {
                         </View>
                     )}
 
+                    {/* Back to today, whenever another day or month is on screen */}
+                    {(!isToday || (mode === 'month' && !isSameDay(monthCursor, new Date(today.getFullYear(), today.getMonth(), 1)))) && (
+                        <TouchableOpacity onPress={() => selectDay(today)} style={styles.todayBtn} testID="journal-go-today">
+                            <CalendarCheck size={14} color="#EA580C" />
+                            <Text style={styles.todayBtnText}>{t('journal.goToday')}</Text>
+                        </TouchableOpacity>
+                    )}
+
                     <View style={styles.legendRow}>
                         {['dose', 'weight', 'checkin', 'meal', 'photo', 'supplements'].map((k) => (
                             <View key={k} style={styles.legendItem}>
@@ -395,11 +431,45 @@ const NativeJournal = ({ user }) => {
                 <View style={styles.summaryRow}>
                     {summary.map((s) => (
                         <View key={s.key} style={styles.summaryChip}>
-                            <Text style={[styles.summaryLabel, { color: s.color }]}>{s.label}</Text>
-                            <Text style={styles.summaryValue}>{s.value || '--'}</Text>
+                            <View style={{ flex: 1, minWidth: 0 }}>
+                                <Text style={[styles.summaryLabel, { color: s.color }]}>{s.label}</Text>
+                                <Text style={styles.summaryValue} numberOfLines={1}>{s.value || '--'}</Text>
+                            </View>
+                            <GoalRing pct={(intake[s.key] || 0) / nutrientGoal(user, s.key)} color={s.color} />
                         </View>
                     ))}
                 </View>
+                <TouchableOpacity
+                    onPress={() => { animate(); setShowNutrients((v) => !v); }}
+                    style={styles.nutrientsToggle}
+                    testID="journal-nutrients-toggle"
+                >
+                    <Text style={styles.nutrientsToggleText}>{showNutrients ? t('journal.nutrientsHide') : t('journal.nutrientsShow')}</Text>
+                    <Text style={styles.mealToggle}>{showNutrients ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+                {showNutrients && (
+                    <View style={styles.nutrientsCard} testID="journal-nutrients">
+                        {details.map((d) => {
+                            const pct = d.goal ? Math.min(1, (d.value || 0) / d.goal) : 0;
+                            return (
+                                <View key={d.key} style={styles.nutrientRow}>
+                                    <View style={styles.nutrientHead}>
+                                        <Text style={styles.nutrientName}>{t(`nutrients.${d.key}`)}</Text>
+                                        <Text style={styles.nutrientValue}>
+                                            {d.value ? formatDetail(d, d.value) : '--'}
+                                            {d.goal ? <Text style={styles.nutrientGoal}>{` / ${formatDetail(d, d.goal)}`}</Text> : null}
+                                        </Text>
+                                    </View>
+                                    {!!d.goal && (
+                                        <View style={styles.nutrientTrack}>
+                                            <View style={[styles.nutrientFill, { width: `${pct * 100}%`, backgroundColor: d.color }]} />
+                                        </View>
+                                    )}
+                                </View>
+                            );
+                        })}
+                    </View>
+                )}
 
                 {entries.length > 0 ? (
                     <View style={styles.timeline}>{timeline.map(renderEntry)}</View>
@@ -430,7 +500,7 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: Platform.OS === 'android' ? 20 : 0, gap: 12 },
     title: { fontSize: 24, fontFamily: 'Outfit_900Black', color: '#0F172A' },
     subtitle: { fontSize: 13, fontFamily: 'Outfit_600SemiBold', color: '#EA580C', marginTop: 2 },
-    todayBtn: { backgroundColor: '#FFF7ED', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#FFEDD5' },
+    todayBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', backgroundColor: '#FFF7ED', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1, borderColor: '#FFEDD5', marginTop: 8 },
     todayBtnText: { fontSize: 11, fontFamily: 'Outfit_900Black', color: '#EA580C', textTransform: 'uppercase', letterSpacing: 0.5 },
 
     calendarCard: { backgroundColor: '#FFFFFF', borderRadius: 32, padding: 16, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 8, elevation: 2, marginBottom: 24 },
@@ -461,8 +531,19 @@ const styles = StyleSheet.create({
     addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EA580C', borderRadius: 14, paddingVertical: 9, paddingHorizontal: 14, shadowColor: '#EA580C', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
     addBtnText: { fontSize: 12, fontFamily: 'Outfit_900Black', color: '#FFFFFF' },
 
-    summaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
-    summaryChip: { width: '47%', flexGrow: 1, backgroundColor: '#FFFFFF', borderRadius: 18, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: '#F1F5F9' },
+    summaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+    nutrientsToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, marginBottom: 12 },
+    nutrientsToggleText: { fontSize: 12, fontFamily: 'Outfit_700Bold', color: '#64748B' },
+    nutrientsCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 16, borderWidth: 1, borderColor: '#F1F5F9', gap: 14, marginBottom: 20 },
+    nutrientRow: { gap: 6 },
+    nutrientHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
+    nutrientName: { fontSize: 13, fontFamily: 'Outfit_700Bold', color: '#334155' },
+    nutrientValue: { fontSize: 14, fontFamily: 'Outfit_900Black', color: '#0F172A' },
+    nutrientGoal: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8' },
+    nutrientTrack: { height: 6, borderRadius: 3, backgroundColor: '#F1F5F9', overflow: 'hidden' },
+    nutrientFill: { height: 6, borderRadius: 3 },
+    summaryChip: { width: '47%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFFFFF', borderRadius: 18, paddingVertical: 10, paddingLeft: 12, paddingRight: 10, borderWidth: 1, borderColor: '#F1F5F9' },
+    ringText: { fontSize: 9, fontFamily: 'Outfit_900Black', color: '#64748B' },
     summaryLabel: { fontSize: 9, fontFamily: 'Outfit_900Black', textTransform: 'uppercase', letterSpacing: 0.5 },
     summaryValue: { fontSize: 15, fontFamily: 'Outfit_900Black', color: '#0F172A', marginTop: 2 },
 
@@ -473,10 +554,12 @@ const styles = StyleSheet.create({
     entryLine: { flex: 1, width: 2, backgroundColor: '#F1F5F9', marginVertical: 4 },
     entryCard: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 24, padding: 14, borderWidth: 1, borderColor: '#F1F5F9', marginBottom: 12, gap: 6 },
     entryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-    mealSummaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+    mealSummaryRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    mealToggleBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    mealToggleIcon: { fontSize: 9, color: '#64748B' },
     mealToggle: { fontSize: 10, color: '#94A3B8', marginTop: 3 },
     mealChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-    mealChip: { flexGrow: 1, minWidth: '22%', backgroundColor: '#F8FAFC', borderRadius: 10, paddingVertical: 4, paddingHorizontal: 6, alignItems: 'center' },
+    mealChip: { width: '45%', flexGrow: 1, backgroundColor: '#F8FAFC', borderRadius: 10, paddingVertical: 4, paddingHorizontal: 6, alignItems: 'center' },
     mealChipLabel: { fontSize: 8, fontFamily: 'Outfit_900Black', textTransform: 'uppercase', letterSpacing: 0.3 },
     mealChipValue: { fontSize: 12, fontFamily: 'Outfit_900Black', color: '#0F172A' },
     mealItemRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderTopWidth: 1, borderTopColor: '#F8FAFC', paddingTop: 6 },

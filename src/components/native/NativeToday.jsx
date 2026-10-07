@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TouchableWithoutFeedback, SafeAreaView, Platform, Image, LayoutAnimation, Animated } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop, ClipPath, Rect } from 'react-native-svg';
-import { ChevronLeft, ChevronRight, Plus, Minus, Info, TrendingUp, Zap, Camera, Check, MapPin, Flame, Wheat, Droplet, Pencil } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Plus, Minus, Info, TrendingUp, Zap, Camera, Check, MapPin, Flame, Wheat, Droplet, Pencil, Ruler, X } from 'lucide-react-native';
 import { Modal, NumberStepper, Button } from './NativeUI';
 import { useTranslation } from 'react-i18next';
 import { ReminderService } from '../../services/ReminderService';
@@ -9,7 +9,10 @@ import { suggestNextInjection } from '../../services/InjectionService';
 import { unitsFor, formatDate, formatNumber } from '../../i18n';
 import { useLog, getMedication, doseIntervalDays } from './NativeLogCenter';
 import { SupplementsCard, SupplementsModal } from './NativeSupplements';
-import { intakeKey, isSameDay, daysBetween, latestWeight, startWeightOf, sortedDoses, weightLogs, photoUri, sortedPhotos } from '../../utils/journal';
+import { intakeKey, isSameDay, daysBetween, latestWeight, startWeightOf, sortedDoses, weightLogs, photoUri, sortedPhotos, bodyLogs, measuresDue } from '../../utils/journal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const MEASURES_SNOOZE_KEY = 'mounjoy.measuresReminderSnoozedUntil';
 
 const waterImg = require('../../../assets/water.png');
 const proteinImg = require('../../../assets/protein.png');
@@ -224,6 +227,22 @@ const NativeToday = ({ user, setUser, setActiveTab }) => {
     const [showSupplements, setShowSupplements] = useState(false);
     const todayPhoto = useMemo(() => sortedPhotos(user).filter((p) => p.date && isSameDay(p.date, today)).pop() || null, [user.photos, today]);
     const [editValue, setEditValue] = useState('');
+
+    // Measures reminder: "first" / "due" (see measuresDue); "×" hides it for a
+    // week, on this device only.
+    const measuresState = measuresDue(user, today);
+    const body = bodyLogs(user);
+    const daysSinceMeasures = body.length ? daysBetween(body[body.length - 1].date, today) : 0;
+    const [measuresSnoozed, setMeasuresSnoozed] = useState(true);
+    useEffect(() => {
+        AsyncStorage.getItem(MEASURES_SNOOZE_KEY)
+            .then((until) => setMeasuresSnoozed(!!until && new Date(until) > new Date()))
+            .catch(() => setMeasuresSnoozed(false));
+    }, []);
+    const snoozeMeasures = () => {
+        setMeasuresSnoozed(true);
+        AsyncStorage.setItem(MEASURES_SNOOZE_KEY, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()).catch(() => {});
+    };
     const decimalSep = formatNumber(1.5).includes(',') ? ',' : '.';
     const openEdit = (type) => {
         const v = type === 'water' ? units.volume(intake.water || 0) : (intake[type] || 0);
@@ -429,6 +448,22 @@ const NativeToday = ({ user, setUser, setActiveTab }) => {
                     {todayPhoto ? <Check size={18} color="#10B981" strokeWidth={3} /> : <Plus size={18} color="#10B981" strokeWidth={3} />}
                 </TouchableOpacity>
 
+                {/* Waist / hip: only when it's time to measure again */}
+                {measuresState && !measuresSnoozed && (
+                    <TouchableOpacity onPress={() => openLog('measures')} style={styles.measuresCard} activeOpacity={0.85} testID="today-measures-reminder">
+                        <View style={styles.measuresIcon}><Ruler size={20} color="#8B5CF6" /></View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.photoTitle}>{t(measuresState === 'first' ? 'today.measuresFirstTitle' : 'today.measuresDueTitle')}</Text>
+                            <Text style={styles.photoSub}>
+                                {measuresState === 'first' ? t('today.measuresFirstSub') : t('today.measuresDueSub', { count: daysSinceMeasures })}
+                            </Text>
+                        </View>
+                        <TouchableOpacity onPress={snoozeMeasures} hitSlop={10} accessibilityLabel={t('today.measuresLater')} testID="today-measures-snooze">
+                            <X size={16} color="#CBD5E1" />
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                )}
+
                 {/* Weight */}
                 <TouchableOpacity activeOpacity={0.9} onPress={() => setActiveTab('progress')} style={styles.weightCard}>
                     <View style={styles.weightMascotBg}>
@@ -602,6 +637,8 @@ const styles = StyleSheet.create({
     goalsCard: { padding: 12, gap: 8 },
     photoCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', borderRadius: 28, padding: 14, borderWidth: 1, borderColor: '#D1FAE5', marginBottom: 24 },
     photoIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' },
+    measuresCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', borderRadius: 28, padding: 14, borderWidth: 1, borderColor: '#EDE9FE', marginBottom: 24 },
+    measuresIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#F5F3FF', alignItems: 'center', justifyContent: 'center' },
     photoThumb: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#F1F5F9' },
     photoTitle: { fontSize: 15, fontFamily: 'Outfit_900Black', color: '#0F172A' },
     photoSub: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#64748B', marginTop: 2 },

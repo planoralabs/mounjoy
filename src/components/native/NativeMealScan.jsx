@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, TouchableWithoutFeedback, Image, Platform, LayoutAnimation, UIManager, TextInput, Keyboard } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { Camera, Images, ArrowLeft, Plus, Minus, Trash2, AlertCircle, ChevronUp, CheckCircle2, Minimize2, Search, UtensilsCrossed } from 'lucide-react-native';
+import { Camera, Images, ArrowLeft, Plus, Minus, Trash2, AlertCircle, ChevronUp, CheckCircle2, Minimize2, Search, UtensilsCrossed, ChevronRight } from 'lucide-react-native';
 import { Button } from './NativeUI';
 import { FoodSearchModal } from './NativeFoodSearch';
 import { userService } from '../../services/userService';
@@ -21,7 +21,7 @@ const triggerLayoutAnimation = () => {
 };
 
 // Macro source, in order of trust: our own food_items table (authoritative
-// once seeded, see mobile_documentation.md 7.8) first; if no match, fall
+// once seeded, see docs/historico/mobile_documentation.md 7.8) first; if no match, fall
 // back to the per-100g estimate Gemini already returned alongside the
 // identification (see 7.10) — only truly empty (manual items with no AI
 // estimate and no DB match) shows nutrition: null / "sem dados".
@@ -47,6 +47,9 @@ const withNutrition = async (item) => {
         nutrition: nutritionFor(rate100g, item.estimatedGrams),
     };
 };
+
+// A typed meal with nothing in it yet isn't kept: closing it cancels it.
+const isEmptyManual = (job) => !!job?.manual && job.items.length === 0;
 
 const nutritionForGrams = (item, grams) => (item.rate100g ? nutritionFor(item.rate100g, grams) : item.nutrition);
 
@@ -210,8 +213,13 @@ export const useMealScan = ({ user, setUser }) => {
             if (!job) setMealDate(date && !isSameDay(date, new Date()) ? date : null);
             setVisible(true);
         },
-        minimize: () => setVisible(false),
+        minimize: () => {
+            if (isEmptyManual(job)) { setJob(null); setMealDate(null); }
+            setVisible(false);
+        },
         discard: () => { setJob(null); setMealDate(null); setPickError(null); setVisible(false); },
+        // Search closed without adding anything: back to choosing photo or typing.
+        cancelEmptyManual: () => setJob((prev) => (isEmptyManual(prev) ? null : prev)),
         pickAndAnalyze,
         setItems,
         confirm,
@@ -224,7 +232,7 @@ export const useMealScan = ({ user, setUser }) => {
 export const MealScanBanner = ({ scan }) => {
     const { t } = useTranslation();
     const { job, progress } = scan;
-    if (!job || scan.visible) return null;
+    if (!job || scan.visible || isEmptyManual(job)) return null;
     const ready = job.status !== 'analyzing';
     const failed = ready && (job.error || job.items.length === 0);
     return (
@@ -283,6 +291,12 @@ const NativeMealScan = ({ user, scan }) => {
     const [showSearch, setShowSearch] = useState(false);
     const [totalWeightHint, setTotalWeightHint] = useState('');
     const [portionDrafts, setPortionDrafts] = useState({});
+    // Before anything is started: null = choose photo or typing, 'photo' = camera/gallery.
+    const [mode, setMode] = useState(null);
+
+    useEffect(() => {
+        if (scan.visible && !job) setMode(null);
+    }, [scan.visible]);
 
     const status = job ? job.status : 'idle';
     const items = job?.items || [];
@@ -326,11 +340,11 @@ const NativeMealScan = ({ user, scan }) => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={job ? scan.minimize : scan.discard} style={styles.headerBtn} testID="meal-scan-back">
+                <TouchableOpacity onPress={job ? scan.minimize : mode ? () => setMode(null) : scan.discard} style={styles.headerBtn} testID="meal-scan-back">
                     <ArrowLeft size={20} color="#EA580C" />
                 </TouchableOpacity>
                 <View style={{ alignItems: 'center' }}>
-                    <Text style={styles.headerTitle}>{job?.manual ? t('foodSearch.mealTitle') : t('mealScan.title')}</Text>
+                    <Text style={styles.headerTitle}>{job ? (job.manual ? t('foodSearch.mealTitle') : t('mealScan.title')) : mode === 'photo' ? t('mealScan.title') : t('foodSearch.mealTitle')}</Text>
                     {!!scan.mealDate && (
                         <Text style={styles.headerDay}>{t('log.forDay', { day: formatDate(scan.mealDate, { day: 'numeric', month: 'long' }) })}</Text>
                     )}
@@ -342,7 +356,30 @@ const NativeMealScan = ({ user, scan }) => {
                 ) : <View style={styles.headerBtn} />}
             </View>
 
-            {status === 'idle' && (
+            {status === 'idle' && !mode && (
+                <View style={styles.centerContent}>
+                    <Text style={styles.idleTitle}>{t('mealScan.chooseTitle')}</Text>
+                    <Text style={[styles.idleSubtitle, { marginTop: 0, marginBottom: 24 }]}>{t('mealScan.chooseSub')}</Text>
+                    <TouchableOpacity onPress={() => setMode('photo')} style={styles.typeBtn} activeOpacity={0.85} testID="meal-mode-photo">
+                        <View style={styles.optionIcon}><Camera size={22} color="#EA580C" /></View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.typeTitle}>{t('mealScan.photoOption')}</Text>
+                            <Text style={styles.typeSub}>{t('mealScan.photoOptionSub')}</Text>
+                        </View>
+                        <ChevronRight size={18} color="#CBD5E1" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={startManual} style={styles.typeBtn} activeOpacity={0.85} testID="meal-type-foods">
+                        <View style={styles.optionIcon}><Search size={22} color="#EA580C" /></View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.typeTitle}>{t('foodSearch.typeTitle')}</Text>
+                            <Text style={styles.typeSub}>{t('foodSearch.typeSub')}</Text>
+                        </View>
+                        <ChevronRight size={18} color="#CBD5E1" />
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {status === 'idle' && mode === 'photo' && (
                 <TouchableWithoutFeedback onPress={Platform.OS === 'web' ? undefined : Keyboard.dismiss} accessible={false}>
                     <View style={styles.centerContent}>
                         <View style={styles.placeholderIcon}>
@@ -377,18 +414,6 @@ const NativeMealScan = ({ user, scan }) => {
                             </Button>
                         </View>
 
-                        <View style={styles.orRow}>
-                            <View style={styles.orLine} />
-                            <Text style={styles.orText}>{t('welcome.or')}</Text>
-                            <View style={styles.orLine} />
-                        </View>
-                        <TouchableOpacity onPress={startManual} style={styles.typeBtn} activeOpacity={0.85} testID="meal-type-foods">
-                            <Search size={18} color="#EA580C" />
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.typeTitle}>{t('foodSearch.typeTitle')}</Text>
-                                <Text style={styles.typeSub}>{t('foodSearch.typeSub')}</Text>
-                            </View>
-                        </TouchableOpacity>
                     </View>
                 </TouchableWithoutFeedback>
             )}
@@ -463,7 +488,7 @@ const NativeMealScan = ({ user, scan }) => {
                     ))}
 
                     <TouchableOpacity onPress={() => setShowSearch(true)} style={styles.addManualBtn} testID="meal-add-food">
-                        <Search size={16} color="#EA580C" />
+                        <View style={styles.addManualIcon}><Plus size={14} color="#FFFFFF" strokeWidth={3} /></View>
                         <Text style={styles.addManualText}>{t('foodSearch.addFood')}</Text>
                     </TouchableOpacity>
 
@@ -487,9 +512,11 @@ const NativeMealScan = ({ user, scan }) => {
                     >
                         {status === 'saving' ? t('common.saving') : t('mealScan.confirm')}
                     </Button>
+                    {/* The one place the food data sources are credited (photo and typed meals both end here) */}
+                    <Text style={styles.credits}>{t('foodSearch.credits')}</Text>
                 </ScrollView>
             )}
-            <FoodSearchModal visible={showSearch} onClose={() => setShowSearch(false)} onAdd={addFood} user={user} setUser={scan.setUser} />
+            <FoodSearchModal visible={showSearch} onClose={() => { setShowSearch(false); scan.cancelEmptyManual(); }} onAdd={addFood} user={user} setUser={scan.setUser} />
         </SafeAreaView>
     );
 };
@@ -535,7 +562,7 @@ const styles = StyleSheet.create({
     itemName: { fontSize: 15, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
     itemCategory: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2 },
     removeBtn: { width: 32, height: 32, borderRadius: 12, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center' },
-    gramsStepper: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    gramsStepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
     stepperBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#FFF7ED', justifyContent: 'center', alignItems: 'center' },
     gramsField: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 8, width: 84 },
     gramsInput: { flex: 1, minWidth: 0, fontSize: 14, fontFamily: 'Outfit_700Bold', color: '#0F172A', padding: 0, textAlign: 'center' },
@@ -544,13 +571,14 @@ const styles = StyleSheet.create({
     itemNoData: { fontSize: 10, fontFamily: 'Outfit_600SemiBold', color: '#CBD5E1', flexShrink: 1, textAlign: 'right' },
 
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-    chip: { flexGrow: 1, minWidth: '22%', borderRadius: 12, paddingVertical: 6, paddingHorizontal: 8, alignItems: 'center' },
+    chip: { width: '45%', flexGrow: 1, borderRadius: 12, paddingVertical: 6, paddingHorizontal: 8, alignItems: 'center' },
     chipCompact: { paddingVertical: 4 },
     chipLabel: { fontSize: 9, fontFamily: 'Outfit_900Black', textTransform: 'uppercase', letterSpacing: 0.3 },
     chipValue: { fontSize: 14, fontFamily: 'Outfit_900Black', color: '#0F172A', marginTop: 1 },
 
-    addManualBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginBottom: 8 },
-    addManualText: { fontSize: 13, fontFamily: 'Outfit_700Bold', color: '#EA580C' },
+    addManualBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, marginTop: 2, marginBottom: 16, borderRadius: 20, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#FDBA74', backgroundColor: '#FFF7ED' },
+    addManualIcon: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#EA580C', alignItems: 'center', justifyContent: 'center' },
+    addManualText: { fontSize: 14, fontFamily: 'Outfit_900Black', color: '#EA580C' },
 
     hintText: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', textAlign: 'center', marginBottom: 16, lineHeight: 16 },
 
@@ -561,6 +589,7 @@ const styles = StyleSheet.create({
     totalsItems: { fontSize: 12, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', marginBottom: 10 },
 
     confirmBtn: { width: '100%' },
+    credits: { fontSize: 10, fontFamily: 'Outfit_600SemiBold', color: '#94A3B8', textAlign: 'center', marginTop: 14, lineHeight: 14 },
 
     banner: {
         position: 'absolute',
@@ -584,10 +613,8 @@ const styles = StyleSheet.create({
     },
     bannerThumb: { width: 46, height: 46, borderRadius: 14, backgroundColor: '#F1F5F9' },
     bannerIcon: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF7ED' },
-    orRow: { flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%', marginTop: 20 },
-    orLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
-    orText: { fontSize: 11, fontFamily: 'Outfit_700Bold', color: '#94A3B8', textTransform: 'uppercase' },
-    typeBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%', marginTop: 16, padding: 16, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#FED7AA' },
+    typeBtn: { flexDirection: 'row', alignItems: 'center', gap: 14, width: '100%', marginTop: 12, padding: 16, borderRadius: 24, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#FED7AA' },
+    optionIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#FFF7ED', justifyContent: 'center', alignItems: 'center' },
     typeTitle: { fontSize: 15, fontFamily: 'Outfit_700Bold', color: '#0F172A' },
     typeSub: { fontSize: 11, fontFamily: 'Outfit_600SemiBold', color: '#64748B', marginTop: 2 },
     bannerTitle: { fontSize: 13, fontFamily: 'Outfit_900Black', color: '#0F172A' },

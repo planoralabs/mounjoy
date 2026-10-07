@@ -108,7 +108,7 @@ create policy "daily_intake_all_own" on public.daily_intake
 -- ── food_items ──────────────────────────────────────────────────────────
 -- Base de nutrição própria, semeada a partir de fontes abertas globais
 -- (Open Food Facts + USDA FoodData Central) — não depende de API externa
--- em runtime. Ver mobile_documentation.md seção 7.5.
+-- em runtime. Ver docs/historico/mobile_documentation.md seção 7.5.
 create table if not exists public.food_items (
     id uuid primary key default gen_random_uuid(),
     name text not null,
@@ -163,7 +163,7 @@ create policy "meal_logs_all_own" on public.meal_logs
 -- through check_and_increment_meal_scan_usage() below, which is the single
 -- gate the Edge Function calls before spending Gemini quota. A stateless
 -- Edge Function instance can't remember previous calls on its own, so the
--- counter has to live here. See mobile_documentation.md section 7.9.
+-- counter has to live here. See docs/historico/mobile_documentation.md section 7.9.
 create table if not exists public.meal_scan_usage (
     user_id uuid not null references public.profiles (id) on delete cascade,
     date date not null,

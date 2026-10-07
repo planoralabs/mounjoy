@@ -5,6 +5,30 @@ import { Info, CheckCircle2, AlertTriangle, RefreshCw, X } from 'lucide-react-na
 import { Modal, Button } from './NativeUI';
 import { useTranslation } from 'react-i18next';
 
+// The silhouette's outer edge, piece by piece (the parts' shared edges are left out)
+const OUTLINE = [
+    // Trunk: waist sides and shoulders
+    'M147.08,247.36c-0.06-7.1.64-14.06,2.71-19.47,5.31-13.86,1.87-35.54,4.26-32.35',
+    'M148.47,118.54s-22.95-7.49-26.13-12.11H75.48c-3.19,4.62-26.13,12.11-26.13,12.11',
+    'M43.77,195.54C46.15,192.36,42.71,214,48,227.9c2.07,5.41,2.78,12.37,2.71,19.47',
+    // Arms
+    'M43.76,195.54c-2.39,3.19-4.94,16.09-5.1,25.82s-3.19,23.27-5.74,29,2.23,35.22-.32,50.36-10.36,42.55-10.36,47.81L3.76,346.3c1-10.36-5.42-86.06-3.35-90.68s4-15.46,2.71-22.63S0.42,189.49,4.4,179.92s-0.8-27.25,9.88-44.62,35.06-16.73,35.06-16.73',
+    'M194,346.3c-1-10.36,5.42-86.06,3.35-90.68s-4-15.46-2.71-22.63,2.71-43.51-1.27-53.07,0.8-27.25-9.88-44.62-35.06-16.73-35.06-16.73',
+    'M154.01,195.57c2.39,3.19,4.94,16.09,5.1,25.82s3.19,23.27,5.74,29-2.23,35.22.32,50.36,10.36,42.55,10.36,47.81L194,346.3',
+    // Hips and crotch
+    'M50.73,247.36a136,136,0,0,1-3.62,28.82c-2.55,10.36-11,68.53-11.79,89.72',
+    'M162.49,365.9c-0.8-21.2-9.24-79.36-11.79-89.72a136,136,0,0,1-3.62-28.82',
+    'M97,368.29L100.82,368.29',
+    // Thighs
+    'M35.11,508.33c1.67-14.63,4.15-24,4.67-31.36,0.8-11.31-5.26-89.88-4.46-111.07',
+    'M97,368.29s0.32,12.43-2.07,21-7.33,19-7.33,33.78-2.23,48.45-6.53,62.31c-3.08,9.94-7,16-7.48,22.91H35.11',
+    'M162.7,508.33c-1.67-14.63-4.15-24-4.67-31.36-0.8-11.31,5.26-89.88,4.46-111.07',
+    'M100.82,368.29s-0.32,12.43,2.07,21,7.33,19,7.33,33.78,2.23,48.45,6.53,62.31c3.08,9.94,7,16,7.48,22.91H162.7',
+].join(' ');
+
+// Where the parts meet: armpits, waist, belly middle and groin
+const DIVISIONS = 'M49.35,118.54l-5.58,77 M148.47,118.54l5.58,77 M50.71,247.36H147.08 M97,247.36V368.29 M35.32,365.9L97,368.29 M100.82,368.29L162.49,365.9';
+
 const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
     const { t } = useTranslation();
     const [showInfo, setShowInfo] = useState(false);
@@ -37,8 +61,7 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                         {/* TRUNK (Reference - Always White) */}
                         <Path
                             fill="#FFFFFF"
-                            stroke="#0F172A"
-                            strokeWidth={1.5}
+                            stroke="none"
                             pointerEvents="none"
                             d="M147.08,247.36c-0.06-7.1.64-14.06,2.71-19.47,5.31-13.86,1.87-35.54,4.26-32.35l-5.58-77s-22.95-7.49-26.13-12.11H75.48c-3.19,4.62-26.13,12.11-26.13,12.11l-5.58,77C46.15,192.36,42.71,214,48,227.9c2.07,5.41,2.78,12.37,2.71,19.47h96.34Z"
                             transform="translate(0.5, 0.5)"
@@ -47,8 +70,7 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
                         {/* Interactive parts */}
                         <Path
                             fill={getFillColor("arm-right")}
-                            stroke="#0F172A"
-                            strokeWidth={1.5}
+                            stroke="none"
                             d="M43.76,195.54c-2.39,3.19-4.94,16.09-5.1,25.82s-3.19,23.27-5.74,29,2.23,35.22-.32,50.36-10.36,42.55-10.36,47.81L3.76,346.3c1-10.36-5.42-86.06-3.35-90.68s4-15.46,2.71-22.63S0.42,189.49,4.4,179.92s-0.8-27.25,9.88-44.62,35.06-16.73,35.06-16.73Z"
                             transform="translate(0.5, 0.5)"
                             onPress={() => onSelect("arm-right")}
@@ -56,8 +78,7 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
 
                         <Path
                             fill={getFillColor("arm-left")}
-                            stroke="#0F172A"
-                            strokeWidth={1.5}
+                            stroke="none"
                             d="M194,346.3c-1-10.36,5.42-86.06,3.35-90.68s-4-15.46-2.71-22.63,2.71-43.51-1.27-53.07,0.8-27.25-9.88-44.62-35.06-16.73-35.06-16.73l5.58,77c2.39,3.19,4.94,16.09,5.1,25.82s3.19,23.27,5.74,29-2.23,35.22.32,50.36,10.36,42.55,10.36,47.81Z"
                             transform="translate(0.5, 0.5)"
                             onPress={() => onSelect("arm-left")}
@@ -65,8 +86,7 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
 
                         <Path
                             fill={getFillColor("abdomen-left")}
-                            stroke="#0F172A"
-                            strokeWidth={1.5}
+                            stroke="none"
                             d="M50.73,247.36 a136,136,0,0,1-3.62,28.82 c-2.55,10.36-11,68.53-11.79,89.72 L97,368.29 L97,247.36 Z"
                             transform="translate(0.5, 0.5)"
                             onPress={() => onSelect("abdomen-left")}
@@ -74,8 +94,7 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
 
                         <Path
                             fill={getFillColor("abdomen-right")}
-                            stroke="#0F172A"
-                            strokeWidth={1.5}
+                            stroke="none"
                             d="M97,247.36 L97,368.29 L100.82,368.29 L162.49,365.9 c-0.8-21.2-9.24-79.36-11.79-89.72 a136,136,0,0,1-3.62-28.82 H97 Z"
                             transform="translate(0.5, 0.5)"
                             onPress={() => onSelect("abdomen-right")}
@@ -83,8 +102,7 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
 
                         <Path
                             fill={getFillColor("thigh-right")}
-                            stroke="#0F172A"
-                            strokeWidth={1.5}
+                            stroke="none"
                             d="M35.11,508.33c1.67-14.63,4.15-24,4.67-31.36,0.8-11.31-5.26-89.88-4.46-111.07L97,368.29s0.32,12.43-2.07,21-7.33,19-7.33,33.78-2.23,48.45-6.53,62.31c-3.08,9.94-7,16-7.48,22.91H35.11Z"
                             transform="translate(0.5, 0.5)"
                             onPress={() => onSelect("thigh-right")}
@@ -92,12 +110,14 @@ const NativeBodySelector = ({ selectedSiteId, onSelect, suggestedSiteId }) => {
 
                         <Path
                             fill={getFillColor("thigh-left")}
-                            stroke="#0F172A"
-                            strokeWidth={1.5}
+                            stroke="none"
                             d="M162.7,508.33c-1.67-14.63-4.15-24-4.67-31.36-0.8-11.31,5.26-89.88,4.46-111.07l-61.67,2.39s-0.32,12.43,2.07,21,7.33,19,7.33,33.78,2.23,48.45,6.53,62.31c3.08,9.94,7,16,7.48,22.91H162.7Z"
                             transform="translate(0.5, 0.5)"
                             onPress={() => onSelect("thigh-left")}
                         />
+                        {/* Outline: solid outside, dashed between the parts */}
+                        <Path d={OUTLINE} fill="none" stroke="#0F172A" strokeWidth={1.5} strokeLinejoin="round" pointerEvents="none" transform="translate(0.5, 0.5)" />
+                        <Path d={DIVISIONS} fill="none" stroke="#64748B" strokeWidth={1.2} strokeDasharray="4 3" pointerEvents="none" transform="translate(0.5, 0.5)" />
                     </Svg>
                 </View>
 

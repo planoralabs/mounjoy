@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toggleTaken, changeWhey, changeSupplement, removeSupplementsOn, progressOn, lastTakenInPeriod, WHEY_ID } from '../../src/utils/supplements';
+import { toggleTaken, changeWhey, changeSupplement, removeSupplementsOn, progressOn, lastTakenInPeriod, isDueOn, withFrequency, WHEY_ID } from '../../src/utils/supplements';
 import { intakeKey, supplementSummaryOn } from '../../src/utils/journal';
 
 const t = (k) => k;
@@ -29,6 +29,20 @@ describe('supplements', () => {
         const u = user({ supplementLogs: [{ date: daysAgo(4), supplementId: 'vitaminD', name: 'D' }] });
         expect(progressOn(u, NOW)).toEqual({ done: 1, total: 3 });
         expect(lastTakenInPeriod(u, { id: 'vitaminD', frequency: 'weekly' }, new Date(2026, 9, 9))).toBeNull();
+    });
+
+    it('shows weekly/monthly supplements with a set day only on that day', () => {
+        const weekly = { id: 'vitaminD', frequency: 'weekly', day: 2 }; // Tuesday
+        expect(isDueOn(weekly, NOW)).toBe(true); // 2026-10-06 is a Tuesday
+        expect(isDueOn(weekly, new Date(2026, 9, 7))).toBe(false);
+        const monthly = { id: 'b12', frequency: 'monthly', day: 31 };
+        expect(isDueOn(monthly, new Date(2026, 10, 30))).toBe(true); // November ends on the 30th
+        expect(isDueOn(monthly, new Date(2026, 10, 29))).toBe(false);
+        expect(withFrequency({ id: 'b12', frequency: 'weekly', day: 3 }, 'daily')).toEqual({ id: 'b12', frequency: 'daily' });
+
+        const u = user({ supplements: [weekly], supplementLogs: [{ date: daysAgo(2), supplementId: 'vitaminD', name: 'D' }] });
+        expect(progressOn(u, NOW)).toEqual({ done: 0, total: 1 });
+        expect(progressOn(u, new Date(2026, 9, 7))).toEqual({ done: 0, total: 0 });
     });
 
     it('adds whey doses to the day\'s goals and removes them again', () => {

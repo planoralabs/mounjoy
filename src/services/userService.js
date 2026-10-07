@@ -381,12 +381,12 @@ export const userService = {
     /**
      * Sends a base64 meal photo to the analyze-meal-photo Edge Function.
      * The image itself is never persisted — only the extracted item list
-     * comes back. See mobile_documentation.md section 7.
+     * comes back. See docs/historico/mobile_documentation.md section 7.
      */
     // ⚠️ TEMPORARY (2026-08-25): no longer requires a session, to make guest
     // mode testable without wiring up anonymous sign-in yet — mirrors the
     // Edge Function's own temporary auth-optional state. See
-    // mobile_documentation.md section 7.9 for what to restore before a real
+    // docs/historico/mobile_documentation.md section 7.9 for what to restore before a real
     // release.
     // `language` (e.g. 'en', 'pt') asks Gemini to name the foods in the
     // user's language.

@@ -1,5 +1,5 @@
 // Canonical storage is always metric (kg, m, cm, L, g) — see
-// mobile_documentation.md 7.6. Everything here only converts for display and
+// docs/historico/mobile_documentation.md 7.6. Everything here only converts for display and
 // converts user input back to metric before it is stored.
 
 const KG_PER_LB = 0.45359237;

@@ -136,8 +136,8 @@
     "finish": "Finish"
   },
   "dashboard": {
-    "greeting": "Hi, {{name}}! 🎈",
-    "greetingNoName": "Hi there! 🎈",
+    "greeting": "Hi, {{name}}!",
+    "greetingNoName": "Hi there!",
     "protocolFallback": "your protocol",
     "foodNoiseTagline": "Watch out for Food Noise 🎈",
     "foodNoiseTitle": "Stay focused!",
@@ -221,6 +221,7 @@
     "symptomsTitle": "Today's Symptoms",
     "triggerLabel": "Identify Trigger",
     "triggerPlaceholder": "e.g. Sweets, fatty food, strong smell...",
+    "foodNoise": "Food Noise",
     "quiet": "Quiet",
     "moderate": "Moderate",
     "high": "High",
@@ -245,6 +246,10 @@
   },
   "mealScan": {
     "title": "Analyze Meal",
+    "chooseTitle": "How do you want to log it?",
+    "chooseSub": "Choose how to add the foods in this meal.",
+    "photoOption": "Photo of your plate",
+    "photoOptionSub": "Take a photo or pick one from your gallery and we identify the foods",
     "idleTitle": "Take a photo of your plate",
     "idleSubtitle": "We identify the foods and estimate the portions automatically.",
     "weightHintLabel": "Approximate plate weight (optional)",
@@ -342,7 +347,7 @@
     "demoHint": "Development only: 2 months on Mounjaro with weigh-ins, photos and applications. Nothing is saved."
   },
   "today": {
-    "subtitle": "Week {{week}} of {{medication}} 💪",
+    "subtitle": "Week {{week}} of {{medication}}",
     "doseDone": "Done today! ✓",
     "goalsTitle": "Today's goals",
     "editGoals": "Adjust goals",
@@ -356,7 +361,13 @@
     "editIntakeHint": "Daily goal: {{goal}}",
     "photoTitle": "Photo of the day",
     "photoSub": "Capture how you look today",
-    "photoDone": "Today's photo saved. Tap to add another"
+    "photoDone": "Today's photo saved. Tap to add another",
+    "measuresFirstTitle": "Log your measures",
+    "measuresFirstSub": "Waist and hip show progress beyond the scale",
+    "measuresDueTitle": "Time to measure waist and hip",
+    "measuresDueSub_one": "Last measured {{count}} day ago",
+    "measuresDueSub_other": "Last measured {{count}} days ago",
+    "measuresLater": "Remind me later"
   },
   "log": {
     "menuTitle": "What do you want to log?",
@@ -371,7 +382,7 @@
     "checkInSub": "Symptoms, food noise and notes",
     "checkInTitle": "How are you feeling?",
     "meal": "Meal",
-    "mealSub": "Photo of your plate, analyzed",
+    "mealSub": "From a photo of your plate or by typing the foods",
     "photo": "Progress photo",
     "photoSub": "For your before & after",
     "measures": "Measurements",
@@ -390,6 +401,8 @@
   "journal": {
     "title": "Journal",
     "subtitle": "Everything that happened, day by day",
+    "nutrientsShow": "See all nutrients",
+    "nutrientsHide": "Hide nutrients",
     "goToday": "Today",
     "month": "Month",
     "week": "Week",
@@ -461,7 +474,22 @@
     "bmiObese2": "Obesity class II",
     "bmiObese3": "Obesity class III",
     "bmiNote": "BMI is a general reference and doesn't account for muscle mass or fat distribution. Talk to your doctor about your goals.",
-    "bmiInfoA11y": "See BMI ranges"
+    "bmiInfoA11y": "See BMI ranges",
+    "tab": {
+      "weight": "Weight",
+      "measures": "Measures",
+      "nutrients": "Nutrients"
+    },
+    "measuresEmpty": "Log waist and hip on 2 different days to see the chart. Tap to log.",
+    "nutrientsTitle": "Nutrients per day",
+    "nutrientsSub": "Tap a bar to see that day",
+    "nutrientsEmpty": "Nothing logged in this period.",
+    "goalLine": "goal {{value}}",
+    "nutrientAvg": "Average {{value}}",
+    "nutrientMet_one": "goal met on {{count}} of {{total}} days",
+    "nutrientMet_other": "goal met on {{count}} of {{total}} days",
+    "nutrientWithin_one": "within goal on {{count}} of {{total}} days",
+    "nutrientWithin_other": "within goal on {{count}} of {{total}} days"
   },
   "reminders": {
     "title": "Reminders",
@@ -536,7 +564,10 @@
     "wheySub": "Each serving counts toward the day's goals",
     "perDose": "Per serving (see the label)",
     "cardTitle": "Supplements",
-    "counter": "{{done}} of {{total}}",
+    "askWeekday": "Which day of the week do you take {{name}}?",
+    "askMonthDay": "Which day of the month do you take {{name}}?",
+    "shortMonthNote": "In shorter months, it shows on the last day.",
+    "noneToday": "No supplements scheduled for today.",
     "emptyTitle": "Taking vitamins or supplements?",
     "emptyText": "Add them here and check them off when you take them.",
     "configure": "Set up",
@@ -573,7 +604,7 @@
     "myFood": "My food",
     "noResults": "Nothing found for \"{{query}}\".",
     "create": "Create food",
-    "credits": "Sources: TACO (NEPA/Unicamp), USDA FoodData Central and Open Food Facts",
+    "credits": "Nutrition data from TACO (NEPA/Unicamp), USDA FoodData Central and Open Food Facts",
     "searchFailed": "Couldn't search right now. Check your connection.",
     "scanHint": "Point the camera at the barcode on the package",
     "looking": "Looking up product...",

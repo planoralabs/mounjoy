@@ -56,7 +56,7 @@ const NativeOnboarding = ({ onComplete }) => {
     const [data, setData] = useState(() => ({
         name: '',
         // 'metric' | 'imperial' — pre-selected from the device's measurement
-        // system (see mobile_documentation.md 7.6); the user can still switch.
+        // system (see docs/historico/mobile_documentation.md 7.6); the user can still switch.
         unitSystem: getDeviceUnitSystem(),
         height: '1.70',
         startWeight: '80.0',
